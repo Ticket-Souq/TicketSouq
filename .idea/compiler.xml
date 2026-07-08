@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="CompilerConfiguration">
+    <annotationProcessing>
+      <profile name="Maven default annotation processors profile" enabled="true">
+        <sourceOutputDir name="target/generated-sources/annotations" />
+        <sourceTestOutputDir name="target/generated-test-sources/test-annotations" />
+        <outputRelativeToContentRoot value="true" />
+        <module name="Shared-Module" />
+      </profile>
+      <profile name="Annotation profile for TicketSouq" enabled="true">
+        <sourceOutputDir name="target/generated-sources/annotations" />
+        <sourceTestOutputDir name="target/generated-test-sources/test-annotations" />
+        <outputRelativeToContentRoot value="true" />
+        <processorPath useClasspath="false">
+          <entry name="$MAVEN_REPOSITORY$/org/mapstruct/mapstruct-processor/1.6.3/mapstruct-processor-1.6.3.jar" />
+          <entry name="$MAVEN_REPOSITORY$/org/projectlombok/lombok/1.18.42/lombok-1.18.42.jar" />
+          <entry name="$MAVEN_REPOSITORY$/org/projectlombok/lombok-mapstruct-binding/0.2.0/lombok-mapstruct-binding-0.2.0.jar" />
+        </processorPath>
+        <module name="audit-service" />
+        <module name="shared-module" />
+        <module name="user-service" />
+        <module name="notification-service" />
+        <module name="ticket-service" />
+        <module name="config-server" />
+        <module name="discovery-server" />
+        <module name="payment-service" />
+        <module name="event-service" />
+        <module name="reservation-service" />
+        <module name="analytics-service" />
+        <module name="api-gateway" />
+        <module name="availability-locking-service" />
+        <module name="venue-service" />
+      </profile>
+    </annotationProcessing>
+    <bytecodeTargetLevel>
+      <module name="demo-module" target="25" />
+    </bytecodeTargetLevel>
+  </component>
+  <component name="JavacSettings">
+    <option name="ADDITIONAL_OPTIONS_OVERRIDE">
+      <module name="Backend" options="" />
+      <module name="Shared-Module" options="-parameters" />
+      <module name="TicketSouq" options="-parameters --enable-preview" />
+      <module name="analytics-service" options="-parameters --enable-preview" />
+      <module name="api-gateway" options="-parameters --enable-preview" />
+      <module name="audit-service" options="-parameters --enable-preview" />
+      <module name="availability-locking-service" options="-parameters --enable-preview" />
+      <module name="config-server" options="-parameters --enable-preview" />
+      <module name="demo-module" options="-parameters --enable-preview" />
+      <module name="discovery-server" options="-parameters --enable-preview" />
+      <module name="event-service" options="-parameters --enable-preview" />
+      <module name="notification-service" options="-parameters --enable-preview" />
+      <module name="payment-service" options="-parameters --enable-preview" />
+      <module name="reservation-service" options="-parameters --enable-preview" />
+      <module name="shared-module" options="-parameters --enable-preview" />
+      <module name="ticket-service" options="-parameters --enable-preview" />
+      <module name="user-service" options="-parameters --enable-preview" />
+      <module name="venue-service" options="-parameters --enable-preview" />
+    </option>
+  </component>
+</project>
