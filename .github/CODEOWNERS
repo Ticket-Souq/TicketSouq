@@ -1,0 +1,30 @@
+# CODEOWNERS for Ticket-Souq
+# Anyone in the org can branch/edit/PR anywhere.
+# This file only controls who must APPROVE a PR before it can merge.
+# Format: path   @Ticket-Souq/team-slug
+
+# ---- Infra (shared by everyone, no single owner) ----
+/services/config-server/                     @Ticket-Souq/infra-team
+
+# ---- Core services ----
+/services/eureka-service/                     @Ticket-Souq/eureka-team
+/services/auth-service/                       @Ticket-Souq/auth-team
+/services/ticket-service/                     @Ticket-Souq/ticket-team
+/services/venue-service/                      @Ticket-Souq/venue-team
+/services/analytics-service/                  @Ticket-Souq/analytics-audit-team
+/services/audit-service/                      @Ticket-Souq/analytics-audit-team
+/services/notification-service/               @Ticket-Souq/notification-team
+/services/availability-locking-service/       @Ticket-Souq/availability-locking-team
+/services/event-service/                      @Ticket-Souq/event-team
+/services/payment-service/                    @Ticket-Souq/payment-team
+/services/reservation-service/                @Ticket-Souq/reservation-team
+
+# ---- Shared libs (Kafka event schemas, common DTOs) ----
+# Everyone has a stake in this, so every team is listed as a possible approver.
+# GitHub only requires ONE matching approval, not all of them.
+/libs/    @Ticket-Souq/infra-team @Ticket-Souq/eureka-team @Ticket-Souq/auth-team @Ticket-Souq/ticket-team @Ticket-Souq/venue-team @Ticket-Souq/analytics-audit-team @Ticket-Souq/notification-team @Ticket-Souq/availability-locking-team @Ticket-Souq/event-team @Ticket-Souq/payment-team @Ticket-Souq/reservation-team
+
+/infra/   @Ticket-Souq/infra-team
+
+# No catch-all "*" rule on purpose — every real path above is already covered.
+# An unmatched file just gets normal review with no required owner.

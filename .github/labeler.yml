@@ -1,0 +1,55 @@
+service:config-server:
+  - changed-files:
+    - any-glob-to-any-file: 'services/config-server/**'
+
+service:eureka:
+  - changed-files:
+    - any-glob-to-any-file: 'services/eureka-service/**'
+
+service:auth:
+  - changed-files:
+    - any-glob-to-any-file: 'services/auth-service/**'
+
+service:ticket:
+  - changed-files:
+    - any-glob-to-any-file: 'services/ticket-service/**'
+
+service:venue:
+  - changed-files:
+    - any-glob-to-any-file: 'services/venue-service/**'
+
+service:analytics:
+  - changed-files:
+    - any-glob-to-any-file: 'services/analytics-service/**'
+
+service:audit:
+  - changed-files:
+    - any-glob-to-any-file: 'services/audit-service/**'
+
+service:notification:
+  - changed-files:
+    - any-glob-to-any-file: 'services/notification-service/**'
+
+service:availability-locking:
+  - changed-files:
+    - any-glob-to-any-file: 'services/availability-locking-service/**'
+
+service:event:
+  - changed-files:
+    - any-glob-to-any-file: 'services/event-service/**'
+
+service:payment:
+  - changed-files:
+    - any-glob-to-any-file: 'services/payment-service/**'
+
+service:reservation:
+  - changed-files:
+    - any-glob-to-any-file: 'services/reservation-service/**'
+
+service:libs-shared:
+  - changed-files:
+    - any-glob-to-any-file: 'libs/**'
+
+service:infra:
+  - changed-files:
+    - any-glob-to-any-file: 'infra/**'

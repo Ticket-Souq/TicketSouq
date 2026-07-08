@@ -1,0 +1,71 @@
+name: CI
+
+on:
+  pull_request:
+    branches: [main]
+
+jobs:
+  detect-changes:
+    runs-on: ubuntu-latest
+    outputs:
+      services: ${{ steps.filter.outputs.changes }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            config-server: 'services/config-server/**'
+            eureka-service: 'services/eureka-service/**'
+            auth-service: 'services/auth-service/**'
+            ticket-service: 'services/ticket-service/**'
+            venue-service: 'services/venue-service/**'
+            analytics-service: 'services/analytics-service/**'
+            audit-service: 'services/audit-service/**'
+            notification-service: 'services/notification-service/**'
+            availability-locking-service: 'services/availability-locking-service/**'
+            event-service: 'services/event-service/**'
+            payment-service: 'services/payment-service/**'
+            reservation-service: 'services/reservation-service/**'
+            libs: 'libs/**'
+
+  # Normal case: only the services actually touched get built/tested.
+  build-and-test:
+    needs: detect-changes
+    if: needs.detect-changes.outputs.services != '[]' && !contains(needs.detect-changes.outputs.services, 'libs')
+    strategy:
+      fail-fast: false
+      matrix:
+        service: ${{ fromJSON(needs.detect-changes.outputs.services) }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: maven
+
+      - name: Build and test ${{ matrix.service }}
+        run: mvn -pl services/${{ matrix.service }} -am test
+
+      - name: Check code style (Spotless)
+        run: mvn -pl services/${{ matrix.service }} spotless:check
+
+  # If shared libs change, every service depends on it, so test everything instead.
+  build-and-test-all-on-libs-change:
+    needs: detect-changes
+    if: contains(needs.detect-changes.outputs.services, 'libs')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: maven
+      - name: Build and test everything
+        run: mvn test
+      - name: Check code style (Spotless) across all services
+        run: mvn spotless:check
