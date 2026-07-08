@@ -1,0 +1,38 @@
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+scrape_configs:
+  - job_name: 'spring-services'
+    eureka_sd_configs:
+      - server: http://host.docker.internal:8761/eureka/v2
+        refresh_interval: 15s
+
+    relabel_configs:
+      # Replace localhost with host.docker.internal so Docker can reach your machine
+      - source_labels: [__meta_eureka_app_instance_hostname]
+        regex: localhost
+        replacement: host.docker.internal
+        target_label: __meta_eureka_app_instance_hostname
+
+      # Build address from (possibly replaced) hostname + port
+      - source_labels: [__meta_eureka_app_instance_hostname, __meta_eureka_app_instance_port]
+        separator: ':'
+        target_label: __address__
+
+      # Metrics path
+      - target_label: __metrics_path__
+        replacement: /actuator/prometheus
+
+      # Drop config-server and discovery-server — they don't expose prometheus metrics
+      - source_labels: [__meta_eureka_app_name]
+        regex: CONFIG-SERVER|DISCOVERY-SERVER|API-GATEWAY
+        action: drop
+
+      # App name label
+      - source_labels: [__meta_eureka_app_name]
+        target_label: application
+
+      # Instance label
+      - source_labels: [__meta_eureka_app_instance_instance_id]
+        target_label: instance
