@@ -7,7 +7,7 @@
 /config-server/                     @Ticket-Souq/infra-team
 
 # ---- Core services ----
-/eureka-service/                     @Ticket-Souq/eureka-team
+/discovery-server/                     @Ticket-Souq/eureka-team
 /auth-service/                       @Ticket-Souq/auth-team
 /ticket-service/                     @Ticket-Souq/ticket-team
 /venue-service/                      @Ticket-Souq/venue-team
@@ -24,7 +24,7 @@
 # GitHub only requires ONE matching approval, not all of them.
 /libs/    @Ticket-Souq/infra-team @Ticket-Souq/eureka-team @Ticket-Souq/auth-team @Ticket-Souq/ticket-team @Ticket-Souq/venue-team @Ticket-Souq/analytics-audit-team @Ticket-Souq/notification-team @Ticket-Souq/availability-locking-team @Ticket-Souq/event-team @Ticket-Souq/payment-team @Ticket-Souq/reservation-team
 
-/infra/   @Ticket-Souq/infra-team
+/../infrastructure/   @Ticket-Souq/infra-team
 
 # No catch-all "*" rule on purpose — every real path above is already covered.
 # An unmatched file just gets normal review with no required owner.
