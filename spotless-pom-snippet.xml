@@ -1,0 +1,38 @@
+<!--
+  Add this <plugin> block into the <build><plugins> section of your ROOT/parent pom.xml.
+  If each service has its own pom.xml inheriting from a parent, this only needs to live
+  in the parent — it applies to every module automatically.
+-->
+
+<plugin>
+  <groupId>com.diffplug.spotless</groupId>
+  <artifactId>spotless-maven-plugin</artifactId>
+  <version>2.43.0</version>
+  <configuration>
+    <java>
+      <googleJavaFormat/>
+      <removeUnusedImports/>
+      <importOrder/>
+      <trimTrailingWhitespace/>
+      <endWithNewline/>
+    </java>
+  </configuration>
+  <executions>
+    <execution>
+      <id>spotless-check</id>
+      <phase>verify</phase>
+      <goals>
+        <goal>check</goal>
+      </goals>
+    </execution>
+  </executions>
+</plugin>
+
+<!--
+  Local dev commands:
+    mvn spotless:apply   -> auto-formats your code before committing
+    mvn spotless:check   -> same check CI runs, use it before pushing
+
+  Add "mvn spotless:apply" as a required step in your PR template / README
+  so nobody has to think about formatting manually.
+-->
