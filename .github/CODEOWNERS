@@ -4,20 +4,20 @@
 # Format: path   @Ticket-Souq/team-slug
 
 # ---- Infra (shared by everyone, no single owner) ----
-/services/config-server/                     @Ticket-Souq/infra-team
+/config-server/                     @Ticket-Souq/infra-team
 
 # ---- Core services ----
-/services/eureka-service/                     @Ticket-Souq/eureka-team
-/services/auth-service/                       @Ticket-Souq/auth-team
-/services/ticket-service/                     @Ticket-Souq/ticket-team
-/services/venue-service/                      @Ticket-Souq/venue-team
-/services/analytics-service/                  @Ticket-Souq/analytics-audit-team
-/services/audit-service/                      @Ticket-Souq/analytics-audit-team
-/services/notification-service/               @Ticket-Souq/notification-team
-/services/availability-locking-service/       @Ticket-Souq/availability-locking-team
-/services/event-service/                      @Ticket-Souq/event-team
-/services/payment-service/                    @Ticket-Souq/payment-team
-/services/reservation-service/                @Ticket-Souq/reservation-team
+/eureka-service/                     @Ticket-Souq/eureka-team
+/auth-service/                       @Ticket-Souq/auth-team
+/ticket-service/                     @Ticket-Souq/ticket-team
+/venue-service/                      @Ticket-Souq/venue-team
+/analytics-service/                  @Ticket-Souq/analytics-audit-team
+/audit-service/                      @Ticket-Souq/analytics-audit-team
+/notification-service/               @Ticket-Souq/notification-team
+/availability-locking-service/       @Ticket-Souq/availability-locking-team
+/event-service/                      @Ticket-Souq/event-team
+/payment-service/                    @Ticket-Souq/payment-team
+/reservation-service/                @Ticket-Souq/reservation-team
 
 # ---- Shared libs (Kafka event schemas, common DTOs) ----
 # Everyone has a stake in this, so every team is listed as a possible approver.
