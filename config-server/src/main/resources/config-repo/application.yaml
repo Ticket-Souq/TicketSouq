@@ -1,0 +1,109 @@
+spring:
+
+  # ── Database defaults (services override only what differs) ──────────
+  datasource:
+    url: jdbc:postgresql://${database.host}:${database.port}/${database.name}
+    username: ${database.username}
+    password: ${database.password}
+    driver-class-name: org.postgresql.Driver
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+        format_sql: true
+
+  # ── Kafka defaults (services override only what differs) ──────────
+  kafka:
+    bootstrap-servers: ${kafka.server}
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+      properties:
+        spring.json.add.type.headers: false
+    consumer:
+      auto-offset-reset: latest
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
+      properties:
+        spring.json.trusted.packages: "*"
+
+# ── Swagger ──────────
+springdoc:
+  api-docs:
+    enabled: true
+    path: /v3/api-docs
+
+  swagger-ui:
+    path: /swagger-ui.html
+    display-request-duration: true
+    operations-sorter: method
+    tags-sorter: alpha
+    try-it-out-enabled: true
+    filter: true
+
+# ── Logging ──────────
+logging:
+  pattern:
+    level: "%5p [${spring.application.name:},%X{traceId:-},%X{spanId:-}]"
+  loki:
+    url: http://${loki.host}:${loki.port}/loki/api/v1/push
+  level:
+    io.micrometer.tracing: DEBUG
+    zipkin2: DEBUG
+
+# ── Tracing & Metrics ──────────
+management:
+  tracing:
+    enabled: true
+    sampling:
+      probability: 1.0
+    export:
+#      otlp:
+#        endpoint: http://${tempo.host}:${tempo.otlp-port}/v1/traces
+      zipkin:
+        endpoint: http://${tempo.host}:${tempo.zipkin-port}/api/v2/spans
+
+  endpoints:
+    web:
+      exposure:
+        include: "*"
+  endpoint:
+    health:
+      show-details: always
+    prometheus:
+      access: read_only
+
+  prometheus:
+    metrics:
+      export:
+        enabled: true
+
+  metrics:
+    distribution:
+      percentiles-histogram:
+        http.server.requests: true
+    tags:
+      application: ${spring.application.name}
+
+    observations:
+      key-values:
+        application: ${spring.application.name}
+
+
+# ── Eureka defaults for all services ──────────
+EurekaLink : ${EurekaOrigin}/eureka/
+
+eureka:
+  client:
+    service-url:
+      defaultZone: ${EurekaLink}
+    register-with-eureka: true
+    fetch-registry: true
+  instance:
+    prefer-ip-address: true
+    instance-id: ${spring.application.name}:${spring.application.instance_id:${random.value}}
+    lease-renewal-interval-in-seconds: 5
+    lease-expiration-duration-in-seconds: 15

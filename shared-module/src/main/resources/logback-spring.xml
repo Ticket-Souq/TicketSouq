@@ -1,0 +1,59 @@
+<configuration>
+
+    <springProperty scope="context" name="appName" source="spring.application.name" defaultValue="unknown-service"/>
+    <springProperty scope="context" name="lokiUrl" source="logging.loki.url" defaultValue="http://localhost:3100/loki/api/v1/push"/>
+    <springProperty scope="context" name="lokiEnabled" source="logging.loki.enabled" defaultValue="true"/>
+
+    <!-- ── Console ───────────────────────────────────────────────── -->
+    <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder>
+            <pattern>%d{HH:mm:ss.SSS} ${LOG_LEVEL_PATTERN:-%5p} [%thread] [${appName},%X{traceId:-},%X{spanId:-}] %logger{36} - %msg%n</pattern>
+        </encoder>
+    </appender>
+
+
+    <!-- ── Loki (skipped when lokiEnabled=false) ─────────────────── -->
+    <appender name="LOKI" class="com.github.loki4j.logback.Loki4jAppender">
+        <http>
+            <url>${lokiUrl}</url>
+            <connectTimeoutMs>5000</connectTimeoutMs>
+            <requestTimeoutMs>5000</requestTimeoutMs>
+        </http>
+        <format>
+            <label>
+                <pattern>app=${appName},env=${SPRING_PROFILES_ACTIVE:-local},level=%level</pattern>
+            </label>
+
+            <message>
+                <pattern>%d{ISO8601} ${LOG_LEVEL_PATTERN:-%5p} [%thread] [${appName},%X{traceId:-},%X{spanId:-}] %logger{36} - %msg%n</pattern>
+            </message>
+            <sortByTime>true</sortByTime>
+        </format>
+
+    </appender>
+
+    <!-- Wrap Loki in an async appender so log calls never block request threads -->
+    <appender name="LOKI_ASYNC" class="ch.qos.logback.classic.AsyncAppender">
+        <appender-ref ref="LOKI"/>
+        <queueSize>512</queueSize>
+        <discardingThreshold>0</discardingThreshold>
+        <neverBlock>true</neverBlock>
+    </appender>
+
+    <!-- ── Noise reduction for framework internals ───────────────── -->
+    <logger name="org.springframework.cloud.gateway"     level="INFO"/>
+    <logger name="org.springframework.cloud.loadbalancer" level="INFO"/>
+    <logger name="org.springframework.security"          level="WARN"/>
+    <logger name="com.netflix.eureka"                    level="WARN"/>
+    <logger name="com.netflix.discovery"                 level="WARN"/>
+    <logger name="io.micrometer"                         level="WARN"/>
+    <logger name="org.hibernate.SQL"                     level="DEBUG"/>
+    <logger name="org.hibernate.type.descriptor.sql"     level="WARN"/>
+
+    <!-- ── Root ─────────────────────────────────────────────────── -->
+    <root level="INFO">
+        <appender-ref ref="CONSOLE"/>
+        <appender-ref ref="LOKI_ASYNC"/>
+    </root>
+
+</configuration>
