@@ -2,10 +2,9 @@ EurekaOrigin : http://localhost:8761
 
 spring:
   application:
-    name: api-gateway
+    name:  payment-service
   config:
     import: optional:file:./profile.properties
 
-
 server:
-  port: 8080
+  port: 0

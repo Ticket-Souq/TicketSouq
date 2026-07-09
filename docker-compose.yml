@@ -1,11 +1,6 @@
 x-postgres: &postgres
   image: postgres
   restart: unless-stopped
-  healthcheck:
-    test: [ "CMD-SHELL", "pg_isready -U admin" ]
-    interval: 10s
-    timeout: 5s
-    retries: 5
   networks:
     - Ticket-Souq-Microservice
 
