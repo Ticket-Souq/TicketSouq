@@ -1,0 +1,41 @@
+EurekaOrigin : http://localhost:8761
+
+
+spring:
+  application:
+    name: api-gateway
+  config:
+    import: optional:file:./profile.properties
+
+springdoc:
+  swagger-ui:
+    urls:
+      - name: Auth Service
+        url: /aggregate/api-gateway/v3/api-docs
+      - name: User Service
+        url: /aggregate/user-service/v3/api-docs
+      - name: Audit Service
+        url: /aggregate/audit-service/v3/api-docs
+      - name: Analytics Service
+        url: /aggregate/analytics-service/v3/api-docs
+
+      - name: Availability & locking Service
+        url: /aggregate/availability-locking-service/v3/api-docs
+      - name: Event Service
+        url: /aggregate/event-service/v3/api-docs
+      - name: Notification Service
+        url: /aggregate/notification-service/v3/api-docs
+      - name: Payment Service
+        url: /aggregate/payment-service/v3/api-docs
+      - name: Reservation Service
+        url: /aggregate/reservation-service/v3/api-docs
+      - name: Ticket Service
+        url: /aggregate/ticket-service/v3/api-docs
+      - name: Venue Service
+        url: /aggregate/venue-service/v3/api-docs
+      - name: Search Service
+        url: /aggregate/search-service/v3/api-docs
+
+
+server:
+  port: 8080
