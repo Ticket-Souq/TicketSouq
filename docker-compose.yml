@@ -1,183 +1,183 @@
-x-postgres: &postgres
-  image: postgres
-  restart: unless-stopped
-  networks:
-    - Ticket-Souq-Microservice
+#x-postgres: &postgres
+#  image: postgres
+#  restart: unless-stopped
+#  networks:
+#    - Ticket-Souq-Microservice
 
 services:
 
   # ─── Databases ──────────────────────────────────────────────
 
-  user-db:
-    <<: *postgres
-    container_name: user-db
-    environment:
-      POSTGRES_USER: admin
-      POSTGRES_PASSWORD: admin
-      POSTGRES_DB: user_db
-    ports:
-      - "5433:5432"
-    volumes:
-      - postgres_user_data:/var/lib/postgresql
+#  user-db:
+#    <<: *postgres
+#    container_name: user-db
+#    environment:
+#      POSTGRES_USER: admin
+#      POSTGRES_PASSWORD: admin
+#      POSTGRES_DB: user_db
+#    ports:
+#      - "5433:5432"
+#    volumes:
+#      - postgres_user_data:/var/lib/postgresql
+#
+#  auth-db:
+#    <<: *postgres
+#    container_name: auth-db
+#    environment:
+#      POSTGRES_USER: admin
+#      POSTGRES_PASSWORD: admin
+#      POSTGRES_DB: auth_db
+#    ports:
+#      - "5443:5432"
+#    volumes:
+#      - postgres_auth_data:/var/lib/postgresql
+#
+#  event-db:
+#    <<: *postgres
+#    container_name: event-db
+#    environment:
+#      POSTGRES_USER: admin
+#      POSTGRES_PASSWORD: admin
+#      POSTGRES_DB: event_db
+#    ports:
+#      - "5434:5432"
+#    volumes:
+#      - postgres_event_data:/var/lib/postgresql
+#
+#  venue-db:
+#    <<: *postgres
+#    container_name: venue-db
+#    environment:
+#      POSTGRES_USER: admin
+#      POSTGRES_PASSWORD: admin
+#      POSTGRES_DB: venue_db
+#    ports:
+#      - "5435:5432"
+#    volumes:
+#      - postgres_venue_data:/var/lib/postgresql
+#
+#  ticket-db:
+#    <<: *postgres
+#    container_name: ticket-db
+#    environment:
+#      POSTGRES_USER: admin
+#      POSTGRES_PASSWORD: admin
+#      POSTGRES_DB: ticket_db
+#    ports:
+#      - "5436:5432"
+#    volumes:
+#      - postgres_ticket_data:/var/lib/postgresql
+#
+#  reservation-db:
+#    <<: *postgres
+#    container_name: reservation-db
+#    environment:
+#      POSTGRES_USER: admin
+#      POSTGRES_PASSWORD: admin
+#      POSTGRES_DB: reservation_db
+#    ports:
+#      - "5437:5432"
+#    volumes:
+#      - postgres_reservation_data:/var/lib/postgresql
+#
+#  payment-db:
+#    <<: *postgres
+#    container_name: payment-db
+#    environment:
+#      POSTGRES_USER: admin
+#      POSTGRES_PASSWORD: admin
+#      POSTGRES_DB: payment_db
+#    ports:
+#      - "5438:5432"
+#    volumes:
+#      - postgres_payment_data:/var/lib/postgresql
 
-  auth-db:
-    <<: *postgres
-    container_name: auth-db
-    environment:
-      POSTGRES_USER: admin
-      POSTGRES_PASSWORD: admin
-      POSTGRES_DB: auth_db
-    ports:
-      - "5443:5432"
-    volumes:
-      - postgres_auth_data:/var/lib/postgresql
+#  notification-db:
+#    <<: *postgres
+#    container_name: notification-db
+#    environment:
+#      POSTGRES_USER: admin
+#      POSTGRES_PASSWORD: admin
+#      POSTGRES_DB: notification_db
+#    ports:
+#      - "5439:5432"
+#    volumes:
+#      - postgres_notification_data:/var/lib/postgresql
 
-  event-db:
-    <<: *postgres
-    container_name: event-db
-    environment:
-      POSTGRES_USER: admin
-      POSTGRES_PASSWORD: admin
-      POSTGRES_DB: event_db
-    ports:
-      - "5434:5432"
-    volumes:
-      - postgres_event_data:/var/lib/postgresql
-
-  venue-db:
-    <<: *postgres
-    container_name: venue-db
-    environment:
-      POSTGRES_USER: admin
-      POSTGRES_PASSWORD: admin
-      POSTGRES_DB: venue_db
-    ports:
-      - "5435:5432"
-    volumes:
-      - postgres_venue_data:/var/lib/postgresql
-
-  ticket-db:
-    <<: *postgres
-    container_name: ticket-db
-    environment:
-      POSTGRES_USER: admin
-      POSTGRES_PASSWORD: admin
-      POSTGRES_DB: ticket_db
-    ports:
-      - "5436:5432"
-    volumes:
-      - postgres_ticket_data:/var/lib/postgresql
-
-  reservation-db:
-    <<: *postgres
-    container_name: reservation-db
-    environment:
-      POSTGRES_USER: admin
-      POSTGRES_PASSWORD: admin
-      POSTGRES_DB: reservation_db
-    ports:
-      - "5437:5432"
-    volumes:
-      - postgres_reservation_data:/var/lib/postgresql
-
-  payment-db:
-    <<: *postgres
-    container_name: payment-db
-    environment:
-      POSTGRES_USER: admin
-      POSTGRES_PASSWORD: admin
-      POSTGRES_DB: payment_db
-    ports:
-      - "5438:5432"
-    volumes:
-      - postgres_payment_data:/var/lib/postgresql
-
-  notification-db:
-    <<: *postgres
-    container_name: notification-db
-    environment:
-      POSTGRES_USER: admin
-      POSTGRES_PASSWORD: admin
-      POSTGRES_DB: notification_db
-    ports:
-      - "5439:5432"
-    volumes:
-      - postgres_notification_data:/var/lib/postgresql
-
-  audit-db:
-    <<: *postgres
-    container_name: audit-db
-    environment:
-      POSTGRES_USER: admin
-      POSTGRES_PASSWORD: admin
-      POSTGRES_DB: audit_db
-    ports:
-      - "5440:5432"
-    volumes:
-      - postgres_audit_data:/var/lib/postgresql
-
-  analytics-db:
-    <<: *postgres
-    container_name: analytics-db
-    environment:
-      POSTGRES_USER: admin
-      POSTGRES_PASSWORD: admin
-      POSTGRES_DB: analytics_db
-    ports:
-      - "5441:5432"
-    volumes:
-      - postgres_analytics_data:/var/lib/postgresql
-
-  availability-locking-db:
-    <<: *postgres
-    container_name: availability-locking-db
-    environment:
-      POSTGRES_USER: admin
-      POSTGRES_PASSWORD: admin
-      POSTGRES_DB: availability_locking_db
-    ports:
-      - "5442:5432"
-    volumes:
-      - postgres_availability_locking_data:/var/lib/postgresql
+#  audit-db:
+#    <<: *postgres
+#    container_name: audit-db
+#    environment:
+#      POSTGRES_USER: admin
+#      POSTGRES_PASSWORD: admin
+#      POSTGRES_DB: audit_db
+#    ports:
+#      - "5440:5432"
+#    volumes:
+#      - postgres_audit_data:/var/lib/postgresql
+#
+#  analytics-db:
+#    <<: *postgres
+#    container_name: analytics-db
+#    environment:
+#      POSTGRES_USER: admin
+#      POSTGRES_PASSWORD: admin
+#      POSTGRES_DB: analytics_db
+#    ports:
+#      - "5441:5432"
+#    volumes:
+#      - postgres_analytics_data:/var/lib/postgresql
+#
+#  availability-locking-db:
+#    <<: *postgres
+#    container_name: availability-locking-db
+#    environment:
+#      POSTGRES_USER: admin
+#      POSTGRES_PASSWORD: admin
+#      POSTGRES_DB: availability_locking_db
+#    ports:
+#      - "5442:5432"
+#    volumes:
+#      - postgres_availability_locking_data:/var/lib/postgresql
 
   # ─── Messaging ──────────────────────────────────────────────
 
-  kafka:
-    image: confluentinc/cp-kafka:7.6.0
-    container_name: kafka
-    ports:
-      - "29092:29092"
-    environment:
-      KAFKA_NODE_ID: 1
-      KAFKA_PROCESS_ROLES: broker,controller
-      KAFKA_CONTROLLER_QUORUM_VOTERS: 1@kafka:9093
-      KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:9092,PLAINTEXT_HOST://0.0.0.0:29092,CONTROLLER://0.0.0.0:9093
-      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092,PLAINTEXT_HOST://localhost:29092
-      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT,CONTROLLER:PLAINTEXT
-      KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
-      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
-      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
-      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
-      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
-      CLUSTER_ID: MkU3OEVBNTcwNTJENDM2Qk
-    volumes:
-      - kafka_data:/var/lib/kafka/data
-    networks:
-      - Ticket-Souq-Microservice
-
-  kafka-ui:
-    image: provectuslabs/kafka-ui:latest
-    container_name: kafka-ui
-    depends_on:
-      - kafka
-    ports:
-      - "8086:8080"
-    environment:
-      KAFKA_CLUSTERS_0_NAME: local
-      KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: kafka:9092
-      DYNAMIC_CONFIG_ENABLED: "true"
-    networks:
-      - Ticket-Souq-Microservice
+#  kafka:
+#    image: confluentinc/cp-kafka:7.6.0
+#    container_name: kafka
+#    ports:
+#      - "29092:29092"
+#    environment:
+#      KAFKA_NODE_ID: 1
+#      KAFKA_PROCESS_ROLES: broker,controller
+#      KAFKA_CONTROLLER_QUORUM_VOTERS: 1@kafka:9093
+#      KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:9092,PLAINTEXT_HOST://0.0.0.0:29092,CONTROLLER://0.0.0.0:9093
+#      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092,PLAINTEXT_HOST://localhost:29092
+#      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT,CONTROLLER:PLAINTEXT
+#      KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
+#      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+#      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+#      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+#      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+#      CLUSTER_ID: MkU3OEVBNTcwNTJENDM2Qk
+#    volumes:
+#      - kafka_data:/var/lib/kafka/data
+#    networks:
+#      - Ticket-Souq-Microservice
+#
+#  kafka-ui:
+#    image: provectuslabs/kafka-ui:latest
+#    container_name: kafka-ui
+#    depends_on:
+#      - kafka
+#    ports:
+#      - "8086:8080"
+#    environment:
+#      KAFKA_CLUSTERS_0_NAME: local
+#      KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: kafka:9092
+#      DYNAMIC_CONFIG_ENABLED: "true"
+#    networks:
+#      - Ticket-Souq-Microservice
 
   # ─── Observability ──────────────────────────────────────────
 
@@ -241,23 +241,23 @@ services:
 
   # ─── Cache ──────────────────────────────────────────────────
 
-  redis:
-    image: redis:7-alpine
-    container_name: redis
-    command: redis-server --appendonly yes
-    ports:
-      - "6379:6379"
-    volumes:
-      - redis_data:/data
-    restart: unless-stopped
-    healthcheck:
-      test: [ "CMD", "redis-cli", "ping" ]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-    networks:
-      - Ticket-Souq-Microservice
-
+#  redis:
+#    image: redis:7-alpine
+#    container_name: redis
+#    command: redis-server --appendonly yes
+#    ports:
+#      - "6379:6379"
+#    volumes:
+#      - redis_data:/data
+#    restart: unless-stopped
+#    healthcheck:
+#      test: [ "CMD", "redis-cli", "ping" ]
+#      interval: 10s
+#      timeout: 5s
+#      retries: 5
+#    networks:
+#      - Ticket-Souq-Microservice
+#
 
 #   ─── Spring Boot Services (commented out until built) ───────
 
@@ -305,26 +305,30 @@ services:
       retries: 8
       start_period: 30s
 
-volumes:
-  postgres_user_data:
-  postgres_auth_data:
-  postgres_event_data:
-  postgres_venue_data:
-  postgres_ticket_data:
-  postgres_reservation_data:
-  postgres_payment_data:
-  postgres_notification_data:
-  postgres_audit_data:
-  postgres_analytics_data:
-  postgres_availability_locking_data:
-  kafka_data:
-  es_data:
-  redis_data:
+#volumes:
+#  postgres_user_data:
+#  postgres_auth_data:
+#  postgres_event_data:
+#  postgres_venue_data:
+#  postgres_ticket_data:
+#  postgres_reservation_data:
+#  postgres_payment_data:
+#  postgres_notification_data:
+#  postgres_audit_data:
+#  postgres_analytics_data:
+#  postgres_availability_locking_data:
+#  kafka_data:
+#  es_data:
+#  redis_data:
+
 
 networks:
   Ticket-Souq-Microservice:
     name: Ticket-Souq-Microservice
     driver: bridge
+
+
+# ─── not working right now do not try to run it ───────
 
 # ─── Elastic Search (commented out until needed) ───────
 #  elasticsearch:
