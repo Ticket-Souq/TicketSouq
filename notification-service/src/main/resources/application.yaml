@@ -2,9 +2,19 @@ EurekaOrigin : http://localhost:8761
 
 spring:
   application:
-    name:  notification-service
+    name: notification-service
+
   config:
     import: optional:file:./profile.properties
+database:
+  vendor: mysql
+  host: localhost
+  port: 3309
+  name: notification_db
+  username: admin
+  password: admin
+  driver: com.mysql.cj.jdbc.Driver
+  dialect: org.hibernate.dialect.MySQLDialect
 
 server:
   port: 0
