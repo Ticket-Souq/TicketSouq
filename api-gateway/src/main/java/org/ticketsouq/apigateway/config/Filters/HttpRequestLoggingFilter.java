@@ -1,4 +1,4 @@
-package org.ticketsouq.apigateway.config.Beans.Filters;
+package org.ticketsouq.apigateway.config.Filters;
 
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
