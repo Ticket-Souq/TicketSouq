@@ -1,12 +1,12 @@
 global:
-  scrape_interval: 15s
-  evaluation_interval: 15s
+  scrape_interval: 5s
+  evaluation_interval: 5s
 
 scrape_configs:
   - job_name: 'spring-services'
     eureka_sd_configs:
       - server: http://host.docker.internal:8761/eureka/v2
-        refresh_interval: 15s
+        refresh_interval: 5s
 
     relabel_configs:
       # Replace localhost with host.docker.internal so Docker can reach your machine
@@ -26,7 +26,7 @@ scrape_configs:
 
       # Drop config-server and discovery-server — they don't expose prometheus metrics
       - source_labels: [__meta_eureka_app_name]
-        regex: CONFIG-SERVER|DISCOVERY-SERVER|API-GATEWAY
+        regex: CONFIG-SERVER|DISCOVERY-SERVER
         action: drop
 
       # App name label

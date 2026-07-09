@@ -10,7 +10,7 @@ loki:
 tempo:
   host: localhost
   zipkin-port: 9411
-  otlp-port: 4318
+#  otlp-port: 4318
 
 logging:
   level:

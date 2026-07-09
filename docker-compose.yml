@@ -219,9 +219,9 @@ services:
       - ./data/tempo:/tmp/tempo
     ports:
       - "3200:3200"
-#      - "9411:9411"   # zipkin listen port
-      - "4317:4317"   # OTLP gRPC
-      - "4318:4318"   # OTLP HTTP — services send directly here
+      - "9411:9411"   # zipkin listen port
+#      - "4317:4317"   # OTLP gRPC
+#      - "4318:4318"   # OTLP HTTP — services send directly here
     networks:
       - Ticket-Souq-Microservice
 
