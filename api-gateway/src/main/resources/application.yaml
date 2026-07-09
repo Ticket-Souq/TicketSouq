@@ -1,4 +1,5 @@
-EurekaOrigin : http://localhost:8761
+server:
+  port: 8080
 
 spring:
   application:
@@ -6,6 +7,50 @@ spring:
   config:
     import: optional:file:./profile.properties
 
+  datasource:
+    url: jdbc:postgresql://localhost:5443/auth_db
+    username: admin
+    password: admin
+    driver-class-name: org.postgresql.Driver
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+        format_sql: true
 
-server:
-  port: 8080
+  kafka:
+    bootstrap-servers: localhost:29092
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+      properties:
+        spring.json.add.type.headers: false
+    consumer:
+      group-id: auth_service
+      auto-offset-reset: latest
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
+      properties:
+        spring.json.trusted.packages: "*"
+
+  data:
+    redis:
+      host: localhost
+      port: 6379
+
+jwt:
+  secret: changeme-this-must-be-at-least-32-bytes-long-for-sha256
+  access-token-expiry-ms: 300000    # 5 minutes
+  email-token-expiry-ms: 300000   # 5 minutes
+  password-reset-expiry-ms: 300000   # 5 minutes
+  refresh-token-expiry-ms: 604800000  # 7 day
+  issuer: ticket-souq
+
+rate-limit:
+  paths: /api/v1/auth/**
+  capacity: 20
+  refill: 20
+  refill-period: 1m
