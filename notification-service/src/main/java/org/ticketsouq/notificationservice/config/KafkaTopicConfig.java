@@ -10,7 +10,7 @@ public class KafkaTopicConfig {
 
     @Bean
     public NewTopic emailVerificationTopic() {
-        return TopicBuilder.name("email-verification")
+        return TopicBuilder.name("notification.email-verification")
             .partitions(6)
             .replicas(1)
             .build();
