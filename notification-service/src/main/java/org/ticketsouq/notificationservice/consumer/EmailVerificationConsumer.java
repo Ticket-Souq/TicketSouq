@@ -13,7 +13,7 @@ public class EmailVerificationConsumer {
         this.notificationService = notificationService;
     }
 
-    @KafkaListener(topics = "email-verification")
+    @KafkaListener(topics = "notification.email-verification")
     public void consume(EmailVerificationEvent event) {
         notificationService.handleEmailVerification(event);
     }
