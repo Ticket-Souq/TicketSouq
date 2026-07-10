@@ -1,8 +1,7 @@
 package org.ticketsouq.notificationservice.controller;
 
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.http.HttpStatus;
+import org.springframework.web.bind.annotation.*;
 import org.ticketsouq.notificationservice.dto.NotificationResponse;
 import org.ticketsouq.notificationservice.dto.UnreadCountResponse;
 import org.ticketsouq.notificationservice.security.CurrentUserProvider;
@@ -36,6 +35,20 @@ public class NotificationController {
     @GetMapping("/unread-count")
     public UnreadCountResponse getUnreadCount() {
         return notificationService.getUnreadCount(
+            currentUserProvider.getCurrentUserId()
+        );
+    }
+
+    @PatchMapping("/{id}/read")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void markAsRead(@PathVariable Long id) {
+
+        notificationService.markAsRead(id, currentUserProvider.getCurrentUserId());
+    }
+    @PatchMapping("/read-all")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void markAllAsRead() {
+        notificationService.markAllAsRead(
             currentUserProvider.getCurrentUserId()
         );
     }

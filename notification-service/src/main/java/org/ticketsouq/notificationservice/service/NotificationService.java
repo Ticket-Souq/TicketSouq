@@ -10,5 +10,14 @@ import java.util.UUID;
 public interface NotificationService {
 
     void handleEmailVerification(EmailVerificationEvent event);
+
     List<NotificationResponse> getNotifications(UUID userId);
-    UnreadCountResponse getUnreadCount(UUID userId);}
+
+    UnreadCountResponse getUnreadCount(UUID userId);
+
+    void markAsRead(Long notificationId, UUID userId);
+
+    void markAllAsRead(UUID userId);
+
+}
+

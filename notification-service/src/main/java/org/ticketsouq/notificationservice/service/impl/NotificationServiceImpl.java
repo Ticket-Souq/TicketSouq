@@ -1,5 +1,6 @@
 package org.ticketsouq.notificationservice.service.impl;
 
+import jakarta.transaction.Transactional;
 import org.springframework.stereotype.Service;
 import org.ticketsouq.notificationservice.dto.NotificationResponse;
 import org.ticketsouq.notificationservice.dto.UnreadCountResponse;
@@ -7,28 +8,31 @@ import org.ticketsouq.notificationservice.entity.Notification;
 import org.ticketsouq.notificationservice.entity.UserEmailProjection;
 import org.ticketsouq.notificationservice.enums.NotificationTemplate;
 import org.ticketsouq.notificationservice.event.EmailVerificationEvent;
+import org.ticketsouq.notificationservice.exception.NotificationNotFoundException;
+import org.ticketsouq.notificationservice.mapper.NotificationMapper;
 import org.ticketsouq.notificationservice.repository.NotificationRepository;
 import org.ticketsouq.notificationservice.repository.UserEmailProjectionRepository;
 import org.ticketsouq.notificationservice.service.EmailService;
 import org.ticketsouq.notificationservice.service.NotificationService;
 
 
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
+import java.util.*;
 
 @Service
 public class NotificationServiceImpl implements NotificationService {
     private final EmailService emailService;
     private final NotificationRepository notificationRepository;
     private final UserEmailProjectionRepository userEmailProjectionRepository;
-    public NotificationServiceImpl(EmailService emailService, NotificationRepository notificationRepository, UserEmailProjectionRepository userEmailProjectionRepository) {
+    private final NotificationMapper notificationMapper;
+
+    public NotificationServiceImpl(EmailService emailService, NotificationRepository notificationRepository, UserEmailProjectionRepository userEmailProjectionRepository,NotificationMapper notificationMapper) {
         this.emailService = emailService;
         this.notificationRepository = notificationRepository;
         this.userEmailProjectionRepository = userEmailProjectionRepository;
-  }
-  @Override
+        this.notificationMapper = notificationMapper;
+    }
+
+    @Override
     public void handleEmailVerification(EmailVerificationEvent event) {
         NotificationTemplate template = NotificationTemplate.REGISTRATION;
 
@@ -38,11 +42,20 @@ public class NotificationServiceImpl implements NotificationService {
             "verificationUrl",
             "http://localhost:8080/api/v1/auth/verify-email?token=" + event.token()
         );
-      if (!userEmailProjectionRepository.existsById(event.userId())) {
-          userEmailProjectionRepository.save(
-              new UserEmailProjection(event.userId(), event.email())
-          );
-      }        emailService.sendEmail(
+//        notificationRepository.save(
+//            Notification.create(
+//                event.userId(),
+//                template.getInAppTitle(),
+//                template.getInAppMessage(),
+//                template.getNotificationType()
+//            )
+//        );
+        if (!userEmailProjectionRepository.existsById(event.userId())) {
+            userEmailProjectionRepository.save(
+                new UserEmailProjection(event.userId(), event.email())
+            );
+        }
+        emailService.sendEmail(
             event.email(),
             template.getEmailSubject(),
             template.getEmailTemplate(),
@@ -53,10 +66,10 @@ public class NotificationServiceImpl implements NotificationService {
 
     @Override
     public List<NotificationResponse> getNotifications(UUID userId) {
-             return notificationRepository
+        return notificationRepository
             .findByUserIdOrderByCreatedAtDesc(userId)
             .stream()
-            .map(this::toResponse)
+            .map(notificationMapper::toResponse)
             .toList();
     }
 
@@ -66,15 +79,23 @@ public class NotificationServiceImpl implements NotificationService {
         return new UnreadCountResponse(count);
     }
 
-    private NotificationResponse toResponse(Notification notification) {
-        return new NotificationResponse(
-            notification.getId(),
-            notification.getTitle(),
-            notification.getMessage(),
-            notification.getType(),
-            notification.isRead(),
-            notification.getCreatedAt()
-        );
+    @Override
+    @Transactional
+    public void markAsRead(Long notificationId, UUID userId) {
+
+        Notification notification = notificationRepository
+            .findByIdAndUserId(notificationId, userId)
+            .orElseThrow(() -> new NotificationNotFoundException(notificationId));
+
+        if (!notification.isRead()) {
+            notification.markAsRead();
+        }
+    }
+
+    @Override
+    @Transactional
+    public void markAllAsRead(UUID userId) {
+        notificationRepository.markAllAsRead(userId);
     }
 
 }
