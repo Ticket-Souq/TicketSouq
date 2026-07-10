@@ -1,6 +1,7 @@
 package org.ticketsouq.notificationservice.service.impl;
 
 import org.springframework.stereotype.Service;
+import org.ticketsouq.notificationservice.enums.EmailTemplate;
 import org.ticketsouq.notificationservice.event.EmailVerificationEvent;
 import org.ticketsouq.notificationservice.service.EmailService;
 import org.ticketsouq.notificationservice.service.NotificationService;
@@ -19,6 +20,8 @@ public class NotificationServiceImpl implements NotificationService {
 
     @Override
     public void handleEmailVerification(EmailVerificationEvent event) {
+        EmailTemplate template = EmailTemplate.REGISTRATION;
+
         Map<String, Object> variables = new HashMap<>();
 
         variables.put(
@@ -28,8 +31,8 @@ public class NotificationServiceImpl implements NotificationService {
 
         emailService.sendEmail(
             event.email(),
-            "Verify your Ticketaty account",
-            "email/registration",
+            template.getSubject(),
+            template.getTemplate(),
             variables
         );
 
