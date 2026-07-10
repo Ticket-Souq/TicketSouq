@@ -20,7 +20,9 @@ import org.ticketsouq.apigateway.repository.AuthCredentialRepository;
 import org.ticketsouq.sharedmodule.GeneralExceptions.BusinessException;
 
 import java.time.Instant;
+import java.time.LocalDateTime;
 import java.time.ZoneId;
+import java.time.ZoneOffset;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.UUID;
@@ -303,7 +305,9 @@ public class AuthService {
      * is set to ORG_HEAD and the account is locked pending admin approval.
      */
     private AuthCredential buildCredential(RegisterRequest req) {
-        UUID userId = userServiceClient.registerUser(new CreateUserRequest(req.name(), req.email(), req.OrganizationName()));
+//        UUID userId = userServiceClient.registerUser(new CreateUserRequest(req.name(), req.email(), req.OrganizationName()));
+        // TODO return this only made for test
+        UUID userId = UUID.randomUUID();
         AuthCredential credential = AuthCredential.builder()
             .userId(userId)
             .email(req.email())
@@ -311,12 +315,13 @@ public class AuthService {
             .role(Role.CUSTOMER)
             .isActive(true)
             .isVerified(false)
+            .locked(false)
             .build();
 
         if (req.OrganizationName() != null) {
             credential.setRole(Role.ORG_HEAD);
             credential.setLocked(true);
-            credential.setLockedUntil(Instant.MAX);
+            credential.setLockedUntil(LocalDateTime.of(9999, 12, 31, 23, 59, 59).toInstant(ZoneOffset.UTC));
         }
         return credential;
     }
