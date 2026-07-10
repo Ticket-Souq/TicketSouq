@@ -11,8 +11,12 @@ import org.springframework.web.bind.annotation.*;
 @Tag(name = "User", description = "Manages user accounts.")
 public class UserPublicController {
 
-    // TODO make approve organization endpoint
+    // TODO make endpoint change org status (PENDING => approve )
+    // TODO make endpoint change org status to BANNED
+
     // TODO make org head can add agents , consumers
+    ///  (send request to api getway have role , revieve credintiona )
+
 
 
 }

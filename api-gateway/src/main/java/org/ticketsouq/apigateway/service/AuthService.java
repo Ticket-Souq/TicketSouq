@@ -187,6 +187,7 @@ public class AuthService {
             assertLoginAllowed(credential);
             credential.setPasswordHash(passwordEncoder.encode(req.newPassword()));
             credentialRepository.save(credential);
+            /// TODO logout from all devices or from current device?
             logoutFromAllDevices(userId);
         } catch (BusinessException e) {
             throw e;
@@ -214,6 +215,8 @@ public class AuthService {
 
         credential.setPasswordHash(passwordEncoder.encode(req.newPassword()));
         credentialRepository.save(credential);
+        /// TODO logout from all devices or from current device?
+
         logoutFromAllDevices(userId);
     }
 
@@ -253,6 +256,7 @@ public class AuthService {
      * Rejects if: not verified, not active, or locked (with reason: bad attempts vs. org approval)
      */
     private void assertLoginAllowed(AuthCredential c) {
+        // TODO check if the user belong to banned org
         if (!c.getIsVerified())
             throw new BusinessException("Account is not verified", HttpStatus.UNAUTHORIZED);
 

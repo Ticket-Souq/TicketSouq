@@ -5,3 +5,7 @@ public record CreateUserRequest (
         String email,
         String OrganizationName
 ){}
+
+///  organizationName = null is normal user
+///  organizationName != null is orgHead  (user and organization)
+///
