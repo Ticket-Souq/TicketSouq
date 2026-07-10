@@ -6,6 +6,7 @@ import org.hibernate.annotations.CreationTimestamp;
 import org.ticketsouq.notificationservice.enums.NotificationType;
 
 import java.time.LocalDateTime;
+import java.util.UUID;
 
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
@@ -24,7 +25,7 @@ public class Notification {
     private Long id;
 
     @Column(name = "user_id", nullable = false)
-    private Long userId;
+    private UUID userId;
 
     @Column(name = "event_id")
     private Long eventId;
@@ -49,6 +50,20 @@ public class Notification {
 
     public void markAsRead() {
         this.isRead = true;
+    }
+
+    public static Notification create(
+        UUID userId,
+        String title,
+        String message,
+        NotificationType type
+    ) {
+        return Notification.builder()
+            .userId(userId)
+            .title(title)
+            .message(message)
+            .type(type)
+            .build();
     }
 
 }
