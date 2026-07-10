@@ -23,6 +23,14 @@ public enum NotificationTemplate {
         "email/password-reset"
     ),
 
+    PASSWORD_CHANGED(
+        NotificationType.PASSWORD_CHANGED,
+        "Password Changed",
+        "Your password has been changed successfully.",
+        "Your password has been changed",
+        "email/password-changed"
+    ),
+
     PAYMENT_SUCCESS(
         NotificationType.PAYMENT_SUCCESS,
         "Payment Successful",

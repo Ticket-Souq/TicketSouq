@@ -15,4 +15,18 @@ public class KafkaTopicConfig {
             .replicas(1)
             .build();
     }
+    @Bean
+    public NewTopic passwordResetTopic() {
+        return TopicBuilder.name("notification.password-reset")
+            .partitions(6)
+            .replicas(1)
+            .build();
+    }
+    @Bean
+    public NewTopic passwordChangedTopic() {
+        return TopicBuilder.name("notification.password-changed")
+            .partitions(6)
+            .replicas(1)
+            .build();
+    }
 }
