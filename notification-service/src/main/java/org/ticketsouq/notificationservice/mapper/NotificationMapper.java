@@ -4,7 +4,6 @@ import org.springframework.stereotype.Component;
 import org.ticketsouq.notificationservice.dto.NotificationResponse;
 import org.ticketsouq.notificationservice.dto.UnreadCountResponse;
 import org.ticketsouq.notificationservice.entity.Notification;
-import org.ticketsouq.notificationservice.service.impl.NotificationServiceImpl;
 
 @Component
 public class NotificationMapper {
