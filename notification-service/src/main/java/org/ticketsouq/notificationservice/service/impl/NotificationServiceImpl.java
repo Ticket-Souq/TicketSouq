@@ -1,38 +1,37 @@
 package org.ticketsouq.notificationservice.service.impl;
 
 import org.springframework.stereotype.Service;
-import org.ticketsouq.notificationservice.entity.UserEmailProjection;
 import org.ticketsouq.notificationservice.event.EmailVerificationEvent;
-import org.ticketsouq.notificationservice.repository.UserEmailProjectionRepository;
 import org.ticketsouq.notificationservice.service.EmailService;
 import org.ticketsouq.notificationservice.service.NotificationService;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+
+
+import java.util.HashMap;
+import java.util.Map;
 
 @Service
 public class NotificationServiceImpl implements NotificationService {
-    private final UserEmailProjectionRepository userEmailProjectionRepository;
     private final EmailService emailService;
-    private static final Logger log =
-        LoggerFactory.getLogger(NotificationServiceImpl.class);
 
-    public NotificationServiceImpl(UserEmailProjectionRepository userEmailProjectionRepository, EmailService emailService) {
-        this.userEmailProjectionRepository = userEmailProjectionRepository;
+    public NotificationServiceImpl(EmailService emailService) {
         this.emailService = emailService;
     }
 
     @Override
     public void handleEmailVerification(EmailVerificationEvent event) {
-        if (!userEmailProjectionRepository.existsById(event.userId())) {
-            UserEmailProjection projection = UserEmailProjection.builder()
-                .userId(event.userId())
-                .email(event.email())
-                .build();
-            userEmailProjectionRepository.save(projection);
-            log.info("Email projection saved for user {}", event.userId());
-        }
-        log.info("Email projection saved for user {}", event.userId());
-        emailService.sendVerificationEmail(event);
-        log.info("Verification email sent to {}", event.email());
+        Map<String, Object> variables = new HashMap<>();
+
+        variables.put(
+            "verificationUrl",
+            "http://localhost:8080/api/v1/auth/verify-email?token=" + event.token()
+        );
+
+        emailService.sendEmail(
+            event.email(),
+            "Verify your Ticketaty account",
+            "email/registration",
+            variables
+        );
+
     }
 }

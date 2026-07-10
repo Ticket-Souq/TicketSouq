@@ -1,9 +1,14 @@
 package org.ticketsouq.notificationservice.service;
 
-import org.ticketsouq.notificationservice.event.EmailVerificationEvent;
+
+import java.util.Map;
 
 public interface EmailService {
 
-    void sendVerificationEmail(EmailVerificationEvent event);
-
+    void sendEmail(
+        String to,
+        String subject,
+        String template,
+        Map<String, Object> variables
+    );
 }
