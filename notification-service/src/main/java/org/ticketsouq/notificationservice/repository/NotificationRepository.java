@@ -26,5 +26,5 @@ public interface NotificationRepository
         WHERE n.userId = :userId
           AND n.isRead = false
         """)
-    int markAllAsRead(UUID userId);
+    void markAllAsRead(UUID userId);
 }
