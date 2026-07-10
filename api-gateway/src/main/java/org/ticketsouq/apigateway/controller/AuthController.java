@@ -69,7 +69,7 @@ public class AuthController {
     }
 
     @PostMapping("/email-varification")
-    public ResponseEntity<Void> verifyEmail(@RequestParam String token) {
+    public ResponseEntity<Void> verifyEmail(@RequestBody String token) {
         authService.verifyEmail(token);
         return ResponseEntity.ok().build();
     }

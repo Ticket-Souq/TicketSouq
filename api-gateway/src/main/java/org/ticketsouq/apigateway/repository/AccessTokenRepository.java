@@ -90,8 +90,8 @@ public class AccessTokenRepository {
 
     // ── Delete ────────────────────────────────────────────────────────────────
 
-    public void removeDeadSessions(String userId) {
-        Long removed = redis.execute(REMOVE_DEAD_SESSIONS, List.of(userSetKey(userId), JTI_KEY_PREFIX));
+    public void removeDeadSessions(UUID userId) {
+        Long removed = redis.execute(REMOVE_DEAD_SESSIONS, List.of(userSetKey(String.valueOf(userId)), JTI_KEY_PREFIX));
         log.debug("Removed {} dead session(s) for userId={}", removed, userId);
     }
 

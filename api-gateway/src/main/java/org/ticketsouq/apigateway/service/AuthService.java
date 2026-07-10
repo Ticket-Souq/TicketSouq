@@ -7,6 +7,9 @@ import org.springframework.http.HttpStatus;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.TransactionDefinition;
+import org.springframework.transaction.support.TransactionTemplate;
 import org.springframework.transaction.annotation.Transactional;
 import org.ticketsouq.apigateway.client.UserServiceClient;
 import org.ticketsouq.apigateway.dto.*;
@@ -17,6 +20,7 @@ import org.ticketsouq.apigateway.model.AuthCredential;
 import org.ticketsouq.apigateway.model.RefreshToken;
 import org.ticketsouq.apigateway.model.Role;
 import org.ticketsouq.apigateway.repository.AuthCredentialRepository;
+import org.ticketsouq.sharedmodule.ApiGateway.exception.EmailAlreadyExistsException;
 import org.ticketsouq.sharedmodule.GeneralExceptions.BusinessException;
 
 import java.time.Instant;
@@ -37,25 +41,25 @@ public class AuthService {
     private final UserServiceClient userServiceClient;
     private final AuthCredentialRepository credentialRepository;
     private final ApplicationEventPublisher applicationEventPublisher;
+    private final PlatformTransactionManager transactionManager;
 
     // ── REGISTER ──────────────────────────────────────────────────────────────
 
     /*
      * Registers a new user:
-     * 1. Creates the user in user-service via Feign (returns a UUID of that user object)
+     * 1. Checks for duplicate email
      * 2. Builds a local AuthCredential with role=CUSTOMER (or ORG_HEAD if org name provided)
-     * 3. Persists the credential
-     * 4. Publishes an EmailVerificationEvent to trigger a verification email
+     * 3. Persists the credential (JPA auto-generates the userId)
+     * 4. Creates the user in user-service via Feign with the generated userId
+     * 5. Publishes an EmailVerificationEvent to trigger a verification email
      */
     @Transactional
     public void register(RegisterRequest req) {
+        if(credentialRepository.existsByEmail(req.email())) throw new EmailAlreadyExistsException("Email already in use");
         AuthCredential credential = buildCredential(req);
         credentialRepository.save(credential);
-        applicationEventPublisher.publishEvent(new EmailVerificationEvent(
-            credential.getUserId(),
-            credential.getEmail(),
-            authTokenService.generateEmailVerificationToken(credential.getUserId())
-        ));
+        userServiceClient.registerUser(new CreateUserRequest(credential.getUserId(),req.name(), req.email(), req.OrganizationName()));
+        sendVarificationNotification(credential);
     }
 
     // ── LOGIN ─────────────────────────────────────────────────────────────────
@@ -75,7 +79,7 @@ public class AuthService {
 
         if (!passwordEncoder.matches(req.password(), credential.getPasswordHash())) handleFailedAttempt(credential);
         if (hasPriorFailures(credential)) resetFailedAttempts(credential);
-
+        credential.setLastLogin(Instant.now());
         return buildAuthResponse(credential, authTokenService.createNewRefreshToken(credential.getUserId()));
     }
 
@@ -92,6 +96,7 @@ public class AuthService {
     public AuthResponse refresh(String refreshToken) {
         RefreshToken newToken = authTokenService.refresh(refreshToken);
         AuthCredential credential = getCredentialByUserId(newToken.getUserId());
+        assertLoginAllowed(credential);
         return buildAuthResponse(credential, newToken);
     }
 
@@ -137,11 +142,11 @@ public class AuthService {
      * 3. Generates a short-lived email-verification JWT
      * 4. Publishes an EmailVerificationEvent (async consumer sends the email)
      */
+    @Transactional(readOnly = true)
     public void triggerVerificationEmail(String email) {
         AuthCredential credential = getCredentialByEmail(email);
         if (credential.getIsVerified()) return;
-        String token = authTokenService.generateEmailVerificationToken(credential.getUserId());
-        applicationEventPublisher.publishEvent(new EmailVerificationEvent(credential.getUserId(), email, token));
+        sendVarificationNotification(credential);
     }
 
     /*
@@ -166,6 +171,7 @@ public class AuthService {
      * 2. Generates a short-lived password-reset JWT
      * 3. Publishes a PasswordResetEvent (async consumer sends the email)
      */
+    @Transactional(readOnly = true)
     public void triggerPasswordReset(String email) {
         AuthCredential credential = getCredentialByEmail(email);
         String token = authTokenService.generatePasswordResetToken(credential.getUserId());
@@ -187,7 +193,6 @@ public class AuthService {
             assertLoginAllowed(credential);
             credential.setPasswordHash(passwordEncoder.encode(req.newPassword()));
             credentialRepository.save(credential);
-            /// TODO logout from all devices or from current device?
             logoutFromAllDevices(userId);
         } catch (BusinessException e) {
             throw e;
@@ -215,8 +220,6 @@ public class AuthService {
 
         credential.setPasswordHash(passwordEncoder.encode(req.newPassword()));
         credentialRepository.save(credential);
-        /// TODO logout from all devices or from current device?
-
         logoutFromAllDevices(userId);
     }
 
@@ -256,7 +259,6 @@ public class AuthService {
      * Rejects if: not verified, not active, or locked (with reason: bad attempts vs. org approval)
      */
     private void assertLoginAllowed(AuthCredential c) {
-        // TODO check if the user belong to banned org
         if (!c.getIsVerified())
             throw new BusinessException("Account is not verified", HttpStatus.UNAUTHORIZED);
 
@@ -265,26 +267,33 @@ public class AuthService {
 
         if (c.getLocked()) {
             if (hasPriorFailures(c)) {
-                String FailedLoginMessage = "Account is locked until " +
+                String failedLoginMessage = "Account is locked until " +
                                             c.getLockedUntil().atZone(ZoneId.systemDefault()).toLocalDateTime() +
                                             ". Because of multiple failed login attempt.";
-                throw new BusinessException(FailedLoginMessage, HttpStatus.UNAUTHORIZED);
+                throw new BusinessException(failedLoginMessage, HttpStatus.UNAUTHORIZED);
             }
             throw new BusinessException("Waiting for Admin Approval for your Organization", HttpStatus.UNAUTHORIZED);
         }
+        if (!(c.getRole().name().equals("ADMIN")||c.getRole().name().equals("CUSTOMER"))){
+            if (userServiceClient.isBelongToBannedOrg(c.getUserId())){
+                throw new BusinessException("you belong to a banned organization you are not allowed to login", HttpStatus.UNAUTHORIZED);
+            }
+        }
     }
 
-    /*
-     * Increments the failed-login counter and locks the account when it reaches 5.
-     * Always throws after recording the attempt.
-     */
+
     private void handleFailedAttempt(AuthCredential c) {
-        c.setFailedAttempts(c.getFailedAttempts() == null ? 1 : c.getFailedAttempts() + 1);
-        if (c.getFailedAttempts() >= 5) {
-            c.setLocked(true);
-            c.setLockedUntil(Instant.now().plus(2, ChronoUnit.MINUTES));
-        }
-        credentialRepository.save(c);
+        TransactionTemplate tx = new TransactionTemplate(transactionManager);
+        tx.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
+        tx.execute(status -> {
+            c.setFailedAttempts(c.getFailedAttempts() == null ? 1 : c.getFailedAttempts() + 1);
+            if (c.getFailedAttempts() >= 5) {
+                c.setLocked(true);
+                c.setLockedUntil(Instant.now().plus(2, ChronoUnit.MINUTES));
+            }
+            credentialRepository.save(c);
+            return null;
+        });
         throw new BusinessException("Bad credentials", HttpStatus.UNAUTHORIZED);
     }
 
@@ -309,11 +318,7 @@ public class AuthService {
      * is set to ORG_HEAD and the account is locked pending admin approval.
      */
     private AuthCredential buildCredential(RegisterRequest req) {
-//        UUID userId = userServiceClient.registerUser(new CreateUserRequest(req.name(), req.email(), req.OrganizationName()));
-        // TODO return this only made for test
-        UUID userId = UUID.randomUUID();
         AuthCredential credential = AuthCredential.builder()
-            .userId(userId)
             .email(req.email())
             .passwordHash(passwordEncoder.encode(req.password()))
             .role(Role.CUSTOMER)
@@ -328,5 +333,13 @@ public class AuthService {
             credential.setLockedUntil(LocalDateTime.of(9999, 12, 31, 23, 59, 59).toInstant(ZoneOffset.UTC));
         }
         return credential;
+    }
+
+    private void sendVarificationNotification(AuthCredential credential) {
+        applicationEventPublisher.publishEvent(new EmailVerificationEvent(
+            credential.getUserId(),
+            credential.getEmail(),
+            authTokenService.generateEmailVerificationToken(credential.getUserId())
+        ));
     }
 }

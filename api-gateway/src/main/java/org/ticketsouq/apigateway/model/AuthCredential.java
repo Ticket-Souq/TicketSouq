@@ -17,9 +17,6 @@ public class AuthCredential {
 
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
-    @Column(name = "id")
-    private UUID id;
-
     @Column(name = "user_id", unique = true, nullable = false)
     private UUID userId;
 

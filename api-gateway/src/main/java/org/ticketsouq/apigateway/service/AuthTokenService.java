@@ -1,19 +1,20 @@
 package org.ticketsouq.apigateway.service;
 
 import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.ExpiredJwtException;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
 import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.ticketsouq.apigateway.model.RefreshToken;
-import org.ticketsouq.apigateway.model.TokenType;
-import org.ticketsouq.apigateway.repository.AccessTokenRepository;
-import org.ticketsouq.apigateway.repository.RefreshTokenRepository;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.ticketsouq.apigateway.model.RefreshToken;
+import org.ticketsouq.apigateway.model.TokenType;
+import org.ticketsouq.apigateway.repository.AccessTokenRepository;
+import org.ticketsouq.apigateway.repository.RefreshTokenRepository;
 import org.ticketsouq.sharedmodule.GeneralExceptions.BusinessException;
 
 import javax.crypto.SecretKey;
@@ -75,8 +76,8 @@ public class AuthTokenService {
         String jti = UUID.randomUUID().toString();
 
         List<String> rawRoles = roles.stream()
-                .map(r -> r.startsWith("ROLE_") ? r.substring(5) : r)
-                .collect(Collectors.toList());
+            .map(r -> r.startsWith("ROLE_") ? r.substring(5) : r)
+            .collect(Collectors.toList());
 
         String token = buildAccessToken(userId.toString(), jti, email, rawRoles, sessionId);
         accessTokenRepository.insertToRedis(userId.toString(), jti, Duration.ofMillis(accessExpiry));
@@ -90,17 +91,17 @@ public class AuthTokenService {
      */
     private String buildAccessToken(String userId, String jti, String email, List<String> roles, UUID sessionId) {
         return Jwts.builder()
-                .issuer(issuer)
-                .subject(userId)
-                .id(jti)
-                .claim("email", email)
-                .claim("roles", roles)
-                .claim("type", TokenType.ACCESS.name())
-                .claim("sid", sessionId.toString())
-                .issuedAt(new Date())
-                .expiration(new Date(System.currentTimeMillis() + accessExpiry))
-                .signWith(secretKey)
-                .compact();
+            .issuer(issuer)
+            .subject(userId)
+            .id(jti)
+            .claim("email", email)
+            .claim("roles", roles)
+            .claim("type", TokenType.ACCESS.name())
+            .claim("sid", sessionId.toString())
+            .issuedAt(new Date())
+            .expiration(new Date(System.currentTimeMillis() + accessExpiry))
+            .signWith(secretKey)
+            .compact();
     }
 
     /*
@@ -126,11 +127,11 @@ public class AuthTokenService {
      */
     public RefreshToken createNewRefreshToken(UUID userId) {
         RefreshToken session = RefreshToken.builder()
-                .sessionId(UUID.randomUUID())
-                .userId(userId)
-                .revoked(false)
-                .expiryDate(Instant.now().plusMillis(refreshExpiry))
-                .build();
+            .sessionId(UUID.randomUUID())
+            .userId(userId)
+            .revoked(false)
+            .expiryDate(Instant.now().plusMillis(refreshExpiry))
+            .build();
         return refreshTokenRepository.save(session);
     }
 
@@ -139,13 +140,13 @@ public class AuthTokenService {
      */
     public String generateRefreshToken(UUID userId, UUID sessionId) {
         return Jwts.builder()
-                .subject(userId.toString())
-                .claim("sid", sessionId.toString())
-                .claim("type", TokenType.REFRESH.name())
-                .issuedAt(new Date())
-                .expiration(new Date(System.currentTimeMillis() + refreshExpiry))
-                .signWith(secretKey)
-                .compact();
+            .subject(userId.toString())
+            .claim("sid", sessionId.toString())
+            .claim("type", TokenType.REFRESH.name())
+            .issuedAt(new Date())
+            .expiration(new Date(System.currentTimeMillis() + refreshExpiry))
+            .signWith(secretKey)
+            .compact();
     }
 
     /*
@@ -163,7 +164,7 @@ public class AuthTokenService {
 
         UUID oldSessionId = UUID.fromString(claims.get("sid", String.class));
         RefreshToken oldSession = refreshTokenRepository.findRefreshTokenBySessionId(oldSessionId)
-                .orElseThrow(() -> new BusinessException("Invalid refresh token, please log in again", HttpStatus.UNAUTHORIZED));
+            .orElseThrow(() -> new BusinessException("Invalid refresh token, please log in again", HttpStatus.UNAUTHORIZED));
 
         if (oldSession.isRevoked()) {
             UUID userId = oldSession.getUserId();
@@ -179,11 +180,11 @@ public class AuthTokenService {
         oldSession.setRevoked(true);
 
         RefreshToken newSession = RefreshToken.builder()
-                .sessionId(UUID.randomUUID())
-                .userId(oldSession.getUserId())
-                .revoked(false)
-                .expiryDate(Instant.now().plusMillis(refreshExpiry))
-                .build();
+            .sessionId(UUID.randomUUID())
+            .userId(oldSession.getUserId())
+            .revoked(false)
+            .expiryDate(Instant.now().plusMillis(refreshExpiry))
+            .build();
 
         return refreshTokenRepository.save(newSession);
     }
@@ -265,10 +266,10 @@ public class AuthTokenService {
      */
     public Claims parseToken(String token) {
         return Jwts.parser()
-                .verifyWith(secretKey)
-                .build()
-                .parseSignedClaims(token)
-                .getPayload();
+            .verifyWith(secretKey)
+            .build()
+            .parseSignedClaims(token)
+            .getPayload();
     }
 
     /*
@@ -288,11 +289,15 @@ public class AuthTokenService {
      * 3. Rejects if the token has expired
      */
     private Claims parseAndValidate(String token, TokenType expected) {
-        Claims claims = parseToken(token);
-        assertTokenType(claims, expected);
-        if (claims.getExpiration().before(new Date()))
+        try {
+            Claims claims = parseToken(token);
+            assertTokenType(claims, expected);
+            if (claims.getExpiration().before(new Date()))
+                throw new BusinessException("Invalid or expired " + expected.name().toLowerCase().replace('_', ' ') + " token", HttpStatus.BAD_REQUEST);
+            return claims;
+        } catch (ExpiredJwtException e) {
             throw new BusinessException("Invalid or expired " + expected.name().toLowerCase().replace('_', ' ') + " token", HttpStatus.BAD_REQUEST);
-        return claims;
+        }
     }
 
     /*
@@ -302,11 +307,11 @@ public class AuthTokenService {
      */
     private String buildShortLivedToken(String subject, TokenType type, long expiryMs) {
         return Jwts.builder()
-                .subject(subject)
-                .claim("type", type.name())
-                .issuedAt(new Date())
-                .expiration(new Date(System.currentTimeMillis() + expiryMs))
-                .signWith(secretKey)
-                .compact();
+            .subject(subject)
+            .claim("type", type.name())
+            .issuedAt(new Date())
+            .expiration(new Date(System.currentTimeMillis() + expiryMs))
+            .signWith(secretKey)
+            .compact();
     }
 }

@@ -1,6 +1,8 @@
 package org.ticketsouq.apigateway.repository;
 
 import jakarta.persistence.LockModeType;
+import org.springframework.data.jpa.repository.Modifying;
+import org.springframework.data.repository.query.Param;
 import org.ticketsouq.apigateway.model.RefreshToken;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Lock;
@@ -22,7 +24,9 @@ public interface RefreshTokenRepository extends JpaRepository<RefreshToken, UUID
     Optional<RefreshToken> findRefreshTokenBySessionId(UUID sessionId);
 
     @Query("SELECT DISTINCT RT.userId FROM RefreshToken RT")
-    List<String> findDistinctUserId();
+    List<UUID> findDistinctUserId();
 
-    void deleteByRevokedTrueOrExpiryDateBefore(Instant expiryDateBefore);
+    @Modifying
+    @Query("DELETE FROM RefreshToken rt WHERE rt.revoked = true OR rt.expiryDate < :now")
+    void deleteByRevokedTrueOrExpiryDateBefore(@Param("now") Instant now);
 }
