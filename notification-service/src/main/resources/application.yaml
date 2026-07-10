@@ -39,9 +39,6 @@ spring:
     port: 587
     username: ${EMAIL}
     password: ${EMAIL_PASSWORD}
-
-
-
     properties:
       mail:
         smtp:
@@ -51,6 +48,10 @@ spring:
 
   application:
     name: notification-service
+  profiles:
+    active: local
+
+
 
   config:
     import: optional:file:./profile.properties
