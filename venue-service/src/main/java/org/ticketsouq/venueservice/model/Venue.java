@@ -4,13 +4,16 @@ import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.hibernate.annotations.SQLRestriction;
 
+import java.util.List;
 import java.util.UUID;
 
 @Entity
 @Getter
 @Setter
 @NoArgsConstructor
+@SQLRestriction("deleted = false")
 public class Venue {
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
@@ -27,4 +30,10 @@ public class Venue {
 
     @Enumerated(EnumType.STRING)
     Type type;
+
+    @OneToMany(mappedBy = "venue")
+    List<VenueTemplate> venueTemplates;
+
+    @Column(name = "deleted", nullable = false)
+    boolean deleted = false;
 }
