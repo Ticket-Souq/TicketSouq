@@ -27,7 +27,7 @@ public class UserPrivateController {
     //
     //  When request.OrganizationName != null (ORG_HEAD):
     //    1. Look up Organization by name
-    //    2. If org exists → create User + Member(userId, orgId) record
+    //    2. If org exists → return error
     //    3. If org does NOT exist → create Organization, then User, then Member
     //    4. Return 201 Created
     //
