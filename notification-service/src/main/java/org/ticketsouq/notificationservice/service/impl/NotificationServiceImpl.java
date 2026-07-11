@@ -2,6 +2,7 @@ package org.ticketsouq.notificationservice.service.impl;
 
 import jakarta.transaction.Transactional;
 import org.springframework.stereotype.Service;
+import org.ticketsouq.notificationservice.dto.EventDetailsResponse;
 import org.ticketsouq.notificationservice.dto.NotificationResponse;
 import org.ticketsouq.notificationservice.dto.UnreadCountResponse;
 import org.ticketsouq.notificationservice.entity.Notification;
@@ -10,11 +11,14 @@ import org.ticketsouq.notificationservice.enums.NotificationTemplate;
 import org.ticketsouq.notificationservice.event.EmailVerificationEvent;
 import org.ticketsouq.notificationservice.event.PasswordChangedEvent;
 import org.ticketsouq.notificationservice.event.PasswordResetEvent;
+import org.ticketsouq.notificationservice.event.PaymentSuccessEvent;
 import org.ticketsouq.notificationservice.exception.NotificationNotFoundException;
+import org.ticketsouq.notificationservice.exception.UserEmailProjectionNotFoundException;
 import org.ticketsouq.notificationservice.mapper.NotificationMapper;
 import org.ticketsouq.notificationservice.repository.NotificationRepository;
 import org.ticketsouq.notificationservice.repository.UserEmailProjectionRepository;
 import org.ticketsouq.notificationservice.service.EmailService;
+import org.ticketsouq.notificationservice.service.EventDetailsService;
 import org.ticketsouq.notificationservice.service.NotificationService;
 
 
@@ -26,12 +30,14 @@ public class NotificationServiceImpl implements NotificationService {
     private final NotificationRepository notificationRepository;
     private final UserEmailProjectionRepository userEmailProjectionRepository;
     private final NotificationMapper notificationMapper;
+    private final EventDetailsService eventDetailsService;
 
-    public NotificationServiceImpl(EmailService emailService, NotificationRepository notificationRepository, UserEmailProjectionRepository userEmailProjectionRepository, NotificationMapper notificationMapper) {
+    public NotificationServiceImpl(EmailService emailService, NotificationRepository notificationRepository, UserEmailProjectionRepository userEmailProjectionRepository, NotificationMapper notificationMapper, EventDetailsService eventDetailsService) {
         this.emailService = emailService;
         this.notificationRepository = notificationRepository;
         this.userEmailProjectionRepository = userEmailProjectionRepository;
         this.notificationMapper = notificationMapper;
+        this.eventDetailsService = eventDetailsService;
     }
 
     @Override
@@ -107,7 +113,9 @@ public class NotificationServiceImpl implements NotificationService {
 
         UserEmailProjection user = userEmailProjectionRepository
             .findById(event.userId())
-            .orElseThrow(() -> new RuntimeException("User not found"));
+            .orElseThrow(() ->
+                new UserEmailProjectionNotFoundException(event.userId())
+            );
 
         NotificationTemplate template = NotificationTemplate.PASSWORD_CHANGED;
 
@@ -128,4 +136,37 @@ public class NotificationServiceImpl implements NotificationService {
         );
     }
 
+    @Override
+    @Transactional
+    public void handlePaymentSuccess(PaymentSuccessEvent event) {
+        NotificationTemplate template = NotificationTemplate.PAYMENT_SUCCESS;
+
+        UserEmailProjection user = userEmailProjectionRepository
+            .findById(event.userId())
+            .orElseThrow(() ->
+                new UserEmailProjectionNotFoundException(event.userId())
+            );
+
+        EventDetailsResponse eventDetailsResponse = eventDetailsService.getEvent(event.eventId());
+        notificationRepository.save(
+            Notification.create(
+                event.userId(),
+                template.getInAppTitle(),
+                template.getInAppMessage(),
+                template.getNotificationType()
+            )
+        );
+        Map<String, Object> variables = new HashMap<>();
+        variables.put("eventName", eventDetailsResponse.name());
+        variables.put("location", eventDetailsResponse.location());
+        variables.put("date", eventDetailsResponse.startDate());
+        variables.put("amount", event.amount());
+        emailService.sendEmail(
+            user.getEmail(),
+            template.getEmailSubject(),
+            template.getEmailTemplate(),
+            variables
+        );
+
+    }
 }
