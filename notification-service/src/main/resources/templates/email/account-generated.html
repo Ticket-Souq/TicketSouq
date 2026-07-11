@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Your Account Has Been Created</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 40px;
+            background-color: #f5f5f5;
+            font-family: Arial, sans-serif;
+            color: #333;
+        }
+
+        .container {
+            max-width: 600px;
+            margin: auto;
+            background: #ffffff;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 2px 8px rgba(0,0,0,.1);
+        }
+
+        .header {
+            background-color: #0d6efd;
+            color: white;
+            text-align: center;
+            padding: 24px;
+        }
+
+        .content {
+            padding: 32px;
+        }
+
+        .credentials {
+            background: #f8f9fa;
+            border-left: 4px solid #0d6efd;
+            padding: 16px;
+            margin: 24px 0;
+        }
+
+        .credentials p {
+            margin: 8px 0;
+        }
+
+        .button {
+            display: inline-block;
+            margin-top: 24px;
+            padding: 12px 24px;
+            background-color: #0d6efd;
+            color: white !important;
+            text-decoration: none;
+            border-radius: 5px;
+        }
+
+        .footer {
+            border-top: 1px solid #eee;
+            text-align: center;
+            padding: 20px;
+            color: #777;
+            font-size: 13px;
+        }
+
+        strong {
+            color: #111;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+
+    <div class="header">
+        <h2>Your Ticketaty Account Is Ready 🎉</h2>
+    </div>
+
+    <div class="content">
+
+        <p>Hello,</p>
+
+        <p>
+            An account has been created for you on <strong>Ticketaty</strong>.
+            You can use the credentials below to sign in.
+        </p>
+
+        <div class="credentials">
+            <p><strong>Email:</strong> <span th:text="${email}">user@example.com</span></p>
+            <p><strong>Temporary Password:</strong> <span th:text="${password}">password123</span></p>
+            <p><strong>Role:</strong> <span th:text="${role}">ORGANIZER</span></p>
+        </div>
+
+        <p>
+            For security reasons, we recommend changing your password after your first login.
+        </p>
+
+        <a th:href="${loginUrl}" class="button">
+            Login to TicketSouq
+        </a>
+
+    </div>
+
+    <div class="footer">
+        This email was sent automatically by Ticketaty. Please do not reply to this message.
+    </div>
+
+</div>
+
+</body>
+</html>

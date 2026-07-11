@@ -9,5 +9,7 @@ public enum NotificationType {
 
     PAYMENT_SUCCESS,
 
-    EVENT_CANCELLED
+    EVENT_CANCELLED,
+
+    ACCOUNT_GENERATED
 }

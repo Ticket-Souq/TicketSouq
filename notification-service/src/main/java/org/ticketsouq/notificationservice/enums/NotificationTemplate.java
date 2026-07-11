@@ -45,7 +45,16 @@ public enum NotificationTemplate {
         "Unfortunately, your event has been cancelled.",
         "Event Cancelled",
         "email/event-cancelled"
-    );
+    ),
+    ACCOUNT_GENERATED(
+        NotificationType.ACCOUNT_GENERATED,
+        null,
+        null,
+        "Your Ticketaty Account",
+        "email/account-generated"
+    )
+    ;
+
 
     private final NotificationType notificationType;
     private final String inAppTitle;

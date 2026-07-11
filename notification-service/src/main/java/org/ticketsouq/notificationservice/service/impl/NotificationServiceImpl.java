@@ -8,10 +8,7 @@ import org.ticketsouq.notificationservice.dto.UnreadCountResponse;
 import org.ticketsouq.notificationservice.entity.Notification;
 import org.ticketsouq.notificationservice.entity.UserEmailProjection;
 import org.ticketsouq.notificationservice.enums.NotificationTemplate;
-import org.ticketsouq.notificationservice.event.EmailVerificationEvent;
-import org.ticketsouq.notificationservice.event.PasswordChangedEvent;
-import org.ticketsouq.notificationservice.event.PasswordResetEvent;
-import org.ticketsouq.notificationservice.event.PaymentSuccessEvent;
+import org.ticketsouq.notificationservice.event.*;
 import org.ticketsouq.notificationservice.exception.NotificationNotFoundException;
 import org.ticketsouq.notificationservice.exception.UserEmailProjectionNotFoundException;
 import org.ticketsouq.notificationservice.mapper.NotificationMapper;
@@ -168,5 +165,38 @@ public class NotificationServiceImpl implements NotificationService {
             variables
         );
 
+    }
+
+    @Override
+    @Transactional
+    public void handleAccountGenerated(AccountGeneratedEvent event) {
+
+        NotificationTemplate template = NotificationTemplate.ACCOUNT_GENERATED;
+        List<UserEmailProjection> projections = event.accounts()
+            .stream()
+            .map(account -> new UserEmailProjection(
+                account.userId(),
+                account.email()
+            ))
+            .toList();
+
+        userEmailProjectionRepository.saveAll(projections);
+
+        for (AccountGeneratedEvent.AccountInfo account : event.accounts()) {
+
+            Map<String, Object> variables = Map.of(
+                "email", account.email(),
+                "password", account.password(),
+                "role", account.role(),
+                "loginUrl", "http://localhost:3000/login"
+            );
+
+            emailService.sendEmail(
+                account.email(),
+                template.getEmailSubject(),
+                template.getEmailTemplate(),
+                variables
+            );
+        }
     }
 }
