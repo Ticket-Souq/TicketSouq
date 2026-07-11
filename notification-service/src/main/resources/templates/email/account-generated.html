@@ -2,7 +2,7 @@
 <html lang="en" xmlns:th="http://www.thymeleaf.org">
 <head>
     <meta charset="UTF-8">
-    <title>Your Account Has Been Created</title>
+    <title>Accounts Created Successfully</title>
     <style>
         body {
             margin: 0;
@@ -13,7 +13,7 @@
         }
 
         .container {
-            max-width: 600px;
+            max-width: 700px;
             margin: auto;
             background: #ffffff;
             border-radius: 8px;
@@ -32,15 +32,26 @@
             padding: 32px;
         }
 
-        .credentials {
-            background: #f8f9fa;
-            border-left: 4px solid #0d6efd;
-            padding: 16px;
+        table {
+            width: 100%;
+            border-collapse: collapse;
             margin: 24px 0;
         }
 
-        .credentials p {
-            margin: 8px 0;
+        th {
+            background-color: #0d6efd;
+            color: white;
+            padding: 12px;
+            text-align: left;
+        }
+
+        td {
+            padding: 12px;
+            border: 1px solid #ddd;
+        }
+
+        tr:nth-child(even) {
+            background-color: #f8f9fa;
         }
 
         .button {
@@ -61,8 +72,8 @@
             font-size: 13px;
         }
 
-        strong {
-            color: #111;
+        p {
+            line-height: 1.6;
         }
     </style>
 </head>
@@ -71,7 +82,7 @@
 <div class="container">
 
     <div class="header">
-        <h2>Your Ticketaty Account Is Ready 🎉</h2>
+        <h2>Organization Accounts Created Successfully 🎉</h2>
     </div>
 
     <div class="content">
@@ -79,18 +90,30 @@
         <p>Hello,</p>
 
         <p>
-            An account has been created for you on <strong>Ticketaty</strong>.
-            You can use the credentials below to sign in.
+            The following accounts have been created successfully for your organization.
+            Please share the credentials securely with each user.
         </p>
 
-        <div class="credentials">
-            <p><strong>Email:</strong> <span th:text="${email}">user@example.com</span></p>
-            <p><strong>Temporary Password:</strong> <span th:text="${password}">password123</span></p>
-            <p><strong>Role:</strong> <span th:text="${role}">ORGANIZER</span></p>
-        </div>
+        <table>
+            <thead>
+            <tr>
+                <th>Email</th>
+                <th>Temporary Password</th>
+                <th>Role</th>
+            </tr>
+            </thead>
+
+            <tbody>
+            <tr th:each="account : ${accounts}">
+                <td th:text="${account.email}">user@example.com</td>
+                <td th:text="${account.password}">password123</td>
+                <td th:text="${account.role}">ORGANIZER</td>
+            </tr>
+            </tbody>
+        </table>
 
         <p>
-            For security reasons, we recommend changing your password after your first login.
+            For security reasons, each user should change their temporary password after the first login.
         </p>
 
         <a th:href="${loginUrl}" class="button">

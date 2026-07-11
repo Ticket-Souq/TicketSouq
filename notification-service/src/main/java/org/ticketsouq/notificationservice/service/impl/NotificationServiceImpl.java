@@ -168,35 +168,25 @@ public class NotificationServiceImpl implements NotificationService {
     }
 
     @Override
-    @Transactional
     public void handleAccountGenerated(AccountGeneratedEvent event) {
 
         NotificationTemplate template = NotificationTemplate.ACCOUNT_GENERATED;
-        List<UserEmailProjection> projections = event.accounts()
-            .stream()
-            .map(account -> new UserEmailProjection(
-                account.userId(),
-                account.email()
-            ))
-            .toList();
 
-        userEmailProjectionRepository.saveAll(projections);
-
-        for (AccountGeneratedEvent.AccountInfo account : event.accounts()) {
-
-            Map<String, Object> variables = Map.of(
-                "email", account.email(),
-                "password", account.password(),
-                "role", account.role(),
-                "loginUrl", "http://localhost:3000/login"
+        UserEmailProjection orgHead = userEmailProjectionRepository
+            .findById(event.orgHeadUserId())
+            .orElseThrow(() ->
+                new UserEmailProjectionNotFoundException(event.orgHeadUserId())
             );
 
-            emailService.sendEmail(
-                account.email(),
-                template.getEmailSubject(),
-                template.getEmailTemplate(),
-                variables
-            );
-        }
+        Map<String, Object> variables = new HashMap<>();
+        variables.put("accounts", event.accounts());
+        variables.put("loginUrl", "http://localhost:3000/login");
+
+        emailService.sendEmail(
+            orgHead.getEmail(),
+            template.getEmailSubject(),
+            template.getEmailTemplate(),
+            variables
+        );
     }
 }
