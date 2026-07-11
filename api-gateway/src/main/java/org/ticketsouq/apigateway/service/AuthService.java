@@ -9,25 +9,33 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.TransactionDefinition;
-import org.springframework.transaction.support.TransactionTemplate;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionTemplate;
 import org.ticketsouq.apigateway.client.UserServiceClient;
 import org.ticketsouq.apigateway.dto.*;
-import org.ticketsouq.sharedmodule.ApiGateway.dto.CreateUserRequest;
-import org.ticketsouq.sharedmodule.ApiGateway.event.EmailVerificationEvent;
-import org.ticketsouq.sharedmodule.ApiGateway.event.PasswordResetEvent;
 import org.ticketsouq.apigateway.model.AuthCredential;
 import org.ticketsouq.apigateway.model.RefreshToken;
 import org.ticketsouq.apigateway.model.Role;
 import org.ticketsouq.apigateway.repository.AuthCredentialRepository;
+import org.ticketsouq.sharedmodule.ApiGateway.dto.CreateUserRequest;
+import org.ticketsouq.sharedmodule.ApiGateway.dto.GenerateAccountRequest;
+import org.ticketsouq.sharedmodule.ApiGateway.dto.GenerateMembersRequest;
+import org.ticketsouq.sharedmodule.ApiGateway.dto.GeneratedAccount;
+import org.ticketsouq.sharedmodule.ApiGateway.event.AccountsGeneratedEvent;
+import org.ticketsouq.sharedmodule.ApiGateway.event.EmailVerificationEvent;
+import org.ticketsouq.sharedmodule.ApiGateway.event.PasswordResetEvent;
 import org.ticketsouq.sharedmodule.ApiGateway.exception.EmailAlreadyExistsException;
+import org.ticketsouq.sharedmodule.AuditService.events.AuditEvent;
 import org.ticketsouq.sharedmodule.GeneralExceptions.BusinessException;
+import org.ticketsouq.sharedmodule.utils.UUIDUtils;
 
+import java.security.SecureRandom;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.ZoneOffset;
 import java.time.temporal.ChronoUnit;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
@@ -55,11 +63,13 @@ public class AuthService {
      */
     @Transactional
     public void register(RegisterRequest req) {
-        if(credentialRepository.existsByEmail(req.email())) throw new EmailAlreadyExistsException("Email already in use");
+        if (credentialRepository.existsByEmail(req.email()))
+            throw new EmailAlreadyExistsException("Email already in use");
         AuthCredential credential = buildCredential(req);
         credentialRepository.save(credential);
-        userServiceClient.registerUser(new CreateUserRequest(credential.getUserId(),req.name(), req.email(), req.OrganizationName()));
+        userServiceClient.registerUser(new CreateUserRequest(credential.getUserId(), req.name(), req.email(), req.OrganizationName()));
         sendVarificationNotification(credential);
+        sendAuditEventWithNoReason("Register", credential.getUserId());
     }
 
     // ── LOGIN ─────────────────────────────────────────────────────────────────
@@ -240,6 +250,44 @@ public class AuthService {
         credentialRepository.save(credential);
         logoutFromAllDevices(userId);
         SecurityContextHolder.clearContext();
+        sendAuditEventWithNoReason("deActivate Account", credential.getUserId());
+    }
+
+    @Transactional
+    public void unlockOrg(UUID orgHeadId) {
+        AuthCredential credential = getCredentialByUserId(orgHeadId);
+        credential.setLocked(false);
+        credential.setLockedUntil(null);
+        credentialRepository.save(credential);
+        sendAuditEventWithNoReason("Approve Organization Head Request", credential.getUserId());
+    }
+
+    @Transactional
+    public List<GeneratedAccount> generateAccountsForOrg(GenerateAccountRequest req) {
+        if (req.consumerCount()==0 && req.agentCount()==0) return List.of();
+
+        UUID orgHeadUserId = UUIDUtils.parse(req.orgId());
+        List<GeneratedAccount> accounts = new ArrayList<>();
+        List<GenerateMembersRequest.MemberToCreate> members = new ArrayList<>();
+
+        for (int i = 0; i < req.agentCount(); i++) addMember(accounts,members,Role.ORG_Agent);
+        for (int i = 0; i < req.consumerCount(); i++) addMember(accounts,members,Role.ORG_Consumer);
+
+        userServiceClient.generateMembers(new GenerateMembersRequest(orgHeadUserId, members));
+        applicationEventPublisher.publishEvent(new AccountsGeneratedEvent(orgHeadUserId,
+            accounts.stream().map(a -> new AccountsGeneratedEvent.AccountInfo(UUIDUtils.parse(a.userId()), a.email(), a.password(), a.Role())).toList()));
+
+        return accounts;
+    }
+
+    private void addMember(List<GeneratedAccount> accounts, List<GenerateMembersRequest.MemberToCreate> members , Role role ) {
+        String prefix = role==Role.ORG_Agent? "agent_":"consumer_";
+        String email = prefix + UUID.randomUUID().toString().substring(0, 8) + "@ticketsouq.com";
+        String rawPassword = generateRandomString(8);
+        AuthCredential credential = buildGeneratedCredential(email, rawPassword, role);
+        credentialRepository.save(credential);
+        accounts.add(new GeneratedAccount(credential.getUserId().toString(), email, rawPassword, role.name()));
+        members.add(new GenerateMembersRequest.MemberToCreate(credential.getUserId(), email, role.name()));
     }
 
     // ── Private helpers ───────────────────────────────────────────────────
@@ -268,14 +316,14 @@ public class AuthService {
         if (c.getLocked()) {
             if (hasPriorFailures(c)) {
                 String failedLoginMessage = "Account is locked until " +
-                                            c.getLockedUntil().atZone(ZoneId.systemDefault()).toLocalDateTime() +
-                                            ". Because of multiple failed login attempt.";
+                    c.getLockedUntil().atZone(ZoneId.systemDefault()).toLocalDateTime() +
+                    ". Because of multiple failed login attempt.";
                 throw new BusinessException(failedLoginMessage, HttpStatus.UNAUTHORIZED);
             }
             throw new BusinessException("Waiting for Admin Approval for your Organization", HttpStatus.UNAUTHORIZED);
         }
-        if (!(c.getRole().name().equals("ADMIN")||c.getRole().name().equals("CUSTOMER"))){
-            if (userServiceClient.isBelongToBannedOrg(c.getUserId())){
+        if (!(c.getRole().name().equals("ADMIN") || c.getRole().name().equals("CUSTOMER"))) {
+            if (userServiceClient.isBelongToBannedOrg(c.getUserId())) {
                 throw new BusinessException("you belong to a banned organization you are not allowed to login", HttpStatus.UNAUTHORIZED);
             }
         }
@@ -341,5 +389,34 @@ public class AuthService {
             credential.getEmail(),
             authTokenService.generateEmailVerificationToken(credential.getUserId())
         ));
+    }
+
+    private void sendAuditEvent(String action, UUID madeById, String reason) {
+        applicationEventPublisher.publishEvent(new AuditEvent(action, madeById, reason, Instant.now()));
+    }
+
+    private void sendAuditEventWithNoReason(String action, UUID madeById) {
+        applicationEventPublisher.publishEvent(new AuditEvent(action, madeById, "", Instant.now()));
+    }
+
+    private String generateRandomString(int length) {
+        String CHARACTERS = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+        SecureRandom RANDOM = new SecureRandom();
+        StringBuilder sb = new StringBuilder(length);
+        for (int i = 0; i < length; i++) {
+            sb.append(CHARACTERS.charAt(RANDOM.nextInt(CHARACTERS.length())));
+        }
+        return sb.toString();
+    }
+
+    private AuthCredential buildGeneratedCredential(String email, String rawPassword, Role role) {
+        return AuthCredential.builder()
+            .email(email)
+            .passwordHash(passwordEncoder.encode(rawPassword))
+            .role(role)
+            .isActive(true)
+            .isVerified(true)
+            .locked(false)
+            .build();
     }
 }

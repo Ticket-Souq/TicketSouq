@@ -1,7 +1,6 @@
 package org.ticketsouq.apigateway.jobs;
 
 import lombok.RequiredArgsConstructor;
-import org.ticketsouq.apigateway.model.AuthCredential;
 import org.ticketsouq.apigateway.repository.AccessTokenRepository;
 import org.ticketsouq.apigateway.repository.AuthCredentialRepository;
 import org.ticketsouq.apigateway.repository.RefreshTokenRepository;

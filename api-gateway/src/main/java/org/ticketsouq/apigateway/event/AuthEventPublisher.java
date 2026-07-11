@@ -6,14 +6,13 @@ import org.springframework.transaction.event.TransactionPhase;
 import org.springframework.transaction.event.TransactionalEventListener;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Component;
+import org.ticketsouq.sharedmodule.ApiGateway.event.AccountsGeneratedEvent;
 import org.ticketsouq.sharedmodule.ApiGateway.event.EmailVerificationEvent;
 import org.ticketsouq.sharedmodule.ApiGateway.event.PasswordResetEvent;
+import org.ticketsouq.sharedmodule.AuditService.events.AuditEvent;
 import org.ticketsouq.sharedmodule.utils.LogUtils;
 
-import java.util.UUID;
-
-import static org.ticketsouq.sharedmodule.Constants.TOPIC_NAMES.USER_EMAIL_VERIFICATION;
-import static org.ticketsouq.sharedmodule.Constants.TOPIC_NAMES.USER_PASSWORD_RESET;
+import static org.ticketsouq.sharedmodule.Constants.TOPIC_NAMES.*;
 
 @Component
 @RequiredArgsConstructor
@@ -33,4 +32,17 @@ public class AuthEventPublisher {
         LogUtils.log(USER_PASSWORD_RESET, event.userId());
         kafkaTemplate.send(USER_PASSWORD_RESET, event.userId().toString(), event);
     }
+
+    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
+    public void sendAuditEvent(AuditEvent event) {
+        LogUtils.log(AUDIT_EVENT, event.madeById());
+        kafkaTemplate.send(AUDIT_EVENT, event.madeById().toString(), event);
+    }
+
+    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
+    public void sendAccountsGeneratedEmail(AccountsGeneratedEvent event) {
+        LogUtils.log(ACCOUNTS_GENERATED, event.orgHeadUserId());
+        kafkaTemplate.send(ACCOUNTS_GENERATED, event.orgHeadUserId().toString(), event);
+    }
+
 }
