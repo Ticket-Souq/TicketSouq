@@ -45,6 +45,14 @@ spring:
           auth: true
           starttls:
             enable: true
+  cloud:
+    openfeign:
+      client:
+        config:
+          event-service:
+            connectTimeout: 3000
+            readTimeout: 3000
+
 
   application:
     name: notification-service
@@ -52,9 +60,11 @@ spring:
     active: local
 
 
-
-  config:
-    import: optional:file:./profile.properties
+logging:
+  level:
+    org.springframework.cache: TRACE
+config:
+  import: optional:file:./profile.properties
 
 server:
   port: 0
