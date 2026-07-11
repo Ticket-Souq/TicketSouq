@@ -81,7 +81,7 @@ public class SecurityConfig {
                 .requestMatchers("/api/v1/private/**").denyAll()
 
                 .requestMatchers("/api/v1/user/org/generate-accounts").hasRole("ORG_HEAD")
-
+                // TODO add the rest of the urls 
 
                 // Everything else is reachable for now; method-level @PreAuthorize
                 // guards endpoints that need specific roles.
