@@ -8,7 +8,7 @@ spring:
     import: optional:file:./profile.properties
 
   datasource:
-    url: jdbc:postgresql://localhost:5443/auth_db
+    url: jdbc:postgresql://localhost:5432/auth_db
     username: admin
     password: admin
     driver-class-name: org.postgresql.Driver
@@ -19,7 +19,7 @@ spring:
     properties:
       hibernate:
         dialect: org.hibernate.dialect.PostgreSQLDialect
-        format_sql: true
+#        format_sql: true
 
   kafka:
     bootstrap-servers: localhost:29092
@@ -27,14 +27,16 @@ spring:
       key-serializer: org.apache.kafka.common.serialization.StringSerializer
       value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
       properties:
-        spring.json.add.type.headers: false
+        spring.json.add.type.headers: true
     consumer:
       group-id: auth_service
       auto-offset-reset: latest
       key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
       value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
       properties:
+        spring.json.use.type.headers: true
         spring.json.trusted.packages: "*"
+
 
   data:
     redis:

@@ -6,9 +6,10 @@ public final class TOPIC_NAMES {
     }
 
     // ─── Auth / API Gateway ───────────────────────────────────
-    public static final String USER_EMAIL_VERIFICATION = "user.email.verification";
-    public static final String USER_PASSWORD_RESET = "user.password.reset";
-
+    public static final String USER_EMAIL_VERIFICATION = "user.email-verification";
+    public static final String USER_PASSWORD_RESET = "user.password-reset";
+    public static final String USER_PASSWORD_CHANGE = "user.password-change";
+    public static final String ACCOUNTS_GENERATED = "accounts.generated";
 
 //    public static final String USER_REGISTERED = "user.registered";
 //    public static final String USER_LOGGED_IN = "user.logged.in";
@@ -43,16 +44,24 @@ public final class TOPIC_NAMES {
 //
     // ─── Payment Service ──────────────────────────────────────
 //    public static final String PAYMENT_INITIATED = "payment.initiated";
-//    public static final String PAYMENT_COMPLETED = "payment.completed";
+    public static final String PAYMENT_SUCCESS = "payment.success";
 //    public static final String PAYMENT_FAILED = "payment.failed";
-//    public static final String PAYMENT_REFUNDED = "payment.refunded";
+    public static final String PAYMENT_REFUNDED = "payment.refunded";
+
 //
     // ─── Notification Service ─────────────────────────────────
+    public static final String NOTIFICATION_SENT = "notification.sent";
+
+    public static final String NOTIFICATION_EMAIL_VERIFICATION = "notification.email-verification";
 //    public static final String NOTIFICATION_SENT = "notification.sent";
-//
+//    public static final String NOTIFICATION_SENT = "notification.sent";
+//    public static final String NOTIFICATION_SENT = "notification.sent";
+//    public static final String NOTIFICATION_SENT = "notification.sent";
+
+
+
     // ─── Audit Service ────────────────────────────────────────
     public static final String AUDIT_EVENT = "audit.event";
-    public static final String ACCOUNTS_GENERATED = "accounts.generated";
 
     // ─── Analytics Service ────────────────────────────────────
 //    public static final String ANALYTICS_EVENT = "analytics.event";

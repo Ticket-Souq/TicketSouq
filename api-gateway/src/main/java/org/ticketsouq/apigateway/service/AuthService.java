@@ -185,7 +185,7 @@ public class AuthService {
     public void triggerPasswordReset(String email) {
         AuthCredential credential = getCredentialByEmail(email);
         String token = authTokenService.generatePasswordResetToken(credential.getUserId());
-        applicationEventPublisher.publishEvent(new PasswordResetEvent(credential.getUserId(), email, token));
+        applicationEventPublisher.publishEvent(new PasswordResetEvent(UUID.randomUUID(),credential.getUserId(), email, token));
     }
 
     /*
@@ -274,7 +274,7 @@ public class AuthService {
         for (int i = 0; i < req.consumerCount(); i++) addMember(accounts,members,Role.ORG_Consumer);
 
         userServiceClient.generateMembers(new GenerateMembersRequest(orgHeadUserId, members));
-        applicationEventPublisher.publishEvent(new AccountsGeneratedEvent(orgHeadUserId,
+        applicationEventPublisher.publishEvent(new AccountsGeneratedEvent(UUID.randomUUID(),orgHeadUserId,
             accounts.stream().map(a -> new AccountsGeneratedEvent.AccountInfo(UUIDUtils.parse(a.userId()), a.email(), a.password(), a.Role())).toList()));
 
         return accounts;
@@ -385,6 +385,7 @@ public class AuthService {
 
     private void sendVarificationNotification(AuthCredential credential) {
         applicationEventPublisher.publishEvent(new EmailVerificationEvent(
+            UUID.randomUUID(),
             credential.getUserId(),
             credential.getEmail(),
             authTokenService.generateEmailVerificationToken(credential.getUserId())

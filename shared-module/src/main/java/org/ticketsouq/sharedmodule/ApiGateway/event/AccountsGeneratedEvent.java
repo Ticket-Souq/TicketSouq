@@ -4,6 +4,7 @@ import java.util.List;
 import java.util.UUID;
 
 public record AccountsGeneratedEvent(
+        UUID messageId,
         UUID orgHeadUserId,
         List<AccountInfo> accounts
 ) {
