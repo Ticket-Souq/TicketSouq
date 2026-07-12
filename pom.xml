@@ -27,7 +27,7 @@
         <module>shared-module</module>
         <module>config-server</module>
         <module>discovery-server</module>
-<!--        <module>api-gateway</module>-->
+        <module>api-gateway</module>
 <!--        <module>analytics-service</module>-->
 <!--        <module>audit-service</module>-->
 <!--        <module>availability-locking-service</module>-->
@@ -36,7 +36,7 @@
 <!--        <module>payment-service</module>-->
 <!--        <module>reservation-service</module>-->
 <!--        <module>ticket-service</module>-->
-<!--        <module>user-service</module>-->
+        <module>user-service</module>
 <!--        <module>venue-service</module>-->
     </modules>
 

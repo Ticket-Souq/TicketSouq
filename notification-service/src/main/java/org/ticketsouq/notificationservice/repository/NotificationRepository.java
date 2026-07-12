@@ -20,11 +20,6 @@ public interface NotificationRepository
     Optional<Notification> findByIdAndUserId(Long id, UUID userId);
 
     @Modifying
-    @Query("""
-        UPDATE Notification n
-        SET n.isRead = true
-        WHERE n.userId = :userId
-          AND n.isRead = false
-        """)
+    @Query("UPDATE Notification n SET n.isRead = true WHERE n.userId = :userId AND n.isRead = false")
     void markAllAsRead(UUID userId);
 }

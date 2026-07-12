@@ -8,14 +8,11 @@ import org.ticketsouq.notificationservice.dto.EventDetailsResponse;
 
 import java.util.UUID;
 
-@FeignClient(
-    name = "event-service"
-)
+@FeignClient(name = "event-service" ,path = "/api/v1/events/")
 @Retry(name = "event-service")
-
 public interface EventClient {
 
-    @GetMapping("/api/v1/events/{eventId}")
+    @GetMapping("{eventId}")
     EventDetailsResponse getEventById(@PathVariable UUID eventId);
 
 }

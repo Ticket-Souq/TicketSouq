@@ -2,7 +2,12 @@ package org.ticketsouq.notificationservice.service;
 
 import org.ticketsouq.notificationservice.dto.NotificationResponse;
 import org.ticketsouq.notificationservice.dto.UnreadCountResponse;
-import org.ticketsouq.notificationservice.event.*;
+import org.ticketsouq.sharedmodule.ApiGateway.event.AccountsGeneratedEvent;
+import org.ticketsouq.sharedmodule.ApiGateway.event.EmailVerificationEvent;
+import org.ticketsouq.sharedmodule.ApiGateway.event.PasswordChangedEvent;
+import org.ticketsouq.sharedmodule.ApiGateway.event.PasswordResetEvent;
+import org.ticketsouq.sharedmodule.PaymentService.events.PaymentSuccessEvent;
+import org.ticketsouq.sharedmodule.PaymentService.events.RefundCompletedEvent;
 
 import java.util.List;
 import java.util.UUID;
@@ -23,7 +28,7 @@ public interface NotificationService {
     void handlePasswordChanged(PasswordChangedEvent event);
     void handlePaymentSuccess(PaymentSuccessEvent event);
 
-    void handleAccountGenerated(AccountGeneratedEvent event);
+    void handleAccountGenerated(AccountsGeneratedEvent event);
 
     void handleRefundCompleted(RefundCompletedEvent event);
 }

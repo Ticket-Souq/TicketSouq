@@ -5,50 +5,49 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.kafka.config.TopicBuilder;
 
+import static org.ticketsouq.sharedmodule.Constants.TOPIC_NAMES.*;
+
 @Configuration
 public class KafkaTopicConfig {
 
+    private static final int PARTITIONS = 6;
+    private static final short REPLICAS = 1;
+
+    private NewTopic createTopic(String name) {
+        return TopicBuilder.name(name)
+            .partitions(PARTITIONS)
+            .replicas(REPLICAS)
+            .build();
+    }
+
     @Bean
     public NewTopic emailVerificationTopic() {
-        return TopicBuilder.name("notification.email-verification")
-            .partitions(6)
-            .replicas(1)
-            .build();
+        return createTopic(USER_EMAIL_VERIFICATION);
     }
+
     @Bean
     public NewTopic passwordResetTopic() {
-        return TopicBuilder.name("notification.password-reset")
-            .partitions(6)
-            .replicas(1)
-            .build();
+        return createTopic(USER_PASSWORD_RESET);
     }
+
     @Bean
     public NewTopic passwordChangedTopic() {
-        return TopicBuilder.name("notification.password-changed")
-            .partitions(6)
-            .replicas(1)
-            .build();
+        return createTopic(USER_PASSWORD_CHANGE);
     }
+
     @Bean
     public NewTopic refundCompletedTopic() {
-        return TopicBuilder.name("notification.refund-completed")
-            .partitions(6)
-            .replicas(1)
-            .build();
+        return createTopic(PAYMENT_REFUNDED);
     }
+
     @Bean
-    public NewTopic AccountGeneratedTopic() {
-        return TopicBuilder.name("notification.account-generated")
-            .partitions(6)
-            .replicas(1)
-            .build();
+    public NewTopic accountGeneratedTopic() {
+        return createTopic(ACCOUNTS_GENERATED);
     }
+
     @Bean
-    public NewTopic PaymentSuccessTopic() {
-        return TopicBuilder.name("notification.payment-success")
-            .partitions(6)
-            .replicas(1)
-            .build();
+    public NewTopic paymentSuccessTopic() {
+        return createTopic(PAYMENT_SUCCESS);
     }
 
 }

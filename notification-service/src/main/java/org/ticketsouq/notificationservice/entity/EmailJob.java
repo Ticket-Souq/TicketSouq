@@ -17,6 +17,7 @@ import java.util.UUID;
     }
 )
 @Getter
+@Setter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @AllArgsConstructor(access = AccessLevel.PRIVATE)
 @Builder
@@ -53,17 +54,4 @@ public class EmailJob {
     @CreationTimestamp
     @Column(nullable = false, updatable = false)
     private LocalDateTime createdAt;
-
-    public void markAsSent() {
-        this.status = EmailJobStatus.SENT;
-        this.lastAttemptAt = LocalDateTime.now();
-    }
-    public void markAsFailed() {
-        this.retryCount++;
-        this.lastAttemptAt = LocalDateTime.now();
-
-        if (this.retryCount >= 5) {
-            this.status = EmailJobStatus.FAILED;
-        }
-    }
 }

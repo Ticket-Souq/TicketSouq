@@ -2,17 +2,21 @@ package org.ticketsouq.notificationservice.service;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import lombok.RequiredArgsConstructor;
 import org.springframework.transaction.annotation.Transactional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.ticketsouq.notificationservice.entity.EmailJob;
+import org.ticketsouq.notificationservice.enums.EmailJobStatus;
 import org.ticketsouq.notificationservice.repository.EmailJobRepository;
 
+import java.time.LocalDateTime;
 import java.util.Map;
 import java.util.UUID;
 
 @Service
+@RequiredArgsConstructor
 public class EmailJobProcessor {
 
     private static final Logger log = LoggerFactory.getLogger(EmailJobProcessor.class);
@@ -22,22 +26,10 @@ public class EmailJobProcessor {
     private final EmailJobRepository emailJobRepository;
 
 
-    public EmailJobProcessor(
-        EmailService emailService,
-        ObjectMapper objectMapper,
-        EmailJobRepository emailJobRepository
-    ) {
-        this.emailService = emailService;
-        this.objectMapper = objectMapper;
-        this.emailJobRepository = emailJobRepository;
-    }
-
     @Transactional
     public void process(UUID jobId) {
-
+        EmailJob job = emailJobRepository.findById(jobId).orElseThrow(() -> new IllegalStateException("EmailJob not found"));
         try {
-            EmailJob job = emailJobRepository.findById(jobId)
-                .orElseThrow(() -> new IllegalStateException("EmailJob not found"));
             Map<String, Object> variables = objectMapper.readValue(
                 job.getVariablesJson(),
                 new TypeReference<>() {}
@@ -51,20 +43,26 @@ public class EmailJobProcessor {
             );
             log.info("Email sent");
 
-            job.markAsSent();
+            markAsSent(job);
 
             log.info("Email job {} processed successfully", job.getId());
-
         } catch (Exception ex) {
-            EmailJob job = emailJobRepository.findById(jobId)
-                .orElseThrow(() -> new IllegalStateException("EmailJob not found"));
-            job.markAsFailed();
+            markAsFailed(job);
+            log.error("Failed to process email job {}", job.getId(), ex);
+        }
+    }
 
-            log.error(
-                "Failed to process email job {}",
-                job.getId(),
-                ex
-            );
+    private void markAsSent(EmailJob job) {
+        job.setStatus(EmailJobStatus.SENT);
+        job.setLastAttemptAt(LocalDateTime.now());
+    }
+
+    private void markAsFailed(EmailJob job) {
+        job.setRetryCount(job.getRetryCount() + 1);
+        job.setLastAttemptAt(LocalDateTime.now());
+
+        if (job.getRetryCount() >= 5) {
+            job.setStatus(EmailJobStatus.FAILED);
         }
     }
 }

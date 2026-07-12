@@ -5,6 +5,14 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.stereotype.Component;
 import org.ticketsouq.notificationservice.service.NotificationService;
+import org.ticketsouq.sharedmodule.ApiGateway.event.AccountsGeneratedEvent;
+import org.ticketsouq.sharedmodule.ApiGateway.event.EmailVerificationEvent;
+import org.ticketsouq.sharedmodule.ApiGateway.event.PasswordChangedEvent;
+import org.ticketsouq.sharedmodule.ApiGateway.event.PasswordResetEvent;
+import org.ticketsouq.sharedmodule.PaymentService.events.PaymentSuccessEvent;
+import org.ticketsouq.sharedmodule.PaymentService.events.RefundCompletedEvent;
+
+import static org.ticketsouq.sharedmodule.Constants.TOPIC_NAMES.*;
 
 @Component
 @RequiredArgsConstructor
@@ -13,36 +21,35 @@ public class NotificationEventConsumer {
     private final NotificationService notificationService;
 
 
-    @KafkaListener(topics = "notification.refund-completed")
+    @KafkaListener(topics = PAYMENT_REFUNDED)
     public void RefundCompletedConsumer(RefundCompletedEvent event) {
         notificationService.handleRefundCompleted(event);
     }
 
 
-    @KafkaListener(topics = "notification.payment-success")
+    @KafkaListener(topics = PAYMENT_SUCCESS)
     public void PaymentSuccessConsumer(PaymentSuccessEvent event) {
         notificationService.handlePaymentSuccess(event);
     }
 
 
-    @KafkaListener(topics = "notification.password-reset")
+    @KafkaListener(topics = USER_PASSWORD_RESET)
     public void PasswordResetConsumer(PasswordResetEvent event) {
-        System.out.println("start 4");
         notificationService.handlePasswordReset(event);
     }
 
-    @KafkaListener(topics = "notification.password-changed")
+    @KafkaListener(topics = USER_PASSWORD_CHANGE)
     public void PasswordChangedConsumer(PasswordChangedEvent event) {
         notificationService.handlePasswordChanged(event);
     }
 
-    @KafkaListener(topics = "notification.email-verification")
+    @KafkaListener(topics = USER_EMAIL_VERIFICATION)
     public void EmailVerificationConsumer(EmailVerificationEvent event) {
         notificationService.handleEmailVerification(event);
     }
 
-    @KafkaListener(topics = "notification.account-generated")
-    public void AccountGeneratedConsumer(AccountGeneratedEvent event) {
+    @KafkaListener(topics = ACCOUNTS_GENERATED)
+    public void AccountGeneratedConsumer(AccountsGeneratedEvent event) {
         notificationService.handleAccountGenerated(event);
     }
 }
