@@ -63,8 +63,7 @@ public class AuthService {
      */
     @Transactional
     public void register(RegisterRequest req) {
-        if (credentialRepository.existsByEmail(req.email()))
-            throw new EmailAlreadyExistsException("Email already in use");
+        if (credentialRepository.existsByEmail(req.email())) throw new EmailAlreadyExistsException("Email already in use");
         AuthCredential credential = buildCredential(req);
         credentialRepository.save(credential);
         userServiceClient.registerUser(new CreateUserRequest(credential.getUserId(), req.name(), req.email(), req.OrganizationName()));
