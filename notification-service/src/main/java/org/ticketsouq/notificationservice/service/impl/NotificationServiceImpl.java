@@ -15,7 +15,6 @@ import org.ticketsouq.notificationservice.mapper.NotificationMapper;
 import org.ticketsouq.notificationservice.repository.NotificationRepository;
 import org.ticketsouq.notificationservice.repository.UserEmailProjectionRepository;
 import org.ticketsouq.notificationservice.service.EmailJobService;
-import org.ticketsouq.notificationservice.service.EmailService;
 import org.ticketsouq.notificationservice.service.EventDetailsService;
 import org.ticketsouq.notificationservice.service.NotificationService;
 

@@ -6,9 +6,7 @@ import org.ticketsouq.notificationservice.entity.EmailJob;
 import org.ticketsouq.notificationservice.enums.EmailJobStatus;
 import org.ticketsouq.notificationservice.repository.EmailJobRepository;
 import org.ticketsouq.notificationservice.service.EmailJobProcessor;
-import org.ticketsouq.notificationservice.service.EmailService;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import java.util.List;
 
 @Component
@@ -17,7 +15,7 @@ public class EmailScheduler {
 
     private final EmailJobProcessor emailJobProcessor;
 
-    public EmailScheduler(EmailJobRepository emailJobRepository, EmailService emailService, ObjectMapper objectMapper,EmailJobProcessor emailJobProcessor) {
+    public EmailScheduler(EmailJobRepository emailJobRepository,EmailJobProcessor emailJobProcessor) {
         this.emailJobRepository = emailJobRepository;
         this.emailJobProcessor = emailJobProcessor;
     }
