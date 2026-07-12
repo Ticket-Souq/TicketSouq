@@ -14,6 +14,7 @@ import org.ticketsouq.notificationservice.exception.UserEmailProjectionNotFoundE
 import org.ticketsouq.notificationservice.mapper.NotificationMapper;
 import org.ticketsouq.notificationservice.repository.NotificationRepository;
 import org.ticketsouq.notificationservice.repository.UserEmailProjectionRepository;
+import org.ticketsouq.notificationservice.service.EmailJobService;
 import org.ticketsouq.notificationservice.service.EmailService;
 import org.ticketsouq.notificationservice.service.EventDetailsService;
 import org.ticketsouq.notificationservice.service.NotificationService;
@@ -23,21 +24,22 @@ import java.util.*;
 
 @Service
 public class NotificationServiceImpl implements NotificationService {
-    private final EmailService emailService;
+    private final EmailJobService emailJobService;
     private final NotificationRepository notificationRepository;
     private final UserEmailProjectionRepository userEmailProjectionRepository;
     private final NotificationMapper notificationMapper;
     private final EventDetailsService eventDetailsService;
 
-    public NotificationServiceImpl(EmailService emailService, NotificationRepository notificationRepository, UserEmailProjectionRepository userEmailProjectionRepository, NotificationMapper notificationMapper, EventDetailsService eventDetailsService) {
-        this.emailService = emailService;
+    public NotificationServiceImpl(NotificationRepository notificationRepository, UserEmailProjectionRepository userEmailProjectionRepository, NotificationMapper notificationMapper, EventDetailsService eventDetailsService, EmailJobService emailJobService) {
         this.notificationRepository = notificationRepository;
         this.userEmailProjectionRepository = userEmailProjectionRepository;
         this.notificationMapper = notificationMapper;
         this.eventDetailsService = eventDetailsService;
+        this.emailJobService = emailJobService;
     }
 
     @Override
+    @Transactional
     public void handleEmailVerification(EmailVerificationEvent event) {
         NotificationTemplate template = NotificationTemplate.REGISTRATION;
 
@@ -48,7 +50,12 @@ public class NotificationServiceImpl implements NotificationService {
         if (!userEmailProjectionRepository.existsById(event.userId())) {
             userEmailProjectionRepository.save(new UserEmailProjection(event.userId(), event.email()));
         }
-        emailService.sendEmail(event.email(), template.getEmailSubject(), template.getEmailTemplate(), variables);
+        emailJobService.createEmailJob(
+            event.messageId(),
+            event.email(),
+            template,
+            variables
+        );
 
     }
 
@@ -81,12 +88,11 @@ public class NotificationServiceImpl implements NotificationService {
     }
 
     @Override
+    @Transactional
     public void handlePasswordReset(PasswordResetEvent event) {
-        System.out.println("start 5");
         UserEmailProjection user = userEmailProjectionRepository
             .findById(event.userId())
             .orElseThrow(() -> new RuntimeException("User not found"));
-        System.out.println("user email " + user.getEmail());
 
         NotificationTemplate template = NotificationTemplate.PASSWORD_RESET;
 
@@ -97,15 +103,16 @@ public class NotificationServiceImpl implements NotificationService {
             "http://localhost:8080/reset-password?token=" + event.token()
         );
 
-        emailService.sendEmail(
+        emailJobService.createEmailJob(
+            event.messageId(),
             user.getEmail(),
-            template.getEmailSubject(),
-            template.getEmailTemplate(),
+            template,
             variables
         );
     }
 
     @Override
+    @Transactional
     public void handlePasswordChanged(PasswordChangedEvent event) {
 
         UserEmailProjection user = userEmailProjectionRepository
@@ -125,10 +132,10 @@ public class NotificationServiceImpl implements NotificationService {
             )
         );
 
-        emailService.sendEmail(
+        emailJobService.createEmailJob(
+            event.messageId(),
             user.getEmail(),
-            template.getEmailSubject(),
-            template.getEmailTemplate(),
+            template,
             Map.of()
         );
     }
@@ -158,16 +165,17 @@ public class NotificationServiceImpl implements NotificationService {
         variables.put("location", eventDetailsResponse.location());
         variables.put("date", eventDetailsResponse.startDate());
         variables.put("amount", event.amount());
-        emailService.sendEmail(
+        emailJobService.createEmailJob(
+            event.messageId(),
             user.getEmail(),
-            template.getEmailSubject(),
-            template.getEmailTemplate(),
+            template,
             variables
         );
 
     }
 
     @Override
+    @Transactional
     public void handleAccountGenerated(AccountGeneratedEvent event) {
 
         NotificationTemplate template = NotificationTemplate.ACCOUNT_GENERATED;
@@ -182,10 +190,10 @@ public class NotificationServiceImpl implements NotificationService {
         variables.put("accounts", event.accounts());
         variables.put("loginUrl", "http://localhost:3000/login");
 
-        emailService.sendEmail(
+        emailJobService.createEmailJob(
+            event.messageId(),
             orgHead.getEmail(),
-            template.getEmailSubject(),
-            template.getEmailTemplate(),
+            template,
             variables
         );
     }
