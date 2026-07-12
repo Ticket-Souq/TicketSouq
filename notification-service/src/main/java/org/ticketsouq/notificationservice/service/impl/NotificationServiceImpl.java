@@ -1,6 +1,8 @@
 package org.ticketsouq.notificationservice.service.impl;
 
 import jakarta.transaction.Transactional;
+import lombok.RequiredArgsConstructor;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.ticketsouq.notificationservice.dto.EventDetailsResponse;
 import org.ticketsouq.notificationservice.dto.NotificationResponse;
@@ -22,20 +24,15 @@ import org.ticketsouq.notificationservice.service.NotificationService;
 import java.util.*;
 
 @Service
+@RequiredArgsConstructor
 public class NotificationServiceImpl implements NotificationService {
+
     private final EmailJobService emailJobService;
     private final NotificationRepository notificationRepository;
     private final UserEmailProjectionRepository userEmailProjectionRepository;
     private final NotificationMapper notificationMapper;
     private final EventDetailsService eventDetailsService;
 
-    public NotificationServiceImpl(NotificationRepository notificationRepository, UserEmailProjectionRepository userEmailProjectionRepository, NotificationMapper notificationMapper, EventDetailsService eventDetailsService, EmailJobService emailJobService) {
-        this.notificationRepository = notificationRepository;
-        this.userEmailProjectionRepository = userEmailProjectionRepository;
-        this.notificationMapper = notificationMapper;
-        this.eventDetailsService = eventDetailsService;
-        this.emailJobService = emailJobService;
-    }
 
     @Override
     @Transactional

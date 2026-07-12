@@ -23,9 +23,7 @@ public class EmailScheduler {
     public void processPendingEmails() {
 
         List<EmailJob> jobs =
-            emailJobRepository.findTop100ByStatusOrderByCreatedAtAsc(
-                EmailJobStatus.PENDING
-            );
+            emailJobRepository.findTop100ByStatusOrderByCreatedAtAsc(EmailJobStatus.PENDING);
 
         for (EmailJob job : jobs) {
             emailJobProcessor.process(job.getId());

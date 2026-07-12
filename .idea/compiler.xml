@@ -9,7 +9,7 @@
         <outputRelativeToContentRoot value="true" />
         <module name="Shared-Module" />
       </profile>
-      <profile name="Annotation profile for TicketSouq" enabled="true">
+      <profile name="Annotation profile for venue-service" enabled="true">
         <sourceOutputDir name="target/generated-sources/annotations" />
         <sourceTestOutputDir name="target/generated-test-sources/test-annotations" />
         <outputRelativeToContentRoot value="true" />
@@ -27,6 +27,7 @@
         <module name="analytics-service" />
         <module name="availability-locking-service" />
         <module name="venue-service" />
+        <module name="notification-service" />
       </profile>
       <profile name="Annotation profile for api-gateway" enabled="true">
         <sourceOutputDir name="target/generated-sources/annotations" />
@@ -100,7 +101,16 @@
       </profile>
     </annotationProcessing>
     <bytecodeTargetLevel>
+      <module name="analytics-service" target="25" />
+      <module name="api-gateway" target="25" />
+      <module name="audit-service" target="25" />
+      <module name="availability-locking-service" target="25" />
       <module name="demo-module" target="25" />
+      <module name="event-service" target="25" />
+      <module name="payment-service" target="25" />
+      <module name="reservation-service" target="25" />
+      <module name="ticket-service" target="25" />
+      <module name="user-service" target="25" />
     </bytecodeTargetLevel>
   </component>
   <component name="JavacSettings">
