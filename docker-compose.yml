@@ -43,18 +43,19 @@ services:
 #      - "5434:5432"
 #    volumes:
 #      - postgres_event_data:/var/lib/postgresql
-#
-#  venue-db:
-#    <<: *postgres
-#    container_name: venue-db
-#    environment:
-#      POSTGRES_USER: admin
-#      POSTGRES_PASSWORD: admin
-#      POSTGRES_DB: venue_db
-#    ports:
-#      - "5435:5432"
-#    volumes:
-#      - postgres_venue_data:/var/lib/postgresql
+
+  venue-db:
+    image: postgres
+    container_name: venue-db
+    environment:
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: admin
+      POSTGRES_DB: venue_db
+    restart: unless-stopped
+    ports:
+      - "5435:5432"
+    volumes:
+      - postgres_venue_data:/var/lib/postgresql
 #
 #  ticket-db:
 #    <<: *postgres
@@ -257,69 +258,68 @@ services:
 #      retries: 5
 #    networks:
 #      - Ticket-Souq-Microservice
-#
 
 #   ─── Spring Boot Services (commented out until built) ───────
 
-  config-server:
-    build:
-      context: .
-      dockerfile: Dockerfile
-      args:
-        JAR_FILE: config-server/target/*.jar
-    container_name: config-server
-    ports:
-      - "8888:8888"
-    environment:
-      EUREKA_ORIGIN: http://discovery-server:8761
-      SPRING_PROFILES_ACTIVE: native,Docker
-    networks:
-      - Ticket-Souq-Microservice
-    healthcheck:
-      test: ["CMD", "wget", "-qO-", "http://localhost:8888/actuator/health"]
-      interval: 15s
-      timeout: 5s
-      retries: 8
-      start_period: 30s
+#  config-server:
+#    build:
+#      context: .
+#      dockerfile: Dockerfile
+#      args:
+#        JAR_FILE: config-server/target/*.jar
+#    container_name: config-server
+#    ports:
+#      - "8888:8888"
+#    environment:
+#      EUREKA_ORIGIN: http://discovery-server:8761
+#      SPRING_PROFILES_ACTIVE: native,Docker
+#    networks:
+#      - Ticket-Souq-Microservice
+#    healthcheck:
+#      test: ["CMD", "wget", "-qO-", "http://localhost:8888/actuator/health"]
+#      interval: 15s
+#      timeout: 5s
+#      retries: 8
+#      start_period: 30s
+#
+#  discovery-server:
+#    build:
+#      context: .
+#      dockerfile: Dockerfile
+#      args:
+#        JAR_FILE: discovery-server/target/*.jar
+#    container_name: discovery-server
+#    ports:
+#      - "8761:8761"
+#    environment:
+#      SPRING_PROFILES_ACTIVE: Docker
+#    depends_on:
+#      config-server:
+#        condition: service_healthy
+#    networks:
+#      - Ticket-Souq-Microservice
+#    healthcheck:
+#      test: ["CMD", "wget", "-qO-", "http://localhost:8761/actuator/health"]
+#      interval: 15s
+#      timeout: 5s
+#      retries: 8
+#      start_period: 30s
 
-  discovery-server:
-    build:
-      context: .
-      dockerfile: Dockerfile
-      args:
-        JAR_FILE: discovery-server/target/*.jar
-    container_name: discovery-server
-    ports:
-      - "8761:8761"
-    environment:
-      SPRING_PROFILES_ACTIVE: Docker
-    depends_on:
-      config-server:
-        condition: service_healthy
-    networks:
-      - Ticket-Souq-Microservice
-    healthcheck:
-      test: ["CMD", "wget", "-qO-", "http://localhost:8761/actuator/health"]
-      interval: 15s
-      timeout: 5s
-      retries: 8
-      start_period: 30s
-
-#volumes:
-#  postgres_user_data:
-#  postgres_auth_data:
-#  postgres_event_data:
-#  postgres_venue_data:
-#  postgres_ticket_data:
-#  postgres_reservation_data:
-#  postgres_payment_data:
-#  postgres_notification_data:
-#  postgres_audit_data:
-#  postgres_analytics_data:
-#  postgres_availability_locking_data:
-#  kafka_data:
-#  es_data:
-#  redis_data:
+volumes:
+  postgres_user_data:
+  postgres_auth_data:
+  postgres_event_data:
+  postgres_venue_data:
+  postgres_ticket_data:
+  postgres_reservation_data:
+  postgres_payment_data:
+  postgres_notification_data:
+  postgres_audit_data:
+  postgres_analytics_data:
+  postgres_availability_locking_data:
+  kafka_data:
+  es_data:
+  redis_data:
 
 
 networks:

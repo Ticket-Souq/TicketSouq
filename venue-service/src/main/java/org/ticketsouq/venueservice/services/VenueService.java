@@ -36,19 +36,19 @@ public class VenueService {
     @Transactional(readOnly = true)
     public VenueResponse getById(UUID id) {
         return venueRepository.findById(id)
-                .map(venueMapper::toResponse)
-                .orElseThrow(() -> new BusinessException("Venue not found: " + id, HttpStatus.NOT_FOUND));
+            .map(venueMapper::toResponse)
+            .orElseThrow(() -> new BusinessException("Venue not found: " + id, HttpStatus.NOT_FOUND));
     }
 
     @Transactional(readOnly = true)
     public Page<VenueResponse> listByOrg(UUID orgId, Pageable pageable) {
         return venueRepository.findByOrgId(orgId, pageable)
-                .map(venueMapper::toResponse);
+            .map(venueMapper::toResponse);
     }
 
     public VenueResponse update(UUID id, UpdateVenueRequest request) {
         Venue venue = venueRepository.findById(id)
-                .orElseThrow(() -> new BusinessException("Venue not found: " + id, HttpStatus.NOT_FOUND));
+            .orElseThrow(() -> new BusinessException("Venue not found: " + id, HttpStatus.NOT_FOUND));
         venueMapper.updateEntity(request, venue);
         Venue saved = venueRepository.save(venue);
         return venueMapper.toResponse(saved);
@@ -56,7 +56,7 @@ public class VenueService {
 
     public void delete(UUID id) {
         Venue venue = venueRepository.findById(id)
-                .orElseThrow(() -> new BusinessException("Venue not found: " + id, HttpStatus.NOT_FOUND));
+            .orElseThrow(() -> new BusinessException("Venue not found: " + id, HttpStatus.NOT_FOUND));
         venue.setDeleted(true);
         venueRepository.save(venue);
     }
