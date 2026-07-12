@@ -24,5 +24,7 @@ public interface NotificationService {
     void handlePaymentSuccess(PaymentSuccessEvent event);
 
     void handleAccountGenerated(AccountGeneratedEvent event);
+
+    void handleRefundCompleted(RefundCompletedEvent event);
 }
 

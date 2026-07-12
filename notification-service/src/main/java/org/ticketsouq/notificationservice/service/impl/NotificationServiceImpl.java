@@ -196,4 +196,38 @@ public class NotificationServiceImpl implements NotificationService {
             variables
         );
     }
+
+    @Override
+    @Transactional
+    public void handleRefundCompleted(RefundCompletedEvent event) {
+        NotificationTemplate template = NotificationTemplate.EVENT_CANCELLED;
+
+        UserEmailProjection user = userEmailProjectionRepository
+            .findById(event.userId())
+            .orElseThrow(() ->
+                new UserEmailProjectionNotFoundException(event.userId())
+            );
+        EventDetailsResponse eventDetailsResponse = eventDetailsService.getEvent(event.eventId());
+        notificationRepository.save(
+            Notification.create(
+                event.userId(),
+                template.getInAppTitle(),
+                template.getInAppMessage(),
+                template.getNotificationType()
+            )
+        );
+        Map<String, Object> variables = new HashMap<>();
+        variables.put("eventName", eventDetailsResponse.name());
+        variables.put("location", eventDetailsResponse.location());
+        variables.put("date", eventDetailsResponse.startDate());
+        variables.put("amount", event.amount());
+
+        emailJobService.createEmailJob(
+            event.messageId(),
+            user.getEmail(),
+            template,
+            variables
+        );
+
+    }
 }

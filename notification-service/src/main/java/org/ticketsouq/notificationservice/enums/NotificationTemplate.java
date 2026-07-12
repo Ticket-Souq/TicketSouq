@@ -42,9 +42,9 @@ public enum NotificationTemplate {
     EVENT_CANCELLED(
         NotificationType.EVENT_CANCELLED,
         "Event Cancelled",
-        "Unfortunately, your event has been cancelled.",
+        "Unfortunately, your event has been cancelled. Your payment has been refunded.",
         "Event Cancelled",
-        "email/event-cancelled"
+        "email/refund-completed"
     ),
     ACCOUNT_GENERATED(
         NotificationType.ACCOUNT_GENERATED,
