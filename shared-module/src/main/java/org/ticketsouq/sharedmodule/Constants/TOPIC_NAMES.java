@@ -21,10 +21,11 @@ public final class TOPIC_NAMES {
 //    public static final String USER_DELETED = "user.deleted";
 //
     // ─── Event Service ────────────────────────────────────────
-//    public static final String EVENT_CREATED = "event.created";
-//    public static final String EVENT_UPDATED = "event.updated";
-//    public static final String EVENT_CANCELLED = "event.cancelled";
-//
+    public static final String EVENT_CREATED = "event.created";
+    public static final String EVENT_UPDATED = "event.updated";
+    public static final String EVENT_CANCELLED = "event.cancelled";
+    public static final String EVENT_STATUS_CHANGED = "event.status.changed";
+
     // ─── Venue Service ────────────────────────────────────────
 //    public static final String VENUE_CREATED = "venue.created";
 //    public static final String VENUE_UPDATED = "venue.updated";
