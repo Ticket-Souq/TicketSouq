@@ -22,11 +22,12 @@ public class MockProducer implements CommandLineRunner {
     @Override
     public void run(String... args) {
 
-        sendPaymentSuccess();
-        sendPasswordReset();
-        sendEmailVerification();
-        sendPasswordChanged();
-        sendAccountGenerated();
+//        sendPaymentSuccess();
+//        sendPasswordReset();
+//        sendEmailVerification();
+//        sendPasswordChanged();
+//        sendAccountGenerated();
+        sendEventCancelled();
 
     }
 
@@ -109,4 +110,21 @@ public class MockProducer implements CommandLineRunner {
             event
         );
     }
+    private void sendEventCancelled() {
+
+        RefundCompletedEvent event = new RefundCompletedEvent(
+            UUID.randomUUID(),
+            UUID.fromString("11111111-1111-1111-1111-111111111111"), // userId
+            UUID.fromString("11111111-1111-1111-1111-111111111111"), // eventId
+            750L // refund amount
+        );
+
+        kafkaTemplate.send(
+            "notification.refund-completed",
+            event
+        );
+
+        System.out.println("EventCancelledEvent sent.");
+    }
+
 }
