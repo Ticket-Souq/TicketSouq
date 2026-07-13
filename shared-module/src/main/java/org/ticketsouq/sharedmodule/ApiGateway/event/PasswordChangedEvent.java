@@ -2,8 +2,8 @@ package org.ticketsouq.sharedmodule.ApiGateway.event;
 
 import java.util.UUID;
 
-public record PasswordResetEvent(
+public record PasswordChangedEvent(
     UUID messageId,
-    UUID userId,
-    String email,
-    String token) {}
+    UUID userId
+) {
+}

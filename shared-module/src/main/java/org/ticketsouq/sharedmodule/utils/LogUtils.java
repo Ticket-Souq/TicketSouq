@@ -13,4 +13,10 @@ public final class LogUtils {
         log.info("Publishing {} event for userId={}", topic, userId);
     }
 
+//    public static void logReceived(String topic, UUID userId){
+//        log.info("Received {} for event for userId={}", topic, userId);
+//    }
+//
+//    log.info("Received {} for titleId={} rating={}", RATING_AGGREGATED_TOPIC, event.titleId(), event.newRating());
+
 }
