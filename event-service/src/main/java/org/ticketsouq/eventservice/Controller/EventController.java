@@ -44,107 +44,70 @@ public class EventController {
 
     @PostMapping
     public ResponseEntity<EventResponse> create(@Valid @RequestBody CreateEventRequest request) {
+        //(ahmed)
         return ResponseEntity.status(HttpStatus.CREATED).body(eventService.create(request));
     }
 
     @GetMapping
     public ResponseEntity<Page<EventResponse>> getPublicEvents(Pageable pageable) {
+        // get events that are active or published for user (omar)
         return ResponseEntity.ok(eventService.getPublicEvents(pageable));
     }
 
     @GetMapping("/organization")
-    public ResponseEntity<Page<EventResponse>> getOrganizationEvents(
-            @RequestParam UUID organizationId,
-            @RequestParam(required = false) EventStatus status,
-            Pageable pageable) {
+    public ResponseEntity<Page<EventResponse>> getOrganizationEvents(@RequestParam UUID organizationId, @RequestParam(required = false) EventStatus status, Pageable pageable) {
+        // get all events belong to organizer (all status) (ahmed)
         return ResponseEntity.ok(eventService.getOrganizationEvents(organizationId, status, pageable));
     }
 
     @GetMapping("/search/like")
-    public ResponseEntity<List<EventResponse>> searchByTitleLike(@RequestParam String title, Pageable pageable) {
-        return ResponseEntity.ok(eventSearchService.searchByTitleLike(title, pageable));
-    }
-
-    @GetMapping("/search/es")
-    public ResponseEntity<List<EventResponse>> searchByTitleEs(@RequestParam String title) {
-        return ResponseEntity.ok(eventSearchService.searchByTitleEs(title));
+    public ResponseEntity<List<EventResponse>> searchByTitlePS(@RequestParam String title, Pageable pageable) {
+        // search by postgres  (Omar)
+        return ResponseEntity.ok(eventSearchService.searchByTitlePS(title, pageable));
     }
 
     @GetMapping("/search/es/fuzzy")
     public ResponseEntity<List<EventResponse>> searchByTitleFuzzy(@RequestParam String title) {
+        // search by ES (Ahmed)
         return ResponseEntity.ok(eventSearchService.searchByTitleFuzzy(title));
     }
 
     @GetMapping("/{id}")
     public ResponseEntity<EventResponse> getById(@PathVariable UUID id) {
+        // (ahmed)
         return ResponseEntity.ok(eventService.getById(id));
-    }
-
-    @PutMapping("/{id}")
-    public ResponseEntity<EventResponse> update(@PathVariable UUID id, @Valid @RequestBody EventRequest request) {
-        return ResponseEntity.ok(eventService.update(id, request));
     }
 
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> cancel(@PathVariable UUID id) {
+        // (omar) update state and send event.cancel event for reservation service to activate refund flow
         eventService.cancel(id);
         return ResponseEntity.noContent().build();
     }
 
     @PatchMapping("/{id}/status")
     public ResponseEntity<EventResponse> updateStatus(@PathVariable UUID id, @RequestParam EventStatus status) {
+        // (ahmed) not endpoint --> job
         return ResponseEntity.ok(eventService.updateStatus(id, status));
-    }
-
-    @PostMapping("/{eventId}/sections")
-    public ResponseEntity<SectionResponse> createSection(@PathVariable UUID eventId, @Valid @RequestBody SectionRequest request) {
-        return ResponseEntity.status(HttpStatus.CREATED).body(sectionService.create(eventId, request));
-    }
-
-    @GetMapping("/{eventId}/sections")
-    public ResponseEntity<List<SectionResponse>> getSections(@PathVariable UUID eventId) {
-        return ResponseEntity.ok(sectionService.getByEventId(eventId));
-    }
-
-    @GetMapping("/sections/{sectionId}")
-    public ResponseEntity<SectionResponse> getSectionById(@PathVariable UUID sectionId) {
-        return ResponseEntity.ok(sectionService.getById(sectionId));
     }
 
     @PutMapping("/sections/{sectionId}")
     public ResponseEntity<SectionResponse> updateSection(@PathVariable UUID sectionId, @Valid @RequestBody SectionRequest request) {
+        //(omar)
         return ResponseEntity.ok(sectionService.update(sectionId, request));
     }
 
-    @DeleteMapping("/sections/{sectionId}")
-    public ResponseEntity<Void> deleteSection(@PathVariable UUID sectionId) {
-        sectionService.delete(sectionId);
-        return ResponseEntity.noContent().build();
-    }
-
-    @PostMapping("/sections/{sectionId}/seats")
-    public ResponseEntity<SeatResponse> createSeat(@PathVariable UUID sectionId, @Valid @RequestBody SeatRequest request) {
-        return ResponseEntity.status(HttpStatus.CREATED).body(seatService.create(sectionId, request));
-    }
-
-    @GetMapping("/sections/{sectionId}/seats")
-    public ResponseEntity<List<SeatResponse>> getSeats(@PathVariable UUID sectionId) {
-        return ResponseEntity.ok(seatService.getBySectionId(sectionId));
-    }
-
-    @GetMapping("/seats/{seatId}")
-    public ResponseEntity<SeatResponse> getSeatById(@PathVariable UUID seatId) {
-        return ResponseEntity.ok(seatService.getById(seatId));
-    }
-
     @PutMapping("/seats/{seatId}")
-    public ResponseEntity<SeatResponse> updateSeat(@PathVariable UUID seatId, @Valid @RequestBody SeatRequest request) {
+    public ResponseEntity<SeatResponse> updateSeatStatusCustomer(@PathVariable UUID seatId, @Valid @RequestBody SeatRequest request) {
+        // TODO change endpoint name
+        // customer (ahmed)
         return ResponseEntity.ok(seatService.update(seatId, request));
     }
 
-    @DeleteMapping("/seats/{seatId}")
-    public ResponseEntity<Void> deleteSeat(@PathVariable UUID seatId) {
-        seatService.delete(seatId);
-        return ResponseEntity.noContent().build();
+    @PutMapping("/seats/{seatId}")
+    public ResponseEntity<SeatResponse> updateSeatStatusOrganizer(@PathVariable UUID seatId, @Valid @RequestBody SeatRequest request) {
+        // TODO change endpoint name
+        // organizer can change status of seat direct without any other service involved to reserve or to (omar)
+        return ResponseEntity.ok(seatService.update(seatId, request));
     }
 }

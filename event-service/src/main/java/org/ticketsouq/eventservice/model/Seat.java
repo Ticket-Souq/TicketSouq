@@ -44,8 +44,6 @@ public class Seat {
     @Column(nullable = false)
     private SeatStatus status;
 
-    private BigDecimal price;
-
     @LastModifiedDate
     private LocalDateTime updatedAt;
 }
