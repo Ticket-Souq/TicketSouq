@@ -1,0 +1,1083 @@
+{
+  "id": "9e868736-9ce3-48d2-9edb-33f5468654a8",
+  "mode": "SEAT_BASED",
+  "name": "New venue",
+  "rows": [
+    {
+      "id": "79d210e6-03cb-40b8-a22d-418ea0606d38",
+      "cells": [
+        {
+          "id": "6e0ac4bf-c80d-464e-adf9-9464dfb4f865",
+          "type": "seat",
+          "number": "1",
+          "status": "blocked",
+          "categoryId": "ae752a48-08f0-467e-9487-a4630469abfe"
+        },
+        {
+          "id": "86284e45-a5bb-4e35-9ea7-dd696dd6fa01",
+          "type": "seat",
+          "number": "2",
+          "status": "reserved",
+          "categoryId": "ae752a48-08f0-467e-9487-a4630469abfe"
+        },
+        {
+          "id": "bfbeebf3-f58a-40e3-8f82-3c229e15976d",
+          "type": "seat",
+          "number": "3",
+          "status": "reserved",
+          "categoryId": "ae752a48-08f0-467e-9487-a4630469abfe"
+        },
+        {
+          "id": "a84135fb-34d6-4c16-a1a0-e5085ee45ee5",
+          "type": "seat",
+          "number": "4",
+          "status": "reserved",
+          "categoryId": "ae752a48-08f0-467e-9487-a4630469abfe"
+        },
+        {
+          "id": "b299cf48-76bd-45dc-a10e-ef8fce130038",
+          "type": "seat",
+          "number": "5",
+          "status": "available",
+          "categoryId": "ae752a48-08f0-467e-9487-a4630469abfe"
+        },
+        {
+          "id": "bd8b0daf-fbef-496d-8382-8870f3b72d97",
+          "type": "seat",
+          "number": "6",
+          "status": "available",
+          "categoryId": "a70b281e-89f2-4918-8d3c-c63f7d531e2c"
+        },
+        {
+          "id": "d2fe9da1-66d2-4e8f-a877-a21a25d38225",
+          "type": "seat",
+          "number": "7",
+          "status": "available",
+          "categoryId": "ae752a48-08f0-467e-9487-a4630469abfe"
+        },
+        {
+          "id": "c36463af-fb4a-4e9c-9c19-aa0a7e43445a",
+          "type": "seat",
+          "number": "8",
+          "status": "available",
+          "categoryId": "ae752a48-08f0-467e-9487-a4630469abfe"
+        },
+        {
+          "id": "4cb3e3dd-4128-4f77-adb0-afee49f31ddd",
+          "type": "seat",
+          "number": "9",
+          "status": "available",
+          "categoryId": "ae752a48-08f0-467e-9487-a4630469abfe"
+        },
+        {
+          "id": "48b569e2-fc61-4099-80a7-648c6aead1cf",
+          "type": "seat",
+          "number": "10",
+          "status": "available",
+          "categoryId": "ae752a48-08f0-467e-9487-a4630469abfe"
+        },
+        {
+          "id": "0991ee68-9418-4bbd-8d2c-64fc7a9de3c0",
+          "type": "seat",
+          "number": "11",
+          "status": "available",
+          "categoryId": "ae752a48-08f0-467e-9487-a4630469abfe"
+        },
+        {
+          "id": "ae4233aa-8e7a-4189-920a-3791d227ac85",
+          "type": "seat",
+          "number": "12",
+          "status": "available",
+          "categoryId": "ae752a48-08f0-467e-9487-a4630469abfe"
+        },
+        {
+          "id": "492b3a8d-3b69-4c72-8e7d-e1ef8096b92b",
+          "type": "seat",
+          "number": "13",
+          "status": "available",
+          "categoryId": "ae752a48-08f0-467e-9487-a4630469abfe"
+        },
+        {
+          "id": "f688ec9d-d5dc-446c-bbfd-8a1485a2d4d5",
+          "type": "seat",
+          "number": "14",
+          "status": "available",
+          "categoryId": "ae752a48-08f0-467e-9487-a4630469abfe"
+        }
+      ],
+      "label": "A"
+    },
+    {
+      "id": "a394e0b7-2d54-4121-97da-ec20a62ade41",
+      "cells": [
+        {
+          "id": "6e7b97da-2b17-4564-8619-0fb8cf1f62a5",
+          "type": "seat",
+          "number": "1",
+          "status": "blocked",
+          "categoryId": "ae752a48-08f0-467e-9487-a4630469abfe"
+        },
+        {
+          "id": "3cc9b2b2-0eba-4f8f-bd49-b725dc657b60",
+          "type": "seat",
+          "number": "2",
+          "status": "blocked",
+          "categoryId": "ae752a48-08f0-467e-9487-a4630469abfe"
+        },
+        {
+          "id": "fdb45752-47ff-49d9-9fca-dee0d4701610",
+          "type": "seat",
+          "number": "3",
+          "status": "blocked",
+          "categoryId": "ae752a48-08f0-467e-9487-a4630469abfe"
+        },
+        {
+          "id": "95f88e10-46f7-4b41-b489-d5d0054dc675",
+          "type": "seat",
+          "number": "4",
+          "status": "available",
+          "categoryId": "ae752a48-08f0-467e-9487-a4630469abfe"
+        },
+        {
+          "id": "7ee518a2-307b-42a1-9373-20853d0fb09b",
+          "type": "seat",
+          "number": "5",
+          "status": "available",
+          "categoryId": "ae752a48-08f0-467e-9487-a4630469abfe"
+        },
+        {
+          "id": "58dc49f5-afaf-42aa-9d97-76d2c9803572",
+          "type": "seat",
+          "number": "6",
+          "status": "available",
+          "categoryId": "a70b281e-89f2-4918-8d3c-c63f7d531e2c"
+        },
+        {
+          "id": "fbf5c31a-2992-4fc9-8729-17c30df8dd1a",
+          "type": "seat",
+          "number": "7",
+          "status": "available",
+          "categoryId": "ae752a48-08f0-467e-9487-a4630469abfe"
+        },
+        {
+          "id": "c03e2a9a-e634-420e-bc57-f060351aeb9d",
+          "type": "seat",
+          "number": "8",
+          "status": "available",
+          "categoryId": "1ac01424-8eb3-49b1-a31c-43560b7628ae"
+        },
+        {
+          "id": "98693d15-7b26-4c26-8cf3-b91bf5471b82",
+          "type": "seat",
+          "number": "9",
+          "status": "available",
+          "categoryId": "1ac01424-8eb3-49b1-a31c-43560b7628ae"
+        },
+        {
+          "id": "c09ef1bf-2a0e-42fb-9e3f-8dcb59963761",
+          "type": "seat",
+          "number": "10",
+          "status": "available",
+          "categoryId": "ae752a48-08f0-467e-9487-a4630469abfe"
+        },
+        {
+          "id": "9176cb6a-0f5d-44e2-9339-c98ff54b1753",
+          "type": "seat",
+          "number": "11",
+          "status": "available",
+          "categoryId": "ae752a48-08f0-467e-9487-a4630469abfe"
+        },
+        {
+          "id": "39be6f7d-a2f1-47c3-877c-369e86c5df6a",
+          "type": "seat",
+          "number": "12",
+          "status": "available",
+          "categoryId": "ae752a48-08f0-467e-9487-a4630469abfe"
+        },
+        {
+          "id": "e85b3ca9-0914-4497-abac-71fc91d46961",
+          "type": "seat",
+          "number": "13",
+          "status": "available",
+          "categoryId": "ae752a48-08f0-467e-9487-a4630469abfe"
+        },
+        {
+          "id": "807cf55a-de69-4763-9b70-cb5b291a4033",
+          "type": "seat",
+          "number": "14",
+          "status": "available",
+          "categoryId": "ae752a48-08f0-467e-9487-a4630469abfe"
+        }
+      ],
+      "label": "B"
+    },
+    {
+      "id": "98c34e14-c3aa-4a4b-8c09-445c16bd0663",
+      "cells": [
+        {
+          "id": "f7c2c962-68cb-46cb-b35c-41079d09b93a",
+          "type": "seat",
+          "number": "1",
+          "status": "available",
+          "categoryId": "ae752a48-08f0-467e-9487-a4630469abfe"
+        },
+        {
+          "id": "7b0fb805-986b-43ea-952f-4d03ebfd26c0",
+          "type": "seat",
+          "number": "2",
+          "status": "available",
+          "categoryId": "ae752a48-08f0-467e-9487-a4630469abfe"
+        },
+        {
+          "id": "21c5f2e9-5503-4fb1-93cb-8ba3ac07e879",
+          "type": "seat",
+          "number": "3",
+          "status": "blocked",
+          "categoryId": "ae752a48-08f0-467e-9487-a4630469abfe"
+        },
+        {
+          "id": "5b90356a-1cf5-4a30-9190-73e973dff019",
+          "type": "seat",
+          "number": "4",
+          "status": "available",
+          "categoryId": "ae752a48-08f0-467e-9487-a4630469abfe"
+        },
+        {
+          "id": "a914fcd7-e718-4d1e-86b1-4793bdb65de9",
+          "type": "seat",
+          "number": "5",
+          "status": "available",
+          "categoryId": "a70b281e-89f2-4918-8d3c-c63f7d531e2c"
+        },
+        {
+          "id": "58f8fbc1-5133-4b46-ae28-cda011a69880",
+          "type": "seat",
+          "number": "6",
+          "status": "available",
+          "categoryId": "ae752a48-08f0-467e-9487-a4630469abfe"
+        },
+        {
+          "id": "7ce8e61d-8915-477f-9bf4-1669c5843627",
+          "type": "seat",
+          "number": "7",
+          "status": "available",
+          "categoryId": "ae752a48-08f0-467e-9487-a4630469abfe"
+        },
+        {
+          "id": "9d92e133-50df-4f84-987d-a6cccff2a2ad",
+          "type": "seat",
+          "number": "8",
+          "status": "available",
+          "categoryId": "ae752a48-08f0-467e-9487-a4630469abfe"
+        },
+        {
+          "id": "e4658fdb-b5b4-43f7-b40c-a0ecff9b851f",
+          "type": "seat",
+          "number": "9",
+          "status": "available",
+          "categoryId": "1ac01424-8eb3-49b1-a31c-43560b7628ae"
+        },
+        {
+          "id": "7463ab40-bf94-4d35-b93c-323f164c53d6",
+          "type": "seat",
+          "number": "10",
+          "status": "available",
+          "categoryId": "ae752a48-08f0-467e-9487-a4630469abfe"
+        },
+        {
+          "id": "e58e611c-a9d1-4a42-b506-6f5892ea2c3d",
+          "type": "seat",
+          "number": "11",
+          "status": "available",
+          "categoryId": "ae752a48-08f0-467e-9487-a4630469abfe"
+        },
+        {
+          "id": "01a57a50-da61-44d8-adb1-65d93730db74",
+          "type": "seat",
+          "number": "12",
+          "status": "available",
+          "categoryId": "ae752a48-08f0-467e-9487-a4630469abfe"
+        },
+        {
+          "id": "493a9c62-14a8-4eea-94f2-ec482ef1ad95",
+          "type": "seat",
+          "number": "13",
+          "status": "available",
+          "categoryId": "ae752a48-08f0-467e-9487-a4630469abfe"
+        },
+        {
+          "id": "4b74ae80-ac33-477a-b69b-7ecd9e739e55",
+          "type": "seat",
+          "number": "14",
+          "status": "available",
+          "categoryId": "ae752a48-08f0-467e-9487-a4630469abfe"
+        }
+      ],
+      "label": "C"
+    },
+    {
+      "id": "6ef1b12b-6928-4ae3-b306-4131b2bca92f",
+      "cells": [
+        {
+          "id": "32405694-fc58-41f6-bf73-16c7546310b1",
+          "type": "seat",
+          "number": "1",
+          "status": "available",
+          "categoryId": "ae752a48-08f0-467e-9487-a4630469abfe"
+        },
+        {
+          "id": "760d7093-c7d3-47e5-9ac9-95c3d2474bbb",
+          "type": "seat",
+          "number": "2",
+          "status": "available",
+          "categoryId": "ae752a48-08f0-467e-9487-a4630469abfe"
+        },
+        {
+          "id": "3a3b513b-1617-4bbc-89b6-5e77a5f6ded9",
+          "type": "seat",
+          "number": "3",
+          "status": "available",
+          "categoryId": "ae752a48-08f0-467e-9487-a4630469abfe"
+        },
+        {
+          "id": "c12d23d9-4629-4767-ae0d-0ce8a2d78735",
+          "type": "seat",
+          "number": "4",
+          "status": "available",
+          "categoryId": "ae752a48-08f0-467e-9487-a4630469abfe"
+        },
+        {
+          "id": "28e3e243-06b6-4112-a4b4-a8b1aae351e7",
+          "type": "seat",
+          "number": "5",
+          "status": "available",
+          "categoryId": "ae752a48-08f0-467e-9487-a4630469abfe"
+        },
+        {
+          "id": "2971cabe-85ce-4476-bf30-5c5106472243",
+          "type": "seat",
+          "number": "6",
+          "status": "available",
+          "categoryId": "a70b281e-89f2-4918-8d3c-c63f7d531e2c"
+        },
+        {
+          "id": "7247ccf1-2f5b-410c-b865-857168daef9a",
+          "type": "seat",
+          "number": "7",
+          "status": "available",
+          "categoryId": "ae752a48-08f0-467e-9487-a4630469abfe"
+        },
+        {
+          "id": "dae38b56-4635-4944-b37f-0dc8318fe257",
+          "type": "seat",
+          "number": "8",
+          "status": "available",
+          "categoryId": "ae752a48-08f0-467e-9487-a4630469abfe"
+        },
+        {
+          "id": "b5c650e4-069e-4680-be97-c8cd001096e8",
+          "type": "seat",
+          "number": "9",
+          "status": "available",
+          "categoryId": "ae752a48-08f0-467e-9487-a4630469abfe"
+        },
+        {
+          "id": "b815db77-ee37-434e-a5e4-2f424a81cc59",
+          "type": "seat",
+          "number": "10",
+          "status": "available",
+          "categoryId": "ae752a48-08f0-467e-9487-a4630469abfe"
+        },
+        {
+          "id": "3fa330fa-d434-407a-acbf-973c92b51a61",
+          "type": "seat",
+          "number": "11",
+          "status": "available",
+          "categoryId": "ae752a48-08f0-467e-9487-a4630469abfe"
+        },
+        {
+          "id": "cc61904a-23bf-4f4e-a2f5-06107279a38b",
+          "type": "seat",
+          "number": "12",
+          "status": "available",
+          "categoryId": "ae752a48-08f0-467e-9487-a4630469abfe"
+        },
+        {
+          "id": "5f1de7cf-daa0-4e72-86a8-10791a368768",
+          "type": "seat",
+          "number": "13",
+          "status": "available",
+          "categoryId": "ae752a48-08f0-467e-9487-a4630469abfe"
+        },
+        {
+          "id": "d8f5214d-c7aa-4b3c-8ffb-f8c7ea57b49d",
+          "type": "seat",
+          "number": "14",
+          "status": "available",
+          "categoryId": "ae752a48-08f0-467e-9487-a4630469abfe"
+        }
+      ],
+      "label": "D"
+    },
+    {
+      "id": "ffdd2022-d7cf-4355-9f93-efa6b6bb2f5d",
+      "cells": [
+        {
+          "id": "25f526e2-e64e-46ff-a301-8193aa3606a5",
+          "type": "seat",
+          "number": "1",
+          "status": "available",
+          "categoryId": "ae752a48-08f0-467e-9487-a4630469abfe"
+        },
+        {
+          "id": "7e197a7a-57f9-444f-a6e3-4b24d1306bf6",
+          "type": "seat",
+          "number": "2",
+          "status": "available",
+          "categoryId": "ae752a48-08f0-467e-9487-a4630469abfe"
+        },
+        {
+          "id": "43bd7b35-0ba7-4379-91d3-e7acefa91c11",
+          "type": "seat",
+          "number": "3",
+          "status": "available",
+          "categoryId": "ae752a48-08f0-467e-9487-a4630469abfe"
+        },
+        {
+          "id": "9f2e0092-efc0-4c47-a155-e138a8a53a1c",
+          "type": "seat",
+          "number": "4",
+          "status": "available",
+          "categoryId": "ae752a48-08f0-467e-9487-a4630469abfe"
+        },
+        {
+          "id": "ad461543-07cf-4d44-9f7d-f07a8f95c932",
+          "type": "seat",
+          "number": "5",
+          "status": "available",
+          "categoryId": "ae752a48-08f0-467e-9487-a4630469abfe"
+        },
+        {
+          "id": "67c064ac-011c-48f6-aca6-d144ac9710ac",
+          "type": "seat",
+          "number": "6",
+          "status": "available",
+          "categoryId": "ae752a48-08f0-467e-9487-a4630469abfe"
+        },
+        {
+          "id": "cad25895-5253-41c1-b8a7-7d031865ea68",
+          "type": "seat",
+          "number": "7",
+          "status": "available",
+          "categoryId": "a70b281e-89f2-4918-8d3c-c63f7d531e2c"
+        },
+        {
+          "id": "91988bb2-e5a1-4716-9ccd-d01e39012890",
+          "type": "seat",
+          "number": "8",
+          "status": "available",
+          "categoryId": "ae752a48-08f0-467e-9487-a4630469abfe"
+        },
+        {
+          "id": "61ab99fd-a7da-4141-b181-59db19c8c752",
+          "type": "seat",
+          "number": "9",
+          "status": "available",
+          "categoryId": "ae752a48-08f0-467e-9487-a4630469abfe"
+        },
+        {
+          "id": "b6b1f771-a0dc-4b09-81bd-587ec806c686",
+          "type": "seat",
+          "number": "10",
+          "status": "available",
+          "categoryId": "ae752a48-08f0-467e-9487-a4630469abfe"
+        },
+        {
+          "id": "5842c32b-5b78-4443-912d-250160f3a330",
+          "type": "seat",
+          "number": "11",
+          "status": "available",
+          "categoryId": "ae752a48-08f0-467e-9487-a4630469abfe"
+        },
+        {
+          "id": "cf279d64-6ddc-4951-abc4-da564c26efb4",
+          "type": "seat",
+          "number": "12",
+          "status": "available",
+          "categoryId": "ae752a48-08f0-467e-9487-a4630469abfe"
+        },
+        {
+          "id": "24bf13b3-74b5-4cf7-aeb9-979c468b60ad",
+          "type": "seat",
+          "number": "13",
+          "status": "available",
+          "categoryId": "ae752a48-08f0-467e-9487-a4630469abfe"
+        },
+        {
+          "id": "f9084a92-74d8-4ac8-bbff-84a098874ba5",
+          "type": "seat",
+          "number": "14",
+          "status": "available",
+          "categoryId": "ae752a48-08f0-467e-9487-a4630469abfe"
+        }
+      ],
+      "label": "E"
+    },
+    {
+      "id": "1faa43e3-42c7-49c8-8997-a30166ffda25",
+      "aisle": true,
+      "cells": [],
+      "label": "F"
+    },
+    {
+      "id": "421b52d7-a2ed-44ce-99c8-44ea6b061b9f",
+      "cells": [
+        {
+          "id": "1a7f7564-8c86-4905-850b-e9b385e91c2e",
+          "type": "seat",
+          "number": "1",
+          "status": "available",
+          "categoryId": "a70b281e-89f2-4918-8d3c-c63f7d531e2c"
+        },
+        {
+          "id": "030396aa-f667-4ddd-8299-5b4f1872d582",
+          "type": "seat",
+          "number": "2",
+          "status": "available",
+          "categoryId": "a70b281e-89f2-4918-8d3c-c63f7d531e2c"
+        },
+        {
+          "id": "3f0327bd-e25b-4aef-a754-37e46094949c",
+          "type": "seat",
+          "number": "3",
+          "status": "available",
+          "categoryId": "a70b281e-89f2-4918-8d3c-c63f7d531e2c"
+        },
+        {
+          "id": "1a2ed963-6f37-4e47-bd48-b32992661ded",
+          "type": "seat",
+          "number": "4",
+          "status": "available",
+          "categoryId": "a70b281e-89f2-4918-8d3c-c63f7d531e2c"
+        },
+        {
+          "id": "d4e67286-fc94-47ed-a986-aa430099f3a8",
+          "type": "seat",
+          "number": "5",
+          "status": "available",
+          "categoryId": "a70b281e-89f2-4918-8d3c-c63f7d531e2c"
+        },
+        {
+          "id": "3906e717-3b2b-4cef-b6ce-d1ab501702b1",
+          "type": "seat",
+          "number": "6",
+          "status": "available",
+          "categoryId": "a70b281e-89f2-4918-8d3c-c63f7d531e2c"
+        },
+        {
+          "id": "da55c0c7-5338-44c5-ae8d-74b7e1bd289b",
+          "type": "seat",
+          "number": "7",
+          "status": "available",
+          "categoryId": "a70b281e-89f2-4918-8d3c-c63f7d531e2c"
+        },
+        {
+          "id": "cc958225-664d-4364-9d58-68c4b3a45766",
+          "type": "seat",
+          "number": "8",
+          "status": "available",
+          "categoryId": "a70b281e-89f2-4918-8d3c-c63f7d531e2c"
+        },
+        {
+          "id": "bc5e1f26-012b-4d84-9b76-d1e528ed0130",
+          "type": "seat",
+          "number": "9",
+          "status": "available",
+          "categoryId": "a70b281e-89f2-4918-8d3c-c63f7d531e2c"
+        },
+        {
+          "id": "707e5425-d9a0-4e7f-b174-f10a06ed20bd",
+          "type": "seat",
+          "number": "10",
+          "status": "available",
+          "categoryId": "a70b281e-89f2-4918-8d3c-c63f7d531e2c"
+        },
+        {
+          "id": "bbae13d6-12c1-4c7c-8f49-143582b5eae3",
+          "type": "seat",
+          "number": "11",
+          "status": "available",
+          "categoryId": "a70b281e-89f2-4918-8d3c-c63f7d531e2c"
+        },
+        {
+          "id": "61cffd43-6130-403e-aaba-1259881229aa",
+          "type": "seat",
+          "number": "12",
+          "status": "available",
+          "categoryId": "a70b281e-89f2-4918-8d3c-c63f7d531e2c"
+        },
+        {
+          "id": "5096951c-304d-4f7f-ad7f-1347756aeff8",
+          "type": "seat",
+          "number": "13",
+          "status": "available",
+          "categoryId": "a70b281e-89f2-4918-8d3c-c63f7d531e2c"
+        },
+        {
+          "id": "358eaf93-9ce2-4956-b318-53b6472b7c07",
+          "type": "seat",
+          "number": "14",
+          "status": "available",
+          "categoryId": "a70b281e-89f2-4918-8d3c-c63f7d531e2c"
+        }
+      ],
+      "label": "G"
+    },
+    {
+      "id": "05ae18d8-c142-4c1a-be93-fcdd020ca65b",
+      "cells": [
+        {
+          "id": "449d4686-5d18-450c-bfda-f3d0b0293168",
+          "type": "seat",
+          "number": "1",
+          "status": "available",
+          "categoryId": "a70b281e-89f2-4918-8d3c-c63f7d531e2c"
+        },
+        {
+          "id": "e0a9f8f0-f1de-4665-882f-de75cde2a57f",
+          "type": "seat",
+          "number": "2",
+          "status": "available",
+          "categoryId": "a70b281e-89f2-4918-8d3c-c63f7d531e2c"
+        },
+        {
+          "id": "3999bdc2-9656-41f5-b27c-2e0d9adf634c",
+          "type": "seat",
+          "number": "3",
+          "status": "available",
+          "categoryId": "a70b281e-89f2-4918-8d3c-c63f7d531e2c"
+        },
+        {
+          "id": "4daa795c-fee0-4088-aab3-c515196ef903",
+          "type": "seat",
+          "number": "4",
+          "status": "available",
+          "categoryId": "a70b281e-89f2-4918-8d3c-c63f7d531e2c"
+        },
+        {
+          "id": "d91cf1a1-2e0d-4e85-80c9-bd232d658695",
+          "type": "seat",
+          "number": "5",
+          "status": "available",
+          "categoryId": "a70b281e-89f2-4918-8d3c-c63f7d531e2c"
+        },
+        {
+          "id": "8265c8fb-a2e5-4cf4-a633-877dd448f433",
+          "type": "seat",
+          "number": "6",
+          "status": "available",
+          "categoryId": "a70b281e-89f2-4918-8d3c-c63f7d531e2c"
+        },
+        {
+          "id": "1890bf53-a055-4c51-ab53-4f0d6e70dc8d",
+          "type": "seat",
+          "number": "7",
+          "status": "available",
+          "categoryId": "a70b281e-89f2-4918-8d3c-c63f7d531e2c"
+        },
+        {
+          "id": "d281206f-b32e-40f5-b7a1-b5055f244058",
+          "type": "seat",
+          "number": "8",
+          "status": "available",
+          "categoryId": "a70b281e-89f2-4918-8d3c-c63f7d531e2c"
+        },
+        {
+          "id": "cd55458f-1117-4b30-9f13-fccec9fadbb8",
+          "type": "seat",
+          "number": "9",
+          "status": "available",
+          "categoryId": "a70b281e-89f2-4918-8d3c-c63f7d531e2c"
+        },
+        {
+          "id": "1928faa9-ecc2-49bc-903b-c1733c536990",
+          "type": "seat",
+          "number": "10",
+          "status": "available",
+          "categoryId": "a70b281e-89f2-4918-8d3c-c63f7d531e2c"
+        },
+        {
+          "id": "5c69c0fa-721c-4d88-b1aa-66fc7c091acb",
+          "type": "seat",
+          "number": "11",
+          "status": "available",
+          "categoryId": "a70b281e-89f2-4918-8d3c-c63f7d531e2c"
+        },
+        {
+          "id": "db651003-b6a3-4fc0-87fb-96f8e0f6b63f",
+          "type": "seat",
+          "number": "12",
+          "status": "available",
+          "categoryId": "a70b281e-89f2-4918-8d3c-c63f7d531e2c"
+        },
+        {
+          "id": "7041d43c-9ee8-46dd-9f7a-33829b3ab793",
+          "type": "seat",
+          "number": "13",
+          "status": "available",
+          "categoryId": "a70b281e-89f2-4918-8d3c-c63f7d531e2c"
+        },
+        {
+          "id": "398397c6-4634-4eb1-91f3-1d99e914d46c",
+          "type": "seat",
+          "number": "14",
+          "status": "available",
+          "categoryId": "a70b281e-89f2-4918-8d3c-c63f7d531e2c"
+        }
+      ],
+      "label": "H"
+    },
+    {
+      "id": "a56fe9bc-83ba-4900-b92a-1a01dd3e13ef",
+      "cells": [
+        {
+          "id": "85fdabb5-0d88-4a49-b40a-83dcb3c0d9de",
+          "type": "seat",
+          "number": "1",
+          "status": "available",
+          "categoryId": "a70b281e-89f2-4918-8d3c-c63f7d531e2c"
+        },
+        {
+          "id": "df39df09-d8d5-4cf4-9c30-74d721ad7a32",
+          "type": "seat",
+          "number": "2",
+          "status": "available",
+          "categoryId": "a70b281e-89f2-4918-8d3c-c63f7d531e2c"
+        },
+        {
+          "id": "0c020c2b-a4f5-46c4-bed3-a7ae4856b21b",
+          "type": "seat",
+          "number": "3",
+          "status": "available",
+          "categoryId": "a70b281e-89f2-4918-8d3c-c63f7d531e2c"
+        },
+        {
+          "id": "6ac546c0-dbd2-41c3-ad18-13e21a1d73df",
+          "type": "seat",
+          "number": "4",
+          "status": "available",
+          "categoryId": "a70b281e-89f2-4918-8d3c-c63f7d531e2c"
+        },
+        {
+          "id": "23fbe1db-cadd-4eb3-a0c2-afcfd1c3ccd6",
+          "type": "seat",
+          "number": "5",
+          "status": "available",
+          "categoryId": "a70b281e-89f2-4918-8d3c-c63f7d531e2c"
+        },
+        {
+          "id": "857d78f7-362e-4c62-a1b6-be080a00a6b8",
+          "type": "seat",
+          "number": "6",
+          "status": "available",
+          "categoryId": "a70b281e-89f2-4918-8d3c-c63f7d531e2c"
+        },
+        {
+          "id": "9b2f3f63-4a6a-4216-a6f6-f3d056396470",
+          "type": "seat",
+          "number": "7",
+          "status": "available",
+          "categoryId": "a70b281e-89f2-4918-8d3c-c63f7d531e2c"
+        },
+        {
+          "id": "c786209a-f799-402a-a9d0-62d3911791ea",
+          "type": "seat",
+          "number": "8",
+          "status": "available",
+          "categoryId": "a70b281e-89f2-4918-8d3c-c63f7d531e2c"
+        },
+        {
+          "id": "5a8d76c9-4fc2-4128-9a60-21c00efc7a00",
+          "type": "seat",
+          "number": "9",
+          "status": "available",
+          "categoryId": "a70b281e-89f2-4918-8d3c-c63f7d531e2c"
+        },
+        {
+          "id": "9ac5b9f1-4437-4858-b573-a5315f10cf8b",
+          "type": "seat",
+          "number": "10",
+          "status": "available",
+          "categoryId": "a70b281e-89f2-4918-8d3c-c63f7d531e2c"
+        },
+        {
+          "id": "e13a7644-952b-410e-88c3-5e5fa7c88caa",
+          "type": "seat",
+          "number": "11",
+          "status": "available",
+          "categoryId": "a70b281e-89f2-4918-8d3c-c63f7d531e2c"
+        },
+        {
+          "id": "6877f7b4-d843-4e1d-be52-c34904e8ac8b",
+          "type": "seat",
+          "number": "12",
+          "status": "available",
+          "categoryId": "a70b281e-89f2-4918-8d3c-c63f7d531e2c"
+        },
+        {
+          "id": "3c2311ee-5e25-4c2b-bb44-623483ec2438",
+          "type": "seat",
+          "number": "13",
+          "status": "available",
+          "categoryId": "a70b281e-89f2-4918-8d3c-c63f7d531e2c"
+        },
+        {
+          "id": "90ddf647-e671-4842-9482-6ed6158d6a69",
+          "type": "seat",
+          "number": "14",
+          "status": "available",
+          "categoryId": "a70b281e-89f2-4918-8d3c-c63f7d531e2c"
+        }
+      ],
+      "label": "I"
+    },
+    {
+      "id": "0228a57a-6c6f-4c5e-8520-d2d983ed0151",
+      "cells": [
+        {
+          "id": "dfc47fa7-69d8-4a7d-962a-8ccd233feff6",
+          "type": "seat",
+          "number": "1",
+          "status": "available",
+          "categoryId": "a70b281e-89f2-4918-8d3c-c63f7d531e2c"
+        },
+        {
+          "id": "69f821d4-ed32-40e5-8bb4-16b85261fda4",
+          "type": "seat",
+          "number": "2",
+          "status": "available",
+          "categoryId": "a70b281e-89f2-4918-8d3c-c63f7d531e2c"
+        },
+        {
+          "id": "1ce3502b-eb11-4727-ba30-aa6539c2be2c",
+          "type": "seat",
+          "number": "3",
+          "status": "available",
+          "categoryId": "a70b281e-89f2-4918-8d3c-c63f7d531e2c"
+        },
+        {
+          "id": "7f344710-9368-477f-8d73-6ba8f0bda7e6",
+          "type": "seat",
+          "number": "4",
+          "status": "available",
+          "categoryId": "a70b281e-89f2-4918-8d3c-c63f7d531e2c"
+        },
+        {
+          "id": "d58b4979-b10b-4bb5-946d-a7ebab8c639d",
+          "type": "seat",
+          "number": "5",
+          "status": "available",
+          "categoryId": "a70b281e-89f2-4918-8d3c-c63f7d531e2c"
+        },
+        {
+          "id": "e8e19429-f2f5-47f2-b466-0f07fd0bef64",
+          "type": "seat",
+          "number": "6",
+          "status": "available",
+          "categoryId": "a70b281e-89f2-4918-8d3c-c63f7d531e2c"
+        },
+        {
+          "id": "b46c3735-4e88-491e-a267-61995e2b493d",
+          "type": "seat",
+          "number": "7",
+          "status": "available",
+          "categoryId": "a70b281e-89f2-4918-8d3c-c63f7d531e2c"
+        },
+        {
+          "id": "e5d035f2-2d28-4eda-b5c9-084a84bf0c66",
+          "type": "seat",
+          "number": "8",
+          "status": "available",
+          "categoryId": "a70b281e-89f2-4918-8d3c-c63f7d531e2c"
+        },
+        {
+          "id": "319bc3d0-199e-401b-bcc2-ea1c93b47051",
+          "type": "seat",
+          "number": "9",
+          "status": "available",
+          "categoryId": "a70b281e-89f2-4918-8d3c-c63f7d531e2c"
+        },
+        {
+          "id": "84c84d85-3c35-4500-817b-ff29e9c5ee7b",
+          "type": "seat",
+          "number": "10",
+          "status": "available",
+          "categoryId": "a70b281e-89f2-4918-8d3c-c63f7d531e2c"
+        },
+        {
+          "id": "db62fdc1-5856-4d61-8aec-7a8a312f0e6f",
+          "type": "seat",
+          "number": "11",
+          "status": "available",
+          "categoryId": "a70b281e-89f2-4918-8d3c-c63f7d531e2c"
+        },
+        {
+          "id": "70486db4-4408-4ef9-8b31-feea8f90665c",
+          "type": "seat",
+          "number": "12",
+          "status": "available",
+          "categoryId": "a70b281e-89f2-4918-8d3c-c63f7d531e2c"
+        },
+        {
+          "id": "a786eec6-def4-4783-945a-1cdbf1af0372",
+          "type": "seat",
+          "number": "13",
+          "status": "available",
+          "categoryId": "a70b281e-89f2-4918-8d3c-c63f7d531e2c"
+        },
+        {
+          "id": "efbe68dc-01fe-4b0e-bc2c-270c28e7a248",
+          "type": "seat",
+          "number": "14",
+          "status": "available",
+          "categoryId": "a70b281e-89f2-4918-8d3c-c63f7d531e2c"
+        }
+      ],
+      "label": "J"
+    },
+    {
+      "id": "1935fd43-2627-4443-b16c-458304009e41",
+      "cells": [
+        {
+          "id": "277e1c69-5064-42cd-a7bf-eae45e7320fc",
+          "type": "seat",
+          "number": "1",
+          "status": "available",
+          "categoryId": "a70b281e-89f2-4918-8d3c-c63f7d531e2c"
+        },
+        {
+          "id": "c790fbee-26e8-4445-92d8-e0648f18f658",
+          "type": "seat",
+          "number": "2",
+          "status": "available",
+          "categoryId": "a70b281e-89f2-4918-8d3c-c63f7d531e2c"
+        },
+        {
+          "id": "9325a403-d6c9-46c5-b217-30985f2569ca",
+          "type": "seat",
+          "number": "3",
+          "status": "available",
+          "categoryId": "a70b281e-89f2-4918-8d3c-c63f7d531e2c"
+        },
+        {
+          "id": "c7c92de4-099f-47e5-95ec-d98adc4e636a",
+          "type": "seat",
+          "number": "4",
+          "status": "available",
+          "categoryId": "a70b281e-89f2-4918-8d3c-c63f7d531e2c"
+        },
+        {
+          "id": "1920bdc4-c517-4678-92ce-89a899cd606e",
+          "type": "seat",
+          "number": "5",
+          "status": "available",
+          "categoryId": "a70b281e-89f2-4918-8d3c-c63f7d531e2c"
+        },
+        {
+          "id": "7d4eda21-0470-495e-a971-ada58fc5ed61",
+          "type": "seat",
+          "number": "6",
+          "status": "available",
+          "categoryId": "a70b281e-89f2-4918-8d3c-c63f7d531e2c"
+        },
+        {
+          "id": "4424aefd-6a4e-4a0f-93e9-e5acc272d1a3",
+          "type": "seat",
+          "number": "7",
+          "status": "available",
+          "categoryId": "a70b281e-89f2-4918-8d3c-c63f7d531e2c"
+        },
+        {
+          "id": "88fc7ac9-3096-47ac-b9db-d09716782d35",
+          "type": "seat",
+          "number": "8",
+          "status": "available",
+          "categoryId": "a70b281e-89f2-4918-8d3c-c63f7d531e2c"
+        },
+        {
+          "id": "667fe94c-1f99-400f-a1c9-416d501fa895",
+          "type": "seat",
+          "number": "9",
+          "status": "available",
+          "categoryId": "a70b281e-89f2-4918-8d3c-c63f7d531e2c"
+        },
+        {
+          "id": "1672a669-ed98-4dc2-8cc5-bbd5ccc15344",
+          "type": "seat",
+          "number": "10",
+          "status": "available",
+          "categoryId": "a70b281e-89f2-4918-8d3c-c63f7d531e2c"
+        },
+        {
+          "id": "54ae922d-645d-471d-a572-e4ee43bf951d",
+          "type": "seat",
+          "number": "11",
+          "status": "available",
+          "categoryId": "a70b281e-89f2-4918-8d3c-c63f7d531e2c"
+        },
+        {
+          "id": "5b6476c4-46c3-44f0-af90-5eb940c68e83",
+          "type": "seat",
+          "number": "12",
+          "status": "available",
+          "categoryId": "a70b281e-89f2-4918-8d3c-c63f7d531e2c"
+        },
+        {
+          "id": "6b277be4-f57f-49ef-9cf3-887c6b874048",
+          "type": "seat",
+          "number": "13",
+          "status": "available",
+          "categoryId": "a70b281e-89f2-4918-8d3c-c63f7d531e2c"
+        },
+        {
+          "id": "3f3f8c3c-6e96-4336-955a-ad3b54b01029",
+          "type": "seat",
+          "number": "14",
+          "status": "available",
+          "categoryId": "a70b281e-89f2-4918-8d3c-c63f7d531e2c"
+        }
+      ],
+      "label": "K"
+    }
+  ],
+  "stage": {
+    "color": "#7f1d1d",
+    "label": "STAGE",
+    "position": "top"
+  },
+  "categories": [
+    {
+      "id": "ae752a48-08f0-467e-9487-a4630469abfe",
+      "name": "Standard",
+      "color": "#3b82f6"
+    },
+    {
+      "id": "a70b281e-89f2-4918-8d3c-c63f7d531e2c",
+      "name": "Premium",
+      "color": "#a855f7"
+    },
+    {
+      "id": "1ac01424-8eb3-49b1-a31c-43560b7628ae",
+      "name": "VIP",
+      "color": "#f59e0b"
+    }
+  ],
+  "verticalAisles": [
+    {
+      "id": "b4db3d9e-ed20-47b4-8a8e-9c77f4c19281",
+      "endRowId": null,
+      "startRowId": null,
+      "columnIndex": 2
+    }
+  ]
+}
