@@ -1,4 +1,4 @@
-package org.ticketsouq.eventservice.controller;
+package org.ticketsouq.eventservice.Controller;
 
 import io.swagger.v3.oas.annotations.Hidden;
 import lombok.RequiredArgsConstructor;
@@ -37,9 +37,7 @@ public class LockPrivateController {
     }
 
     @PatchMapping("/sections/{sectionId}/remaining-capacity")
-    public ResponseEntity<Void> updateRemainingCapacity(
-            @PathVariable UUID sectionId,
-            @RequestBody Integer remainingCapacity) {
+    public ResponseEntity<Void> updateRemainingCapacity(@PathVariable UUID sectionId, @RequestBody Integer remainingCapacity) {
         sectionService.updateRemainingCapacity(sectionId, remainingCapacity);
         return ResponseEntity.ok().build();
     }

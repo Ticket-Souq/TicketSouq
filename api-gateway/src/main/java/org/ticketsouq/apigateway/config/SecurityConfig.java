@@ -21,6 +21,7 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
+import org.ticketsouq.apigateway.config.Filters.HeaderForwardingFilter;
 import org.ticketsouq.apigateway.config.Filters.JwtAuthenticationFilter;
 import org.ticketsouq.apigateway.config.Filters.RateLimit.RateLimitFilter;
 import org.ticketsouq.apigateway.config.Filters.SecurityHeadersFilter;
@@ -39,6 +40,7 @@ public class SecurityConfig {
     private final JwtAuthenticationFilter jwtFilter;
     private final RateLimitFilter rateLimitFilter;
     private final SecurityHeadersFilter securityHeadersFilter;
+    private final HeaderForwardingFilter headerForwardingFilter;
     private final AuthCredentialRepository authCredentialRepository;
 
     // ── Security filter chain ──────────────────────────────────────────────
@@ -93,6 +95,7 @@ public class SecurityConfig {
             .addFilterBefore(securityHeadersFilter, UsernamePasswordAuthenticationFilter.class)
             .addFilterBefore(rateLimitFilter, UsernamePasswordAuthenticationFilter.class)
             .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class)
+            .addFilterAfter(headerForwardingFilter, JwtAuthenticationFilter.class)
             .build();
     }
 
@@ -114,7 +117,7 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration config = new CorsConfiguration();
-        config.setAllowedOriginPatterns(List.of("http://localhost:4200", "http://localhost:3000"));
+        config.setAllowedOriginPatterns(List.of("http://localhost:4200", "http://localhost:3000","http://localhost:5173"));
         config.setAllowedMethods(List.of("*"));
         config.setAllowedHeaders(List.of("*"));
         config.setAllowCredentials(true);

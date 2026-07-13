@@ -1,5 +1,6 @@
 package org.ticketsouq.venueservice.services;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
@@ -17,15 +18,11 @@ import java.util.UUID;
 
 @Service
 @Transactional
+@RequiredArgsConstructor
 public class VenueService {
 
     private final VenueRepository venueRepository;
     private final VenueMapper venueMapper;
-
-    public VenueService(VenueRepository venueRepository, VenueMapper venueMapper) {
-        this.venueRepository = venueRepository;
-        this.venueMapper = venueMapper;
-    }
 
     public VenueResponse create(CreateVenueRequest request) {
         Venue venue = venueMapper.toEntity(request);

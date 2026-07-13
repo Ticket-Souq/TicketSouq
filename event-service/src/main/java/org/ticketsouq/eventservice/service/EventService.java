@@ -10,6 +10,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.ticketsouq.eventservice.dto.CreateEventRequest;
 import org.ticketsouq.eventservice.dto.EventRequest;
 import org.ticketsouq.eventservice.dto.EventResponse;
+import org.ticketsouq.eventservice.dto.UpdateEventRequest;
 import org.ticketsouq.eventservice.model.Event;
 import org.ticketsouq.eventservice.model.Seat;
 import org.ticketsouq.eventservice.model.Section;
@@ -139,7 +140,7 @@ public class EventService {
     }
 
     @Transactional
-    public EventResponse update(UUID id, EventRequest request) {
+    public EventResponse update(UUID id, UpdateEventRequest request) {
         Event event = eventRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Event", id));
 

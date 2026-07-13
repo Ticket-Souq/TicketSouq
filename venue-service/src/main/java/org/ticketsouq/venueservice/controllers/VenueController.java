@@ -1,6 +1,7 @@
 package org.ticketsouq.venueservice.controllers;
 
 import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
@@ -16,14 +17,11 @@ import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/v1/venue")
-@CrossOrigin(origins = "*")
+//@CrossOrigin(origins = "*")
+@RequiredArgsConstructor
 public class VenueController {
 
     private final VenueService venueService;
-
-    public VenueController(VenueService venueService) {
-        this.venueService = venueService;
-    }
 
     @PostMapping
     public ResponseEntity<VenueResponse> create(@Valid @RequestBody CreateVenueRequest request) {

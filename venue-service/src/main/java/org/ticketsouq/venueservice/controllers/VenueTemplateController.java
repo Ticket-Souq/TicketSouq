@@ -1,6 +1,7 @@
 package org.ticketsouq.venueservice.controllers;
 
 import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -21,14 +22,11 @@ import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/v1/venue/{venueId}/templates")
-@CrossOrigin(origins = "*")
+//@CrossOrigin(origins = "*")
+@RequiredArgsConstructor
 public class VenueTemplateController {
 
     private final VenueTemplateService templateService;
-
-    public VenueTemplateController(VenueTemplateService templateService) {
-        this.templateService = templateService;
-    }
 
     @GetMapping
     public ResponseEntity<List<VenueTemplateResponse>> listTemplates(@PathVariable String venueId) {
