@@ -36,8 +36,13 @@ public class Event {
     @Column(columnDefinition = "TEXT")
     private String description;
 
-    @Column(name = "venue_id")
-    private UUID venueId;
+    @Column(name = "venue_id_temp")
+    private UUID venueId_temp;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JsonIgnore
+    @Builder.Default
+    private event_categories event_categories;
 
     @Column(name = "organization_id")
     private UUID organizationId;
