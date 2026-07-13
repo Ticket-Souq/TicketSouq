@@ -20,7 +20,7 @@ public class EventSearchService {
     private final EventRepository eventRepository;
     private final ElasticsearchEventRepository elasticsearchEventRepository;
 
-    public List<EventResponse> searchByTitleLike(String title, Pageable pageable) {
+    public List<EventResponse> searchByTitlePS(String title, Pageable pageable) {
         return eventRepository.findByTitleContainingIgnoreCase(title,pageable).stream()
                 .map(EventResponse::from)
                 .toList();
@@ -43,7 +43,7 @@ public class EventSearchService {
                 .id(event.getId())
                 .title(event.getTitle())
                 .description(event.getDescription())
-                .venueId(event.getVenueId())
+                .venueId(event.getVenueId_temp())
                 .organizationId(event.getOrganizationId())
                 .createdBy(event.getCreatedBy())
                 .posterUrl(event.getPosterUrl())
