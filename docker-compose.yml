@@ -30,7 +30,7 @@ services:
     volumes:
       - postgres_notification_data:/var/lib/postgresql
     networks:
-      - Ticket-Souq-Microservice'
+      - Ticket-Souq-Microservice
 
   venue-db:
     image: postgres

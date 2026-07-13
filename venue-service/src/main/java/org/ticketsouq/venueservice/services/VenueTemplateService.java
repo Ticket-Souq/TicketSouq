@@ -1,5 +1,6 @@
 package org.ticketsouq.venueservice.services;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -17,19 +18,12 @@ import java.util.UUID;
 
 @Service
 @Transactional
+@RequiredArgsConstructor
 public class VenueTemplateService {
 
     private final VenueTemplateRepository templateRepository;
     private final VenueRepository venueRepository;
     private final VenueTemplateMapper templateMapper;
-
-    public VenueTemplateService(VenueTemplateRepository templateRepository,
-                                VenueRepository venueRepository,
-                                VenueTemplateMapper templateMapper) {
-        this.templateRepository = templateRepository;
-        this.venueRepository = venueRepository;
-        this.templateMapper = templateMapper;
-    }
 
     @Transactional(readOnly = true)
     public List<VenueTemplateResponse> listByVenue(UUID venueId) {
