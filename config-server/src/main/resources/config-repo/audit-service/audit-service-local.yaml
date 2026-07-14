@@ -1,0 +1,6 @@
+database:
+  host: localhost
+  port: 5440
+  name: audit_db
+  username: admin
+  password: admin

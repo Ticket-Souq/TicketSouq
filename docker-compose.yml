@@ -1,8 +1,8 @@
-#x-postgres: &postgres
-#  image: postgres
-#  restart: unless-stopped
-#  networks:
-#    - Ticket-Souq-Microservice
+x-postgres: &postgres
+  image: postgres
+  restart: unless-stopped
+  networks:
+    - Ticket-Souq-Microservice
 
 services:
 
@@ -104,18 +104,18 @@ services:
 #    volumes:
 #      - postgres_notification_data:/var/lib/postgresql
 
-#  audit-db:
-#    <<: *postgres
-#    container_name: audit-db
-#    environment:
-#      POSTGRES_USER: admin
-#      POSTGRES_PASSWORD: admin
-#      POSTGRES_DB: audit_db
-#    ports:
-#      - "5440:5432"
-#    volumes:
-#      - postgres_audit_data:/var/lib/postgresql
-#
+  audit-db:
+    <<: *postgres
+    container_name: audit-db
+    environment:
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: admin
+      POSTGRES_DB: audit_db
+    ports:
+      - "5440:5432"
+    volumes:
+      - postgres_audit_data:/var/lib/postgresql
+
 #  analytics-db:
 #    <<: *postgres
 #    container_name: analytics-db
@@ -305,8 +305,8 @@ services:
       retries: 8
       start_period: 30s
 
-#volumes:
-#  postgres_user_data:
+volumes:
+  postgres_user_data:
 #  postgres_auth_data:
 #  postgres_event_data:
 #  postgres_venue_data:
@@ -314,7 +314,7 @@ services:
 #  postgres_reservation_data:
 #  postgres_payment_data:
 #  postgres_notification_data:
-#  postgres_audit_data:
+  postgres_audit_data:
 #  postgres_analytics_data:
 #  postgres_availability_locking_data:
 #  kafka_data:
