@@ -50,33 +50,6 @@ public class UserPublicController {
 
 
     // ── Account generation (org head) ─────────────────────────────────────────
-        ///  ASK
-    // TODO implement account generation for org:
-    //  1. Make rule only ORG_HEAD can call this
-    //  2. Call authServiceClient.generateAccounts(req) to create AuthCredentials
-    //     → returns List<GeneratedAccount> with userId, email, password, role
-    //  3. For each generated account, create a Member record in the org
-    //     (or this can be handled by the existing /private/user/generate-members)
-    //  4. Return the credentials so the org head can distribute them
-
-//    @PostMapping("/org/generate-accounts")
-//    public ResponseEntity<List<GeneratedAccount>> generateAccounts(@RequestBody GenerateAccountRequest req) {
-//        List<GeneratedAccount> accounts = authServiceClient.generateAccounts(req).getBody();
-//        // memberService.createMembersFromGeneratedAccounts(orgHeadId, accounts);
-//        // return ResponseEntity.ok(accounts);
-//        return ResponseEntity.ok(List.of());
-//    }
-
-
-    /// ── Account generation (org head) ─────────────────────────────────────────
-
-    /**
-     * ⚠️ ARCHITECTURAL WARNING: CIRCULAR DEPENDENCY RISK
-     * This endpoint calls api-gateway (authServiceClient.generateAccounts),
-     * and the api-gateway internally calls back to user-service (/private/user/generate-members).
-     * This creates a Ping-Pong effect (User -> Gateway -> User) which can lead to
-     * thread starvation and distributed deadlocks under heavy load.
-     */
 
     @PostMapping("/org/generate-accounts")
     public ResponseEntity<List<GeneratedAccount>> generateAccounts(
