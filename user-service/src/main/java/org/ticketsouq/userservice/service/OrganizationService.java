@@ -2,12 +2,12 @@ package org.ticketsouq.userservice.service;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.ticketsouq.sharedmodule.AuditService.events.AuditEvent;
 import org.ticketsouq.sharedmodule.GeneralExceptions.BusinessException;
-import org.ticketsouq.userservice.client.AuditServiceClient;
 import org.ticketsouq.userservice.model.MemberRole;
 import org.ticketsouq.userservice.model.OrgMember;
 import org.ticketsouq.userservice.model.OrgStatus;
@@ -23,7 +23,7 @@ import java.util.UUID;
 public class OrganizationService {
 
     private final OrgMemberRepository orgMemberRepository;
-    private final AuditServiceClient auditServiceClient;
+    private final ApplicationEventPublisher applicationEventPublisher;
 
     @Transactional
     public void changeStatus(UUID orgHeadId, OrgStatus newStatus, UUID adminId) {
@@ -33,19 +33,10 @@ public class OrganizationService {
         Organization org = head.getOrganization();
         org.setStatus(newStatus);
 
-        AuditEvent auditEvent = new AuditEvent(
+        applicationEventPublisher.publishEvent(new AuditEvent(
             "Change Organization [" + org.getName() + "] Status to " + newStatus.name(),
-            adminId,
-            "Admin Decision",
-            Instant.now()
-        );
-
-
-        try {
-            auditServiceClient.logEvent(auditEvent);
-        } catch (Exception e) {
-            log.error("Failed to send Audit Event: {}", e.getMessage());
-        }
+            adminId, "Admin Decision", Instant.now()
+        ));
 
         log.info("Admin {} changed status of Organization {} to {}", adminId, org.getName(), newStatus);
     }
