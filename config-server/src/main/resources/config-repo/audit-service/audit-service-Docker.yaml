@@ -1,6 +1,0 @@
-database:
-  host: audit-db
-  port: 5432
-  name: audit_db
-  username: admin
-  password: admin
