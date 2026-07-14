@@ -31,8 +31,6 @@ public class Organization {
 
     @PrePersist
     void onCreate() {
-        if (this.createdAt == null) {
             this.createdAt = Instant.now();
-        }
     }
 }

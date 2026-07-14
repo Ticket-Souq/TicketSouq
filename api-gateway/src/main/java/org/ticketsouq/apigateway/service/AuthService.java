@@ -263,10 +263,8 @@ public class AuthService {
     }
 
     @Transactional
-    public List<GeneratedAccount> generateAccountsForOrg(GenerateAccountRequest req) {
+    public List<GeneratedAccount> generateAccountsForOrg(UUID orgHeadUserId, GenerateAccountRequest req) {
         if (req.consumerCount()==0 && req.agentCount()==0) return List.of();
-
-        UUID orgHeadUserId = UUIDUtils.parse(req.orgId());
         List<GeneratedAccount> accounts = new ArrayList<>();
         List<GenerateMembersRequest.MemberToCreate> members = new ArrayList<>();
 

@@ -3,15 +3,17 @@ package org.ticketsouq.apigateway.controller;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import org.ticketsouq.apigateway.dto.*;
-import org.ticketsouq.apigateway.service.AuthService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
+import org.ticketsouq.apigateway.dto.*;
+import org.ticketsouq.apigateway.service.AuthService;
+import org.ticketsouq.sharedmodule.ApiGateway.dto.GenerateAccountRequest;
+import org.ticketsouq.sharedmodule.ApiGateway.dto.GeneratedAccount;
 
-import java.net.URI;
+import java.util.List;
 import java.util.UUID;
 
 @RestController
@@ -25,7 +27,7 @@ public class AuthController {
     // ── REGISTRATION ──────────────────────────────────────────────────────────
 
     @PostMapping("/register")
-    public ResponseEntity<Void> register(@Valid @RequestBody RegisterRequest req){
+    public ResponseEntity<Void> register(@Valid @RequestBody RegisterRequest req) {
         authService.register(req);
         return ResponseEntity.status(HttpStatus.CREATED).build();
     }
@@ -104,6 +106,14 @@ public class AuthController {
     public ResponseEntity<Void> deactivateAccount(@AuthenticationPrincipal String userId) {
         authService.deactivateAccount(UUID.fromString(userId));
         return ResponseEntity.noContent().build();
+    }
+
+    // ── ORG ACCOUNT GENERATION ────────────────────────────────────────────────
+
+    @PostMapping("/org/generate-accounts")
+    @PreAuthorize("hasAuthority('ORG_HEAD')")
+    public ResponseEntity<List<GeneratedAccount>> generateAccounts(@AuthenticationPrincipal String orgHeadUserId, @RequestBody GenerateAccountRequest req) {
+        return ResponseEntity.ok(authService.generateAccountsForOrg(UUID.fromString(orgHeadUserId), req));
     }
 
 }
