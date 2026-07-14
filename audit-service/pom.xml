@@ -30,7 +30,7 @@
         <dependency>
             <groupId>org.TicketSouq</groupId>
             <artifactId>shared-module</artifactId>
-            <version>${project.version}</version>
+            <version>1.0-SNAPSHOT</version>
         </dependency>
     </dependencies>
 
