@@ -6,7 +6,7 @@ import org.ticketsouq.eventservice.service.Search.ESSearchService;
 import org.ticketsouq.eventservice.service.Search.PostgresSearchService;
 import org.ticketsouq.eventservice.service.Search.SearchService;
 
-@Component
+//@Component
 public class Searchbean {
 
     @Bean
