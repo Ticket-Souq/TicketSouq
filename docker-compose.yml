@@ -17,7 +17,7 @@ services:
     networks:
       - Ticket-Souq-Microservice
   user-db:
-    <<: *postgres
+    image: postgres
     container_name: user-db
     environment:
       POSTGRES_USER: admin
@@ -27,7 +27,8 @@ services:
       - "5433:5432"
     volumes:
       - postgres_user_data:/var/lib/postgresql
-
+    networks:
+      - Ticket-Souq-Microservice
   notification-db:
     image: postgres
     container_name: notification-db
