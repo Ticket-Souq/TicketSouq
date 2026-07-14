@@ -4,10 +4,10 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.ticketsouq.auditservice.dto.AuditLogResponse;
-import org.ticketsouq.auditservice.exception.AuditLogNotFoundException;
 import org.ticketsouq.auditservice.mapper.AuditLogMapper;
 import org.ticketsouq.auditservice.repository.AuditLogRepository;
 import org.ticketsouq.auditservice.service.AuditService;
+import org.ticketsouq.sharedmodule.GeneralExceptions.ResourceNotFoundException;
 
 import java.time.Instant;
 import java.util.List;
@@ -24,39 +24,39 @@ public class AuditServiceImpl implements AuditService {
     @Override
     public AuditLogResponse findById(UUID id) {
         return repository.findById(id)
-                .map(mapper::toResponse)
-                .orElseThrow(() -> new AuditLogNotFoundException(id));
+            .map(mapper::toResponse)
+            .orElseThrow(() -> new ResourceNotFoundException("Audit", id));
     }
 
     @Override
     public List<AuditLogResponse> findByMadeById(UUID madeById) {
         return repository.findByMadeByIdOrderByMadeAtDesc(madeById)
-                .stream()
-                .map(mapper::toResponse)
-                .toList();
+            .stream()
+            .map(mapper::toResponse)
+            .toList();
     }
 
     @Override
     public List<AuditLogResponse> findByAction(String action) {
         return repository.findByActionOrderByMadeAtDesc(action)
-                .stream()
-                .map(mapper::toResponse)
-                .toList();
+            .stream()
+            .map(mapper::toResponse)
+            .toList();
     }
 
     @Override
     public List<AuditLogResponse> findByDateRange(Instant from, Instant to) {
         return repository.findByMadeAtBetweenOrderByMadeAtDesc(from, to)
-                .stream()
-                .map(mapper::toResponse)
-                .toList();
+            .stream()
+            .map(mapper::toResponse)
+            .toList();
     }
 
     @Override
     public List<AuditLogResponse> findAll() {
         return repository.findAll()
-                .stream()
-                .map(mapper::toResponse)
-                .toList();
+            .stream()
+            .map(mapper::toResponse)
+            .toList();
     }
 }

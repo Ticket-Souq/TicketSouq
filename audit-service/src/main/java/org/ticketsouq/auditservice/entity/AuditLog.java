@@ -38,7 +38,7 @@ public class AuditLog {
     @Column(nullable = false, updatable = false)
     private Instant madeAt;
 
-    public static AuditLog create(String action, UUID madeById, String reason, Instant madeAt) {
+        public static AuditLog create(String action, UUID madeById, String reason, Instant madeAt) {
         return new AuditLog(null, action, madeById, reason, madeAt);
-    }
+        }
 }
