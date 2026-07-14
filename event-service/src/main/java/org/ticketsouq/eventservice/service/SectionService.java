@@ -15,7 +15,6 @@ import org.ticketsouq.eventservice.repository.SectionRepository;
 import org.ticketsouq.sharedmodule.AuditService.events.AuditEvent;
 import org.ticketsouq.sharedmodule.GeneralExceptions.BadRequestException;
 import org.ticketsouq.sharedmodule.GeneralExceptions.ConflictException;
-import org.ticketsouq.sharedmodule.GeneralExceptions.ForbiddenException;
 import org.ticketsouq.sharedmodule.GeneralExceptions.ResourceNotFoundException;
 
 import java.time.Instant;
@@ -49,7 +48,20 @@ public class SectionService {
     }
 
     private void updateZoneSection(Section section, UpdateSectionRequest request) {
-        if (request.name() != null) section.setName(request.name());
+        if (request.name() != null
+            && !request.name().equals(section.getName())) {
+
+            if (sectionRepository.existsByEventIdAndName(
+                section.getEvent().getId(),
+                request.name())) {
+
+                throw new ConflictException(
+                    "A section with this name already exists."
+                );
+            }
+
+            section.setName(request.name());
+        }
 
         if (request.price() != null) section.setPrice(request.price());
 

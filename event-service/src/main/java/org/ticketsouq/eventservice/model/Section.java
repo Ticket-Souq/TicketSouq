@@ -3,7 +3,6 @@ package org.ticketsouq.eventservice.model;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.*;
-import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
@@ -14,7 +13,15 @@ import java.util.List;
 import java.util.UUID;
 
 @Entity
-@Table(name = "sections")
+@Table(
+    name = "sections",
+    uniqueConstraints = {
+        @UniqueConstraint(
+            columnNames = {"event_id", "name"}
+        )
+    }
+
+)
 @Getter
 @Setter
 @NoArgsConstructor
@@ -45,7 +52,7 @@ public class Section {
     @LastModifiedDate
     private LocalDateTime updatedAt;
 
-    @OneToMany(mappedBy = "section", fetch = FetchType.LAZY,cascade = CascadeType.ALL, orphanRemoval = true)
+    @OneToMany(mappedBy = "section", fetch = FetchType.LAZY, cascade = CascadeType.ALL, orphanRemoval = true)
     @JsonIgnore
     @Builder.Default
     private List<Seat> seats = new ArrayList<>();
