@@ -7,6 +7,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.ticketsouq.sharedmodule.ApiGateway.dto.CreateUserRequest;
 import org.ticketsouq.sharedmodule.ApiGateway.dto.GenerateMembersRequest;
+import org.ticketsouq.userservice.service.UserService;
 
 import java.util.UUID;
 
@@ -15,6 +16,7 @@ import java.util.UUID;
 @RequiredArgsConstructor
 @Hidden
 public class UserPrivateController {
+    private final UserService userService;
 
     // ── Register user (called by api-gateway AuthService.register) ────────────
 
@@ -34,9 +36,8 @@ public class UserPrivateController {
     //  On any failure → throw BusinessException
     @PostMapping
     public ResponseEntity<Void> register(@RequestBody CreateUserRequest request) {
-        // User user = userService.createUser(request);
-        // return ResponseEntity.status(HttpStatus.CREATED).build();
-        return ResponseEntity.ok().build();
+        userService.register(request);
+        return ResponseEntity.status(HttpStatus.CREATED).build();
     }
 
     // ── Banned-org check (called by api-gateway AuthService.assertLoginAllowed) ─
@@ -48,9 +49,7 @@ public class UserPrivateController {
     //  4. Return false if the user has no org or the org is not banned
     @GetMapping("/isbanned")
     public ResponseEntity<Boolean> isBelongToBannedOrg(@RequestParam UUID userId) {
-        // boolean banned = userService.isBelongToBannedOrg(userId);
-        // return ResponseEntity.ok(banned);
-        return ResponseEntity.ok(false);
+        return ResponseEntity.ok(userService.isBelongToBannedOrg(userId));
     }
 
     // ── Generate org members (called by api-gateway AuthService.generateAccountsForOrg) ─
@@ -65,9 +64,12 @@ public class UserPrivateController {
     //     b. Create a Member record (userId, orgId, role) linking them to the org
     //  3. Return 200 OK when all members are created
     //  4. On any failure → throw BusinessException (the caller should roll back)
+
+    // Gateway calls this AFTER creating passwords, to save the profiles here
     @PostMapping("/generate-members")
     public ResponseEntity<Void> generateMembers(@RequestBody GenerateMembersRequest request) {
-        // userService.generateMembers(request);
+        userService.generateMembers(request);
         return ResponseEntity.ok().build();
     }
+    ///  add endpoint to find userby id
 }
