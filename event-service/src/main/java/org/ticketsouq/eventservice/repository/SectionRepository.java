@@ -8,6 +8,4 @@ import java.util.UUID;
 
 public interface SectionRepository extends JpaRepository<Section, UUID> {
 
-    List<Section> findByEvent_Id(UUID eventId);
-
 }

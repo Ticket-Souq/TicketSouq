@@ -1059,17 +1059,20 @@
     {
       "id": "ae752a48-08f0-467e-9487-a4630469abfe",
       "name": "Standard",
-      "color": "#3b82f6"
+      "color": "#3b82f6",
+      "capacity": "100"
     },
     {
       "id": "a70b281e-89f2-4918-8d3c-c63f7d531e2c",
       "name": "Premium",
-      "color": "#a855f7"
+      "color": "#a855f7",
+      "capacity": "100"
     },
     {
       "id": "1ac01424-8eb3-49b1-a31c-43560b7628ae",
       "name": "VIP",
-      "color": "#f59e0b"
+      "color": "#f59e0b",
+      "capacity": "100"
     }
   ],
   "verticalAisles": [

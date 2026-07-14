@@ -4,15 +4,22 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.Sort;
-import org.springframework.data.web.PageableDefault;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import org.ticketsouq.eventservice.dto.*;
+import org.ticketsouq.eventservice.dto.FrontendMap.CreateEventWithLayoutRequest;
+import org.ticketsouq.eventservice.dto.FrontendMap.EventCardResponse;
+import org.ticketsouq.eventservice.dto.FrontendMap.EventLayoutResponse;
+import org.ticketsouq.eventservice.dto.SeatResponse;
+import org.ticketsouq.eventservice.dto.SectionResponse;
+import org.ticketsouq.eventservice.dto.UpdateSeatStatusRequest;
+import org.ticketsouq.eventservice.dto.UpdateSectionRequest;
 import org.ticketsouq.eventservice.service.EventService;
+import org.ticketsouq.eventservice.service.Search.SearchService;
 import org.ticketsouq.eventservice.service.SeatService;
 import org.ticketsouq.eventservice.service.SectionService;
 
+import java.util.List;
 import java.util.UUID;
 
 @RestController
@@ -20,59 +27,45 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class EventController {
     private final EventService eventService;
+    private final SearchService eventSearchService;
     private final SectionService sectionService;
     private final SeatService seatService;
 
-    @GetMapping
-    public ResponseEntity<Page<EventCardResponse>> getPublicEvents(
-        @PageableDefault(
-            sort = "startDate",
-            direction = Sort.Direction.ASC
-        ) Pageable pageable) {
+    @PostMapping
+    public ResponseEntity<Void> create(@RequestHeader("X-User-Id") UUID userId, @RequestBody CreateEventWithLayoutRequest request) {
+        eventService.create(userId, request);
+        return ResponseEntity.status(HttpStatus.CREATED).build();
+    }
 
-        return ResponseEntity.ok(eventService.getPublicEvents(pageable));
+    @GetMapping
+    public ResponseEntity<Page<EventCardResponse>> getEvents(@RequestHeader("X-User-Id") UUID userId, Pageable pageable) {
+        return ResponseEntity.ok(eventService.getEvents(userId, pageable));
+    }
+
+    @GetMapping("/{id}")
+    public ResponseEntity<EventLayoutResponse> getById(@PathVariable UUID id) {
+        return ResponseEntity.ok(eventService.getById(id));
     }
 
     @PatchMapping("/sections/{sectionId}")
-    public ResponseEntity<SectionResponse> updateSection(
-        @PathVariable UUID sectionId,
-        @Valid @RequestBody UpdateSectionRequest request,
-        @RequestHeader("X-User-Id") UUID userId
-    ) {
-
-        return ResponseEntity.ok(
-            sectionService.updateSection(
-                sectionId,
-                request,
-                userId
-            )
-        );
+    public ResponseEntity<SectionResponse> updateSection(@PathVariable UUID sectionId, @Valid @RequestBody UpdateSectionRequest request, @RequestHeader("X-User-Id") UUID userId) {
+        return ResponseEntity.ok(sectionService.updateSection(sectionId, request, userId));
     }
 
-    @DeleteMapping("/{eventId}")
-    public ResponseEntity<Void> cancelEvent(
-        @PathVariable UUID eventId,
-        @RequestHeader("X-User-Id") UUID userId
-    ) {
-
+    @DeleteMapping("/{eventId}") // must be org_head / admin
+    public ResponseEntity<Void> cancelEvent(@PathVariable UUID eventId, @RequestHeader("X-User-Id") UUID userId) {
         eventService.cancelEvent(eventId, userId);
-
         return ResponseEntity.noContent().build();
     }
-    @PatchMapping("/seats/{seatId}/status")
-    public ResponseEntity<SeatResponse> updateOrganizerSeatStatus(
-        @PathVariable UUID seatId,
-        @Valid @RequestBody UpdateSeatStatusRequest request,
-        @RequestHeader("X-User-Id") UUID userId
-    ) {
 
-        return ResponseEntity.ok(
-            seatService.updateOrganizerSeatStatus(
-                seatId,
-                request,
-                userId
-            )
-        );
+    @GetMapping("/search")
+    public ResponseEntity<List<EventCardResponse>> searchByTitle(@RequestParam String title, Pageable pageable) {
+        return ResponseEntity.ok(eventSearchService.searchByTitle(title, pageable));
+    }
+
+    @PatchMapping("/seats/{seatId}/status") // must be org_head / agent
+    public ResponseEntity<SeatResponse> updateOrganizerSeatStatus(@PathVariable UUID seatId, @Valid @RequestBody UpdateSeatStatusRequest request, @RequestHeader("X-User-Id") UUID userId) {
+        return ResponseEntity.ok(seatService.updateOrganizerSeatStatus(seatId, request, userId));
     }
 
 }

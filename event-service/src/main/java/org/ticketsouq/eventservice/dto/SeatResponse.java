@@ -7,13 +7,9 @@ import org.ticketsouq.eventservice.model.enums.SeatStatus;
 import java.util.UUID;
 
 public record SeatResponse(
-
     UUID id,
-
     UUID sectionId,
-
     SeatStatus status
-
 ) {
     public static SeatResponse from(Seat seat) {
         return new SeatResponse(

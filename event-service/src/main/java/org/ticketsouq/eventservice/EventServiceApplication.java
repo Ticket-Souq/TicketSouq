@@ -12,7 +12,6 @@ import org.springframework.scheduling.annotation.EnableScheduling;
 @EnableScheduling
 @EnableKafka
 @EnableFeignClients
-
 public class EventServiceApplication {
 
     public static void main(String[] args) {

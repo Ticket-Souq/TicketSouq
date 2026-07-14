@@ -6,8 +6,8 @@ import java.util.UUID;
 public record EventCreatedEvent(
         UUID eventId,
         String title,
-        UUID organizationId,
-        String status,
+        String organization,
+        UUID createdby,
         String bookingModel,
         Instant startDateTime,
         Instant endDateTime
