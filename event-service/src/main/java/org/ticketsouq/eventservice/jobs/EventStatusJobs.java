@@ -12,23 +12,23 @@ import org.ticketsouq.eventservice.service.EventService;
 @RequiredArgsConstructor
 public class EventStatusJobs {
 
-    private final EventService eventService;
-
-    @Scheduled(fixedRate = 60_000)
-    @Transactional
-    public void activateScheduledEvents() {
-        int count = eventService.activateScheduledEvents();
-        if (count > 0) {
-            log.info("Activated {} scheduled events", count);
-        }
-    }
-
-    @Scheduled(fixedRate = 60_000)
-    @Transactional
-    public void completeExpiredEvents() {
-        int count = eventService.completeExpiredEvents();
-        if (count > 0) {
-            log.info("Completed {} expired events", count);
-        }
-    }
+//    private final EventService eventService;
+//
+//    @Scheduled(fixedRate = 60_000)
+//    @Transactional
+//    public void activateScheduledEvents() {
+//        int count = eventService.activateScheduledEvents();
+//        if (count > 0) {
+//            log.info("Activated {} scheduled events", count);
+//        }
+//    }
+//
+//    @Scheduled(fixedRate = 60_000)
+//    @Transactional
+//    public void completeExpiredEvents() {
+//        int count = eventService.completeExpiredEvents();
+//        if (count > 0) {
+//            log.info("Completed {} expired events", count);
+//        }
+//    }
 }

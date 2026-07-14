@@ -29,7 +29,7 @@ public class EventFrontendMapper {
         return Event.builder()
                 .title(request.title())
                 .description(request.description())
-                .venueId(request.venueId())
+//                .venueId(request.venueId())
                 .organizationId(request.organizationId())
                 .createdBy(request.createdBy())
                 .PosterUrl(request.posterUrl())
@@ -92,7 +92,7 @@ public class EventFrontendMapper {
                         .col(col)
                         .lable(lable)
                         .status(mapStatus(cell.status()))
-                        .price(null)
+//                        .price(null)
                         .build();
                 seats.add(seat);
             }

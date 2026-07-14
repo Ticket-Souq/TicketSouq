@@ -17,6 +17,7 @@ services:
     networks:
       - Ticket-Souq-Microservice
 
+
   notification-db:
     image: postgres
     container_name: notification-db
@@ -44,7 +45,22 @@ services:
       - "5435:5432"
     volumes:
       - postgres_venue_data:/var/lib/postgresql
-
+    networks:
+      - Ticket-Souq-Microservice
+  event-db:
+    image: postgres
+    container_name: event-db
+    environment:
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: admin
+      POSTGRES_DB: event_db
+    restart: unless-stopped
+    ports:
+      - "5434:5432"
+    volumes:
+      - postgres_event_data:/var/lib/postgresql
+    networks:
+      - Ticket-Souq-Microservice
 
   # ─── Messaging ──────────────────────────────────────────────
 
@@ -121,8 +137,8 @@ services:
     ports:
       - "3200:3200"
       - "9411:9411"   # zipkin listen port
-#      - "4317:4317"   # OTLP gRPC
-#      - "4318:4318"   # OTLP HTTP — services send directly here
+    #      - "4317:4317"   # OTLP gRPC
+    #      - "4318:4318"   # OTLP HTTP — services send directly here
     networks:
       - Ticket-Souq-Microservice
 
