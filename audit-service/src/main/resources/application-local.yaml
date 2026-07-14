@@ -1,3 +1,21 @@
 spring:
   config:
     import: "configserver:http://localhost:8888"
+
+  datasource:
+    url: jdbc:postgresql://localhost:5440/audit_db
+    username: admin
+    password: admin
+    driver-class-name: org.postgresql.Driver
+
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+        format_sql: true
+
+  kafka:
+    bootstrap-servers: localhost:29092

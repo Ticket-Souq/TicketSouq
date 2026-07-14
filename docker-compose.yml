@@ -56,7 +56,46 @@ services:
       - "5435:5432"
     volumes:
       - postgres_venue_data:/var/lib/postgresql
+    networks:
+      - Ticket-Souq-Microservice
 
+  audit-db:
+    image: postgres
+    container_name: audit-db
+    environment:
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: admin
+      POSTGRES_DB: audit_db
+    ports:
+      - "5440:5432"
+    volumes:
+      - postgres_audit_data:/var/lib/postgresql
+    networks:
+      - Ticket-Souq-Microservice
+
+#  analytics-db:
+#    <<: *postgres
+#    container_name: analytics-db
+#    environment:
+#      POSTGRES_USER: admin
+#      POSTGRES_PASSWORD: admin
+#      POSTGRES_DB: analytics_db
+#    ports:
+#      - "5441:5432"
+#    volumes:
+#      - postgres_analytics_data:/var/lib/postgresql
+#
+#  availability-locking-db:
+#    <<: *postgres
+#    container_name: availability-locking-db
+#    environment:
+#      POSTGRES_USER: admin
+#      POSTGRES_PASSWORD: admin
+#      POSTGRES_DB: availability_locking_db
+#    ports:
+#      - "5442:5432"
+#    volumes:
+#      - postgres_availability_locking_data:/var/lib/postgresql
 
   # ─── Messaging ──────────────────────────────────────────────
 
