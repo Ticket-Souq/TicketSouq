@@ -12,6 +12,7 @@ import org.ticketsouq.sharedmodule.ApiGateway.event.PasswordResetEvent;
 import org.ticketsouq.sharedmodule.AuditService.events.AuditEvent;
 import org.ticketsouq.sharedmodule.utils.LogUtils;
 
+import static org.ticketsouq.sharedmodule.Constants.SERVICE_NAMES.API_GATEWAY;
 import static org.ticketsouq.sharedmodule.Constants.TOPIC_NAMES.*;
 
 @Component
@@ -23,25 +24,25 @@ public class AuthEventPublisher {
 
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     public void sendVerificationEmail(EmailVerificationEvent event) {
-        LogUtils.log(USER_EMAIL_VERIFICATION, event.userId());
+        LogUtils.logEventPublished(API_GATEWAY,USER_EMAIL_VERIFICATION);
         kafkaTemplate.send(USER_EMAIL_VERIFICATION, event.userId().toString(), event);
     }
 
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     public void sendPasswordResetEmail(PasswordResetEvent event) {
-        LogUtils.log(USER_PASSWORD_RESET, event.userId());
+        LogUtils.logEventPublished(API_GATEWAY,USER_PASSWORD_RESET);
         kafkaTemplate.send(USER_PASSWORD_RESET, event.userId().toString(), event);
     }
 
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     public void sendAuditEvent(AuditEvent event) {
-        LogUtils.log(AUDIT_EVENT, event.madeById());
+        LogUtils.logEventPublished(API_GATEWAY,AUDIT_EVENT);
         kafkaTemplate.send(AUDIT_EVENT, event.madeById().toString(), event);
     }
 
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     public void sendAccountsGeneratedEmail(AccountsGeneratedEvent event) {
-        LogUtils.log(ACCOUNTS_GENERATED, event.orgHeadUserId());
+        LogUtils.logEventPublished(API_GATEWAY,ACCOUNTS_GENERATED);
         kafkaTemplate.send(ACCOUNTS_GENERATED, event.orgHeadUserId().toString(), event);
     }
 

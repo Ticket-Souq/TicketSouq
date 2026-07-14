@@ -9,14 +9,12 @@ public final class LogUtils {
 
     private LogUtils() {}
 
-    public static void log(String topic, UUID userId){
-        log.info("Publishing {} event for userId={}", topic, userId);
+    public static void logEventPublished(String Service ,String topic){
+        log.info("Service {} Publishing {} event ", Service, topic);
     }
 
-//    public static void logReceived(String topic, UUID userId){
-//        log.info("Received {} for event for userId={}", topic, userId);
-//    }
-//
-//    log.info("Received {} for titleId={} rating={}", RATING_AGGREGATED_TOPIC, event.titleId(), event.newRating());
+    public static void logEventConsumed(String Service ,String topic){
+        log.info("Service {} Received {} event", Service , topic);
+    }
 
 }

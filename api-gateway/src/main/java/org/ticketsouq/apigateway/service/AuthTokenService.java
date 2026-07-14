@@ -164,7 +164,7 @@ public class AuthTokenService {
 
         UUID oldSessionId = UUID.fromString(claims.get("sid", String.class));
         RefreshToken oldSession = refreshTokenRepository.findRefreshTokenBySessionId(oldSessionId)
-            .orElseThrow(() -> new BusinessException("Invalid refresh token, please log in again", HttpStatus.UNAUTHORIZED));
+            .orElseThrow(() -> new BusinessException("Invalid refresh token, please logEventPublished in again", HttpStatus.UNAUTHORIZED));
 
         if (oldSession.isRevoked()) {
             UUID userId = oldSession.getUserId();
@@ -174,7 +174,7 @@ public class AuthTokenService {
         }
 
         if (oldSession.getExpiryDate().isBefore(Instant.now())) {
-            throw new BusinessException("Refresh token expired, please log in again", HttpStatus.UNAUTHORIZED);
+            throw new BusinessException("Refresh token expired, please logEventPublished in again", HttpStatus.UNAUTHORIZED);
         }
 
         oldSession.setRevoked(true);
