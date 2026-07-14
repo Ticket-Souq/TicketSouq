@@ -47,7 +47,7 @@ public class Event {
     @Column(name = "createdBy_id")
     private UUID createdBy;
 
-    @Column(nullable = false)
+    @Column(nullable = true) //TODO return this
     private String PosterUrl;
 
     @Enumerated(EnumType.STRING)
@@ -58,10 +58,10 @@ public class Event {
     @Column(nullable = false)
     private BookingModel bookingModel;
 
-    @Column(name = "start_date_time", nullable = false)
+    @Column(name = "start_date_time", nullable = true)
     private Instant startDate;
 
-    @Column(name = "end_date_time", nullable = false)
+    @Column(name = "end_date_time", nullable = true)
     private Instant finishDate;
 
     @OneToMany(mappedBy = "event", fetch = FetchType.LAZY,cascade = CascadeType.ALL, orphanRemoval = true)
