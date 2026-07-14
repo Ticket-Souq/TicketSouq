@@ -116,8 +116,6 @@ public class UserService {
 
     @Transactional(readOnly = true)
     public String getOrganizationNameByUserId(UUID userId) {
-        return orgMemberRepository.findById(userId)
-            .map(member -> member.getOrganization().getName())
-            .orElse(null);
+        return orgMemberRepository.findOrganizationNameByUserId(userId).orElse(null);
     }
 }
