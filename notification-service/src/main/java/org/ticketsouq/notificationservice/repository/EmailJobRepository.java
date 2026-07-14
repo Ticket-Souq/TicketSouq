@@ -10,5 +10,6 @@ import java.util.UUID;
 
 @Repository
 public interface EmailJobRepository extends JpaRepository<EmailJob, UUID> {
+
     List<EmailJob> findTop100ByStatusOrderByCreatedAtAsc(EmailJobStatus status);
 }

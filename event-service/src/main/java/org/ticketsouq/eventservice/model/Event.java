@@ -9,7 +9,6 @@ import org.ticketsouq.eventservice.model.enums.EventStatus;
 
 import java.time.Instant;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
@@ -35,20 +34,20 @@ public class Event {
     @Column(columnDefinition = "TEXT")
     private String description;
 
-    @Column(name = "venue_id_temp")
-    private UUID venueId_temp;
+    @Column(name = "venue_template_id")
+    private UUID venueTemplateId;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JsonIgnore
-    private EventCategory event_categories;
+    private EventCategory eventCategory;
 
-    @Column(name = "organization_id")
-    private UUID organizationId;
+    @Column(name = "organization")
+    private String organization;
 
     @Column(name = "createdBy_id")
     private UUID createdBy;
 
-    @Column(nullable = false)
+    @Column(nullable = true) //TODO return this
     private String PosterUrl;
 
     @Enumerated(EnumType.STRING)
@@ -59,16 +58,15 @@ public class Event {
     @Column(nullable = false)
     private BookingModel bookingModel;
 
-    @Column(name = "start_date_time", nullable = false)
+    @Column(name = "start_date_time", nullable = true)
     private Instant startDate;
 
-    @Column(name = "end_date_time", nullable = false)
+    @Column(name = "end_date_time", nullable = true)
     private Instant finishDate;
 
     @OneToMany(mappedBy = "event", fetch = FetchType.LAZY)
     @JsonIgnore
-    @Builder.Default
-    private List<Section> sections = new ArrayList<>();
+    private List<Section> sections;
 
     @CreatedDate
     private LocalDateTime createdAt;
