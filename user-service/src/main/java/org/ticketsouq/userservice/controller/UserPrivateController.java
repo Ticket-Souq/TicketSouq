@@ -34,12 +34,16 @@ public class UserPrivateController {
     }
 
     // ── Generate org members (called by api-gateway AuthService.generateAccountsForOrg) ─
-    
+
     // Gateway calls this AFTER creating passwords, to save the profiles here
     @PostMapping("/generate-members")
     public ResponseEntity<Void> generateMembers(@RequestBody GenerateMembersRequest request) {
         userService.generateMembers(request);
         return ResponseEntity.ok().build();
     }
-    ///  add endpoint to find userby id
+
+    @GetMapping("/{id}/org-name")
+    public ResponseEntity<String> getOrganizationNameByUserId(@PathVariable UUID id) {
+        return ResponseEntity.ok(userService.getOrganizationNameByUserId(id));
+    }
 }

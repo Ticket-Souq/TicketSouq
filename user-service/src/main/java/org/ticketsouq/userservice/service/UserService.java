@@ -8,6 +8,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.ticketsouq.sharedmodule.ApiGateway.dto.CreateUserRequest;
 import org.ticketsouq.sharedmodule.ApiGateway.dto.GenerateMembersRequest;
 import org.ticketsouq.sharedmodule.GeneralExceptions.BusinessException;
+import org.ticketsouq.userservice.mapper.UserMapper;
 import org.ticketsouq.userservice.model.MemberRole;
 import org.ticketsouq.userservice.model.OrgMember;
 import org.ticketsouq.userservice.model.OrgStatus;
@@ -28,6 +29,7 @@ public class UserService {
     private final UserRepository userRepository;
     private final OrganizationRepository organizationRepository;
     private final OrgMemberRepository orgMemberRepository;
+    private final UserMapper userMapper;
 
     @Transactional
     public void register(CreateUserRequest req) {
@@ -110,5 +112,12 @@ public class UserService {
             orgMemberRepository.save(member);
         }
         log.info("Generated {} members for organization {}", membersToCreate.size(), org.getName());
+    }
+
+    @Transactional(readOnly = true)
+    public String getOrganizationNameByUserId(UUID userId) {
+        return orgMemberRepository.findById(userId)
+            .map(member -> member.getOrganization().getName())
+            .orElse(null);
     }
 }
