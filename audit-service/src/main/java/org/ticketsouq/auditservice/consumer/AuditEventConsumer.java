@@ -9,6 +9,8 @@ import org.ticketsouq.auditservice.entity.AuditLog;
 import org.ticketsouq.auditservice.repository.AuditLogRepository;
 import org.ticketsouq.sharedmodule.AuditService.events.AuditEvent;
 
+import static org.ticketsouq.sharedmodule.Constants.TOPIC_NAMES.AUDIT_EVENT;
+
 @Component
 @RequiredArgsConstructor
 public class AuditEventConsumer {
@@ -17,7 +19,7 @@ public class AuditEventConsumer {
 
     private final AuditLogRepository repository;
 
-    @KafkaListener(topics = "audit.event", groupId = "${spring.application.name}")
+    @KafkaListener(topics = AUDIT_EVENT)
     public void consume(AuditEvent event) {
         log.info("Received audit event: action={}, madeById={}", event.action(), event.madeById());
 

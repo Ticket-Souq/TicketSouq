@@ -1,4 +1,4 @@
-package org.ticketsouq.auditservice.exception;
+package org.ticketsouq.sharedmodule.AuditService.exception;
 
 import org.ticketsouq.sharedmodule.GeneralExceptions.ResourceNotFoundException;
 
