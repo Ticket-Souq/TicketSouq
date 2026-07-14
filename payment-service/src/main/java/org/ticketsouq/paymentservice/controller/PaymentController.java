@@ -1,7 +1,7 @@
 package org.ticketsouq.paymentservice.controller;
 
 
-import lombok.AllArgsConstructor;
+import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -13,13 +13,16 @@ import java.util.UUID;
 
 @RestController
 @RequestMapping("api/v1/payment")
-@AllArgsConstructor
 public class PaymentController {
+
     private final PaymentService paymentService;
 
+    public PaymentController(PaymentService paymentService) {
+        this.paymentService = paymentService;
+    }
 
     @PostMapping
-    ResponseEntity<PaymentResponse> pay(@RequestBody PaymentRequest request){
+    ResponseEntity<PaymentResponse> pay(@Valid @RequestBody PaymentRequest request){
         return paymentService.pay(request);
     }
 

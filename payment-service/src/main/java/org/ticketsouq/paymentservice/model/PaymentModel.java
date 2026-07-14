@@ -28,6 +28,8 @@ public class PaymentModel {
     UUID customerID;
     BigDecimal amount;
 
+    String currency;
+
     @Enumerated(EnumType.STRING)
     PaymentStatus paymentStatus;
 
@@ -37,9 +39,22 @@ public class PaymentModel {
 
     private String transactionRef;
 
+    private String stripePaymentIntentId;
+
     private Instant createdAt;
 
     private Instant updatedAt;
 
+    @PrePersist
+    void prePersist() {
+        var now = Instant.now();
+        this.createdAt = now;
+        this.updatedAt = now;
+    }
+
+    @PreUpdate
+    void preUpdate() {
+        this.updatedAt = Instant.now();
+    }
 
 }

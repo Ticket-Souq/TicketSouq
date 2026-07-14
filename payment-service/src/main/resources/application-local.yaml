@@ -1,3 +1,7 @@
 spring:
   config:
     import: "configserver:http://localhost:8888"
+  stripe:
+    secret-key: sk_test_xxxxxxxxx
+    publishable-key: pk_test_xxxxxxxxx
+    webhook-secret: whsec_xxxxxxxxx
