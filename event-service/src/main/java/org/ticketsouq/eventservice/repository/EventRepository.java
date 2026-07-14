@@ -1,6 +1,5 @@
 package org.ticketsouq.eventservice.repository;
 
-import io.micrometer.core.instrument.config.MeterFilter;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -14,23 +13,32 @@ import java.util.UUID;
 
 public interface EventRepository extends JpaRepository<Event, UUID> {
 
+    @Query("""
+        SELECT e FROM Event e
+        WHERE (:organization IS NULL AND e.status IN :statuses) OR (:organization IS NOT NULL AND e.organization = :organization)
+        ORDER BY e.startDate ASC
+        """)
+    Page<Event> findFilteredEvents(@Param("organization") String organization, @Param("statuses") List<EventStatus> statuses, Pageable pageable);
+
     @Query(value = """
         SELECT DISTINCT e.* FROM events e
-        LEFT JOIN sections s ON s.event_id = e.id
-        WHERE e.title % :term OR s.name % :term
+        LEFT JOIN event_categories ec ON ec.id = e.event_category_id
+        WHERE (:title IS NULL OR e.title % :title)
+          AND (:organization IS NULL OR e.organization % :organization)
+          AND (:category IS NULL OR ec.name % :category)
         ORDER BY GREATEST(
-            similarity(e.title, :term),
-            COALESCE(similarity(s.name, :term), 0)
+            COALESCE(similarity(e.title, :title), 0),
+            COALESCE(similarity(e.organization, :organization), 0),
+            COALESCE(similarity(ec.name, :category), 0)
         ) DESC
         """, countQuery = """
         SELECT COUNT(DISTINCT e.id) FROM events e
-        LEFT JOIN sections s ON s.event_id = e.id
-        WHERE e.title % :term OR s.name % :term
+        LEFT JOIN event_categories ec ON ec.id = e.event_category_id
+        WHERE (:title IS NULL OR e.title % :title)
+          AND (:organization IS NULL OR e.organization % :organization)
+          AND (:category IS NULL OR ec.name % :category)
         """, nativeQuery = true)
-    List<Event> findFuzzyByTitleOrSectionName(@Param("term") String term, Pageable pageable);
+    Page<Event> searchBy(@Param("title") String title, @Param("organization") String organization, @Param("category") String category, Pageable pageable);
 
-    @Query("SELECT e FROM Event e WHERE e.status IN :statuses ORDER BY e.startDate ASC")
-    Page<Event> findByStatus(@Param("statuses") List<EventStatus> statuses, Pageable pageable);
 
-    Page<Event> findByOrganizationOrderByCreatedAtAsc(String organization, Pageable pageable);
 }

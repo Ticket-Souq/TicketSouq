@@ -9,14 +9,14 @@ import org.ticketsouq.eventservice.service.Search.SearchService;
 @Component
 public class Searchbean {
 
-//    @Bean
-//    public SearchService eventSearchService(ESSearchService esSearchService) {
-//        return esSearchService;
-//    }
-
     @Bean
-    public SearchService eventSearchService(PostgresSearchService esSearchService) {
+    public SearchService eventSearchService(ESSearchService esSearchService) {
         return esSearchService;
     }
+
+//    @Bean
+//    public SearchService eventSearchService(PostgresSearchService esSearchService) {
+//        return esSearchService;
+//    }
 
 }

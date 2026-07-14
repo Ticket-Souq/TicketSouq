@@ -20,7 +20,6 @@ public class EventIndex {
     private UUID id;
 
     @Field(type = FieldType.Text) String title;
-    @Field(type = FieldType.Text) String categoryName;
-    // TODO handel it with postgres and ES
-    @Field(type = FieldType.Text) String organizationName;
+    @Field(type = FieldType.Text) String category;
+    @Field(type = FieldType.Text) String organization;
 }

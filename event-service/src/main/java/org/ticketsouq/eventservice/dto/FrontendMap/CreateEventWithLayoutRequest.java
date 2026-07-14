@@ -17,7 +17,6 @@ public record CreateEventWithLayoutRequest(
     Instant startDate,
     Instant finishDate,
     List<RowDto> rows,
-    StageDto stage,
     List<CategoryDto> categories
 ) {
 
@@ -47,14 +46,6 @@ public record CreateEventWithLayoutRequest(
         String number,
         String status,
         String categoryId
-    ) {
-    }
-
-    @Builder
-    public record StageDto(
-        String color,
-        String label,
-        String position
     ) {
     }
 }

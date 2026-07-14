@@ -7,13 +7,10 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.ticketsouq.eventservice.dto.*;
 import org.ticketsouq.eventservice.dto.FrontendMap.CreateEventWithLayoutRequest;
 import org.ticketsouq.eventservice.dto.FrontendMap.EventCardResponse;
 import org.ticketsouq.eventservice.dto.FrontendMap.EventLayoutResponse;
-import org.ticketsouq.eventservice.dto.SeatResponse;
-import org.ticketsouq.eventservice.dto.SectionResponse;
-import org.ticketsouq.eventservice.dto.UpdateSeatStatusRequest;
-import org.ticketsouq.eventservice.dto.UpdateSectionRequest;
 import org.ticketsouq.eventservice.service.EventService;
 import org.ticketsouq.eventservice.service.Search.SearchService;
 import org.ticketsouq.eventservice.service.SeatService;
@@ -31,6 +28,7 @@ public class EventController {
     private final SectionService sectionService;
     private final SeatService seatService;
 
+    // info tested
     @PostMapping
     public ResponseEntity<Void> create(@RequestHeader("X-User-Id") UUID userId, @RequestBody CreateEventWithLayoutRequest request) {
         eventService.create(userId, request);
@@ -42,11 +40,13 @@ public class EventController {
         return ResponseEntity.ok(eventService.getEvents(userId, pageable));
     }
 
+    // info tested (need to handle stage and axiel only)
     @GetMapping("/{id}")
     public ResponseEntity<EventLayoutResponse> getById(@PathVariable UUID id) {
         return ResponseEntity.ok(eventService.getById(id));
     }
 
+    //
     @PatchMapping("/sections/{sectionId}")
     public ResponseEntity<SectionResponse> updateSection(@PathVariable UUID sectionId, @Valid @RequestBody UpdateSectionRequest request, @RequestHeader("X-User-Id") UUID userId) {
         return ResponseEntity.ok(sectionService.updateSection(sectionId, request, userId));
@@ -59,8 +59,8 @@ public class EventController {
     }
 
     @GetMapping("/search")
-    public ResponseEntity<List<EventCardResponse>> searchByTitle(@RequestParam String title, Pageable pageable) {
-        return ResponseEntity.ok(eventSearchService.searchByTitle(title, pageable));
+    public ResponseEntity<Page<EventCardResponse>> searchBy(@ModelAttribute EventSearchRequest request, Pageable pageable) {
+        return ResponseEntity.ok(eventSearchService.searchBy(request, pageable));
     }
 
     @PatchMapping("/seats/{seatId}/status") // must be org_head / agent

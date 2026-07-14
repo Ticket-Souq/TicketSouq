@@ -24,18 +24,23 @@ public class EventFrontendMapper {
 
     /// DTO to Entity
     public Event buildEvent(UUID createdBy, CreateEventWithLayoutRequest request) {
-        // TODO save each section and each seat
         Event event = Event.builder()
                 .title(request.name())
                 .description(request.description())
                 .venueTemplateId(request.id())
                 .eventCategory(
-                    eventCategoriesRepository.findByName(request.categoryName()).orElse(
-                        eventCategoriesRepository.save(EventCategory.builder().name(request.categoryName()).build())
-                    )
+                    eventCategoriesRepository.findByNameIgnoreCase(request.categoryName())
+                        .orElseGet(() ->
+                            eventCategoriesRepository.save(
+                                EventCategory.builder()
+                                    .name(request.categoryName())
+                                    .build()
+                            )
+                        )
                 )
                 // TODO make mock in user service
-                .organization(userServiceClient.getOrganizationName(createdBy))
+//                .organization(userServiceClient.getOrganizationName(createdBy))
+                .organization("org name")
                 .createdBy(createdBy)
                 .PosterUrl(request.posterUrl())
                 .status(EventStatus.PUBLISHED)
