@@ -51,14 +51,10 @@ public class EventService {
 
     @Transactional(readOnly = true)
     public Page<EventCardResponse> getEvents(UUID userId, Pageable pageable) {
-        String orgname = userServiceClient.getOrganizationName(userId);
-        if (orgname == null) {
-            return eventRepository.findByStatus(List.of(EventStatus.PUBLISHED, EventStatus.ACTIVE), pageable)
-                .map(EventCardResponse::from);
-        } else {
-            // TODO sort by startdate
-            return eventRepository.findByOrganizationOrderByCreatedAtAsc(orgname, pageable).map(EventCardResponse::from);
-        }
+        String organization = userServiceClient.getOrganizationName(userId);
+
+        return eventRepository.findFilteredEvents(organization, List.of(EventStatus.PUBLISHED, EventStatus.ACTIVE), pageable)
+            .map(EventCardResponse::from);
 
     }
 
@@ -72,6 +68,7 @@ public class EventService {
 
         event.setStatus(EventStatus.CANCELLED);
 
+        eventSearchService.deleteFromIndex(event);
         eventRepository.save(event);
 
         eventPublisher.publishEvent(new AuditEvent("Event Canceled", userId, "", Instant.now()));

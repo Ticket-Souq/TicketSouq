@@ -18,6 +18,6 @@ public class EventCategory {
     @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
 
-    @Column(nullable = true, unique = true) //TODO return this
+    @Column(nullable = false, unique = true)
     private String name;
 }

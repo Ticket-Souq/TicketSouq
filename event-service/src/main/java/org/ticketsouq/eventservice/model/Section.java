@@ -45,7 +45,7 @@ public class Section {
     @LastModifiedDate
     private LocalDateTime updatedAt;
 
-    @OneToMany(mappedBy = "section", fetch = FetchType.LAZY)
+    @OneToMany(mappedBy = "section", fetch = FetchType.LAZY,cascade = CascadeType.ALL, orphanRemoval = true)
     @JsonIgnore
     @Builder.Default
     private List<Seat> seats = new ArrayList<>();
