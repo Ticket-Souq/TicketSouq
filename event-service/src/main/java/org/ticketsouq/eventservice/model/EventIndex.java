@@ -2,14 +2,14 @@ package org.ticketsouq.eventservice.model;
 
 import lombok.*;
 import org.springframework.data.annotation.Id;
-import org.springframework.data.elasticsearch.annotations.Document;
-import org.springframework.data.elasticsearch.annotations.Field;
-import org.springframework.data.elasticsearch.annotations.FieldType;
+//import org.springframework.data.elasticsearch.annotations.Document;
+//import org.springframework.data.elasticsearch.annotations.Field;
+//import org.springframework.data.elasticsearch.annotations.FieldType;
 
 import java.time.Instant;
 import java.util.UUID;
 
-@Document(indexName = "events")
+//@Document(indexName = "events")
 @Getter
 @Setter
 @NoArgsConstructor
@@ -20,11 +20,11 @@ public class EventIndex {
     @Id
     private UUID id;
 
-    @Field(type = FieldType.Text)
-    private String title;
-
-    @Field(type = FieldType.Text)
-    private String description;
+//    @Field(type = FieldType.Text)
+//    private String title;
+//
+//    @Field(type = FieldType.Text)
+//    private String description;
 
     private UUID venueId;
 
