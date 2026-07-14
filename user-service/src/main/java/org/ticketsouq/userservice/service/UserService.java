@@ -50,10 +50,9 @@ public class UserService {
                 .name(req.name())
                 .email(req.email())
                 .build();
-            userRepository.save(user);
+            user = userRepository.save(user);
 
             OrgMember head = OrgMember.builder()
-                .userId(user.getId())
                 .user(user)
                 .organization(org)
                 .memberRole(MemberRole.HEAD)
@@ -96,14 +95,13 @@ public class UserService {
                 .email(m.email())
                 .name(m.email().split("@")[0]) // take email prefix as init userName
                 .build();
-            userRepository.save(user);
+            user = userRepository.save(user);
 
             // Role Mapping
-            String rawRole = m.role().replace("ORG_", "");
+            String rawRole = m.role().replace("ORG_", "").toUpperCase();
             MemberRole roleEnum = MemberRole.valueOf(rawRole);
 
             OrgMember member = OrgMember.builder()
-                .userId(user.getId())
                 .user(user)
                 .organization(org)
                 .memberRole(roleEnum)

@@ -42,8 +42,8 @@ public class UserPrivateController {
         return ResponseEntity.ok().build();
     }
 
-    @GetMapping("/{id}/org-name")
-    public ResponseEntity<String> getOrganizationNameByUserId(@PathVariable UUID id) {
+    @GetMapping("/organization")
+    public ResponseEntity<String> getOrganizationNameByUserId(@RequestParam UUID id) {
         return ResponseEntity.ok(userService.getOrganizationNameByUserId(id));
     }
 }

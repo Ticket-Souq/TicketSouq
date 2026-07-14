@@ -5,7 +5,7 @@ spring:
     import: optional:file:./profile.properties
 
   datasource:
-    url: jdbc:postgresql://localhost:5433/user_db
+    url: jdbc:postgresql://localhost:5438/user_db
     username: admin
     password: admin
     driver-class-name: org.postgresql.Driver

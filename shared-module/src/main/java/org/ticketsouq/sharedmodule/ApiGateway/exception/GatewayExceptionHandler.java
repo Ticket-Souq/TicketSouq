@@ -19,6 +19,15 @@ import org.ticketsouq.sharedmodule.GeneralExceptions.ErrorResponse;
 @RestControllerAdvice
 public class GatewayExceptionHandler {
 
+    @ExceptionHandler(FeignException.class)
+    public ResponseEntity<ErrorResponse> handleRemoteService(FeignException ex) throws JsonProcessingException {
+        String body = ex.contentUTF8();
+        ObjectMapper mapper = new ObjectMapper();
+        mapper.findAndRegisterModules(); // for Instant support
+        ErrorResponse error = mapper.readValue(body, ErrorResponse.class);
+        return ResponseEntity.status(ex.status()).body(error);
+    }
+
     @ExceptionHandler(UserNotFoundException.class)
     public ResponseEntity<ErrorResponse> handleUserNotFound(UserNotFoundException ex) {
         return ResponseEntity

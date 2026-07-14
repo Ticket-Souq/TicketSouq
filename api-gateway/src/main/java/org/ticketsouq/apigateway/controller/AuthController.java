@@ -111,7 +111,6 @@ public class AuthController {
     // ── ORG ACCOUNT GENERATION ────────────────────────────────────────────────
 
     @PostMapping("/org/generate-accounts")
-    @PreAuthorize("hasAuthority('ORG_HEAD')")
     public ResponseEntity<List<GeneratedAccount>> generateAccounts(@AuthenticationPrincipal String orgHeadUserId, @RequestBody GenerateAccountRequest req) {
         return ResponseEntity.ok(authService.generateAccountsForOrg(UUID.fromString(orgHeadUserId), req));
     }
