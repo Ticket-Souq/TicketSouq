@@ -56,7 +56,22 @@ services:
       - "5435:5432"
     volumes:
       - postgres_venue_data:/var/lib/postgresql
-
+    networks:
+      - Ticket-Souq-Microservice
+  event-db:
+    image: postgres
+    container_name: event-db
+    environment:
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: admin
+      POSTGRES_DB: event_db
+    restart: unless-stopped
+    ports:
+      - "5434:5432"
+    volumes:
+      - postgres_event_data:/var/lib/postgresql
+    networks:
+      - Ticket-Souq-Microservice
 
   # ─── Messaging ──────────────────────────────────────────────
 

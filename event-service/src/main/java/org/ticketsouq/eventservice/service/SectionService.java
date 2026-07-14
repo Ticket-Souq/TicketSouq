@@ -1,17 +1,22 @@
 package org.ticketsouq.eventservice.service;
 
+
+
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.ticketsouq.eventservice.dto.SectionRequest;
 import org.ticketsouq.eventservice.dto.SectionResponse;
+import org.ticketsouq.eventservice.dto.UpdateSectionRequest;
 import org.ticketsouq.eventservice.model.Event;
 import org.ticketsouq.eventservice.model.Section;
-import org.ticketsouq.eventservice.repository.EventRepository;
+import org.ticketsouq.eventservice.model.enums.BookingModel;
+import org.ticketsouq.eventservice.model.enums.EventStatus;
 import org.ticketsouq.eventservice.repository.SectionRepository;
+import org.ticketsouq.sharedmodule.GeneralExceptions.BadRequestException;
+import org.ticketsouq.sharedmodule.GeneralExceptions.ConflictException;
+import org.ticketsouq.sharedmodule.GeneralExceptions.ForbiddenException;
 import org.ticketsouq.sharedmodule.GeneralExceptions.ResourceNotFoundException;
 
-import java.util.List;
 import java.util.UUID;
 
 @Service
@@ -19,60 +24,135 @@ import java.util.UUID;
 public class SectionService {
 
     private final SectionRepository sectionRepository;
-    private final EventRepository eventRepository;
+    private final AuthorizationService authorizationService;
+
 
     @Transactional
-    public SectionResponse create(UUID eventId, SectionRequest request) {
-        Event event = eventRepository.findById(eventId)
-                .orElseThrow(() -> new ResourceNotFoundException("Event", eventId));
-        Section section = Section.builder()
-                .event(event)
-                .name(request.name())
-                .capacity(request.capacity())
-                .remainingCapacity(request.remainingCapacity())
-                .color(request.color())
-                .price(request.price())
-                .build();
-        return SectionResponse.from(sectionRepository.save(section));
-    }
+    public SectionResponse updateSection(
+        UUID sectionId,
+        UpdateSectionRequest request,
+        UUID userId
+    ) {
 
-    @Transactional(readOnly = true)
-    public List<SectionResponse> getByEventId(UUID eventId) {
-        return sectionRepository.findByEvent_Id(eventId).stream()
-                .map(SectionResponse::from)
-                .toList();
-    }
+        if (request.name() == null
+            && request.price() == null
+            && request.capacity() == null) {
+            throw new BadRequestException("Nothing to update.");
+        }
 
-    @Transactional(readOnly = true)
-    public SectionResponse getById(UUID id) {
-        return SectionResponse.from(sectionRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Section", id)));
-    }
 
-    @Transactional
-    public SectionResponse update(UUID id, SectionRequest request) {
-        Section section = sectionRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Section", id));
-        section.setName(request.name());
-        section.setCapacity(request.capacity());
-        section.setRemainingCapacity(request.remainingCapacity());
-        section.setColor(request.color());
-        section.setPrice(request.price());
-        return SectionResponse.from(sectionRepository.save(section));
-    }
-
-    @Transactional
-    public void delete(UUID id) {
-        Section section = sectionRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Section", id));
-        sectionRepository.delete(section);
-    }
-
-    @Transactional
-    public void updateRemainingCapacity(UUID sectionId, Integer remainingCapacity) {
         Section section = sectionRepository.findById(sectionId)
-                .orElseThrow(() -> new ResourceNotFoundException("Section", sectionId));
-        section.setRemainingCapacity(remainingCapacity);
-        sectionRepository.save(section);
+            .orElseThrow(() ->
+                new ResourceNotFoundException(
+                    "Section not found.",
+                    sectionId
+                ));
+
+
+        Event event = section.getEvent();
+
+
+        if (!authorizationService.validateOrganizer(event.getOrganizationId(), userId)) {
+            throw new ForbiddenException(
+                "User is not allowed to modify this event."
+            );
+
+        }
+
+        validateEventCanBeUpdated(event);
+
+
+        if (event.getBookingModel() == BookingModel.ZONE) {
+            updateZoneSection(section, request);
+        } else {
+            updateSeatSection(section, request);
+        }
+
+
+        return SectionResponse.from(
+            sectionRepository.save(section)
+        );
+    }
+
+    private void updateZoneSection(
+        Section section,
+        UpdateSectionRequest request
+    ) {
+
+        if (request.name() != null) {
+            section.setName(request.name());
+        }
+
+
+        if (request.price() != null) {
+            section.setPrice(request.price());
+        }
+
+
+        if (request.capacity() != null) {
+            updateCapacity(
+                section,
+                request.capacity()
+            );
+        }
+    }
+
+
+    private void updateSeatSection(
+        Section section,
+        UpdateSectionRequest request
+    ) {
+
+        if (request.name() != null) {
+            throw new ConflictException(
+                "Section name cannot be updated for seat-based events."
+            );
+        }
+
+
+        if (request.capacity() != null) {
+            throw new ConflictException(
+                "Capacity cannot be updated for seat-based events."
+            );
+        }
+
+
+        if (request.price() != null) {
+            section.setPrice(request.price());
+        }
+    }
+
+
+    private void updateCapacity(
+        Section section,
+        Integer newCapacity
+    ) {
+
+        int booked =
+            section.getCapacity()
+                - section.getRemainingCapacity();
+
+
+        if (newCapacity < booked) {
+            throw new ConflictException(
+                "Capacity cannot be less than booked seats."
+            );
+        }
+
+        section.setCapacity(newCapacity);
+
+        section.setRemainingCapacity(
+            newCapacity - booked
+        );
+    }
+
+
+    private void validateEventCanBeUpdated(Event event) {
+
+        if (event.getStatus() != EventStatus.PUBLISHED) {
+            throw new ConflictException(
+                "Only published events can be updated."
+            );
+        }
     }
 }

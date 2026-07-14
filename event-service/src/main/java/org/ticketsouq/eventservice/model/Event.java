@@ -3,7 +3,6 @@ package org.ticketsouq.eventservice.model;
 import jakarta.persistence.*;
 import lombok.*;
 import org.springframework.data.annotation.CreatedDate;
-import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 import org.ticketsouq.eventservice.model.enums.BookingModel;
 import org.ticketsouq.eventservice.model.enums.EventStatus;
@@ -41,8 +40,7 @@ public class Event {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JsonIgnore
-    @Builder.Default
-    private event_categories event_categories;
+    private EventCategory event_categories;
 
     @Column(name = "organization_id")
     private UUID organizationId;

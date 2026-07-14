@@ -2,32 +2,25 @@ package org.ticketsouq.eventservice.service;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.ticketsouq.eventservice.dto.CreateEventRequest;
-import org.ticketsouq.eventservice.dto.EventRequest;
-import org.ticketsouq.eventservice.dto.EventResponse;
-import org.ticketsouq.eventservice.dto.UpdateEventRequest;
+
+import org.ticketsouq.eventservice.Mapper.EventMapper;
+import org.ticketsouq.eventservice.dto.*;
+
 import org.ticketsouq.eventservice.model.Event;
-import org.ticketsouq.eventservice.model.Seat;
-import org.ticketsouq.eventservice.model.Section;
-import org.ticketsouq.eventservice.model.enums.BookingModel;
 import org.ticketsouq.eventservice.model.enums.EventStatus;
-import org.ticketsouq.eventservice.model.enums.SeatStatus;
+import org.ticketsouq.eventservice.producer.EventProducer;
 import org.ticketsouq.eventservice.repository.EventRepository;
-import org.ticketsouq.eventservice.repository.SeatRepository;
-import org.ticketsouq.eventservice.repository.SectionRepository;
 import org.ticketsouq.sharedmodule.EventService.events.EventCancelledEvent;
-import org.ticketsouq.sharedmodule.EventService.events.EventCreatedEvent;
-import org.ticketsouq.sharedmodule.EventService.events.EventStatusChangedEvent;
-import org.ticketsouq.sharedmodule.EventService.events.EventUpdatedEvent;
+import org.ticketsouq.sharedmodule.GeneralExceptions.ConflictException;
+import org.ticketsouq.sharedmodule.GeneralExceptions.ForbiddenException;
 import org.ticketsouq.sharedmodule.GeneralExceptions.ResourceNotFoundException;
 
+import java.time.Duration;
 import java.time.Instant;
-import java.util.List;
 import java.util.UUID;
 
 @Slf4j
@@ -36,191 +29,67 @@ import java.util.UUID;
 public class EventService {
 
     private final EventRepository eventRepository;
-    private final SectionRepository sectionRepository;
-    private final SeatRepository seatRepository;
-    private final EventSearchService eventSearchService;
-    private final ApplicationEventPublisher eventPublisher;
+    private final EventMapper eventMapper;
+    private final AuthorizationService authorizationService;
+    private final EventProducer eventProducer;
+
+    @Transactional(readOnly = true)
+    public Page<EventCardResponse> getPublicEvents(Pageable pageable) {
+
+        return eventRepository
+            .findByStatusOrderByStartDateAsc(EventStatus.PUBLISHED, pageable)
+            .map(eventMapper::toCardResponse);
+    }
 
     @Transactional
-    public EventResponse create(CreateEventRequest request) {
-        Event event = Event.builder()
-                .title(request.title())
-                .description(request.description())
-                .venueId(request.venueId())
-                .organizationId(request.organizationId())
-                .createdBy(request.createdBy())
-                .PosterUrl(request.posterUrl())
-                .status(request.status())
-                .bookingModel(request.bookingModel())
-                .startDate(request.startDate())
-                .finishDate(request.finishDate())
-                .build();
+    public void cancelEvent(UUID eventId, UUID userId) {
 
-        event = eventRepository.save(event);
+        Event event = eventRepository.findById(eventId)
+            .orElseThrow(() ->
+                new ResourceNotFoundException("Event not found.", eventId));
 
-        if (request.sections() != null) {
-            for (CreateEventRequest.SectionWithSeats sectionReq : request.sections()) {
-                Section section = Section.builder()
-                        .event(event)
-                        .name(sectionReq.name())
-                        .capacity(sectionReq.capacity())
-                        .remainingCapacity(sectionReq.capacity())
-                        .color(sectionReq.color())
-                        .price(sectionReq.price())
-                        .build();
-                section = sectionRepository.save(section);
 
-                if (request.bookingModel() == BookingModel.SEAT && sectionReq.seats() != null) {
-                    for (CreateEventRequest.SeatInSection seatReq : sectionReq.seats()) {
-                        Seat seat = Seat.builder()
-                                .section(section)
-                                .row(seatReq.row())
-                                .col(seatReq.col())
-                                .lable(seatReq.lable())
-                                .status(SeatStatus.AVAILABLE)
-                                .price(seatReq.price())
-                                .build();
-                        seatRepository.save(seat);
-                    }
-                }
-            }
+        if(!authorizationService.validateCanManageEvent(event.getOrganizationId(), userId)){
+                throw new ForbiddenException(
+                    "User is not allowed to perform this action."
+                );
         }
 
-        eventSearchService.indexEvent(event);
+        validateEventCanBeCancelled(event);
 
-        eventPublisher.publishEvent(new EventCreatedEvent(
-                event.getId(), event.getTitle(), event.getOrganizationId(),
-                event.getStatus().name(), event.getBookingModel().name(),
-                event.getStartDate(), event.getFinishDate()));
+        event.setStatus(EventStatus.CANCELLED);
 
-        return EventResponse.from(event);
+        eventRepository.save(event);
+
+        publishCancellationEvent(event);
     }
 
-    @Transactional(readOnly = true)
-    public EventResponse getById(UUID id) {
-        Event event = eventRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Event", id));
-        return EventResponse.from(event);
-    }
+    private void validateEventCanBeCancelled(Event event) {
 
-    @Transactional(readOnly = true)
-    public Page<EventResponse> getPublicEvents(Pageable pageable) {
-        return eventRepository.findByStatusIn(List.of(EventStatus.PUBLISHED, EventStatus.ACTIVE), pageable)
-                .map(EventResponse::from);
-    }
-
-    @Transactional(readOnly = true)
-    public Page<EventResponse> getOrganizationEvents(UUID organizationId, EventStatus status, Pageable pageable) {
-        if (status != null) {
-            return eventRepository.findByOrganizationIdAndStatus(organizationId, status, pageable)
-                    .map(EventResponse::from);
-        }
-        return eventRepository.findByOrganizationId(organizationId, pageable)
-                .map(EventResponse::from);
-    }
-
-    @Transactional(readOnly = true)
-    public List<EventResponse> getAll() {
-        return eventRepository.findAll().stream()
-                .map(EventResponse::from)
-                .toList();
-    }
-
-    @Transactional(readOnly = true)
-    public Page<EventResponse> getByStatus(EventStatus status, Pageable pageable) {
-        return eventRepository.findByStatus(status, pageable)
-                .map(EventResponse::from);
-    }
-
-    @Transactional(readOnly = true)
-    public List<EventResponse> getByOrganizationId(UUID organizationId, Pageable pageable) {
-        return eventRepository.findByOrganizationId(organizationId, pageable).stream()
-                .map(EventResponse::from)
-                .toList();
-    }
-
-    @Transactional
-    public EventResponse update(UUID id, UpdateEventRequest request) {
-        Event event = eventRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Event", id));
-
-        event.setTitle(request.title());
-        event.setDescription(request.description());
-        event.setVenueId(request.venueId());
-        event.setOrganizationId(request.organizationId());
-        event.setCreatedBy(request.createdBy());
-        event.setPosterUrl(request.posterUrl());
-        event.setStatus(request.status());
-        event.setBookingModel(request.bookingModel());
-        event.setStartDate(request.startDate());
-        event.setFinishDate(request.finishDate());
-
-        event = eventRepository.save(event);
-
-        eventSearchService.indexEvent(event);
-
-        eventPublisher.publishEvent(new EventUpdatedEvent(
-                event.getId(), event.getTitle(), event.getOrganizationId(),
-                event.getStatus().name(), event.getBookingModel().name(),
-                event.getStartDate(), event.getFinishDate()));
-
-        return EventResponse.from(event);
-    }
-
-    @Transactional
-    public void cancel(UUID id) {
-        Event event = eventRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Event", id));
-        eventSearchService.deleteFromIndex(event);
-        eventRepository.delete(event);
-    }
-
-    @Transactional
-    public EventResponse updateStatus(UUID id, EventStatus newStatus) {
-        Event event = eventRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Event", id));
-        EventStatus oldStatus = event.getStatus();
-        event.setStatus(newStatus);
-        event = eventRepository.save(event);
-
-        eventPublisher.publishEvent(new EventStatusChangedEvent(
-                event.getId(), oldStatus.name(), newStatus.name()));
-
-        if (newStatus == EventStatus.CANCELLED) {
-            eventPublisher.publishEvent(new EventCancelledEvent(
-                    event.getId(), event.getOrganizationId()));
+        if (event.getStatus() != EventStatus.PUBLISHED) {
+            throw new ConflictException(
+                "Only published events can be cancelled."
+            );
         }
 
-        return EventResponse.from(event);
+        Instant deadline = event.getStartDate().minus(Duration.ofHours(24));
+
+        if (Instant.now().isAfter(deadline)) {
+            throw new ConflictException(
+                "Events cannot be cancelled less than 24 hours before start time."
+            );
+        }
     }
 
-    @Transactional
-    public int activateScheduledEvents() {
-        List<Event> events = eventRepository
-                .findByStartDateBeforeAndStatus(Instant.now(), EventStatus.PUBLISHED);
-        for (Event event : events) {
-            EventStatus oldStatus = event.getStatus();
-            event.setStatus(EventStatus.ACTIVE);
-            eventRepository.save(event);
-            eventPublisher.publishEvent(new EventStatusChangedEvent(
-                    event.getId(), oldStatus.name(), EventStatus.ACTIVE.name()));
-        }
-        log.info("Activated {} events", events.size());
-        return events.size();
-    }
+    private void publishCancellationEvent(Event event) {
+        EventCancelledEvent cancelledEvent = new EventCancelledEvent(
+            UUID.randomUUID(),
+            event.getId(),
+            event.getOrganizationId(),
+            Instant.now()
+        );
+        eventProducer.sendEventCancelled(cancelledEvent);
 
-    @Transactional
-    public int completeExpiredEvents() {
-        List<Event> events = eventRepository
-                .findByFinishDateBeforeAndStatus(Instant.now(), EventStatus.ACTIVE);
-        for (Event event : events) {
-            EventStatus oldStatus = event.getStatus();
-            event.setStatus(EventStatus.COMPLETED);
-            eventRepository.save(event);
-            eventPublisher.publishEvent(new EventStatusChangedEvent(
-                    event.getId(), oldStatus.name(), EventStatus.COMPLETED.name()));
-        }
-        log.info("Completed {} events", events.size());
-        return events.size();
+
     }
 }

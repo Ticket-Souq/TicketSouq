@@ -6,3 +6,4 @@ public enum SeatStatus {
     BOOKED_ORGANIZER,
     BOOKED
 }
+
