@@ -7,5 +7,6 @@ import java.util.Optional;
 import java.util.UUID;
 
 public interface EventCategoriesRepository extends JpaRepository<EventCategory, UUID> {
-    Optional<EventCategory> findByName(String name);
+
+    Optional<EventCategory> findByNameIgnoreCase(String name);
 }
