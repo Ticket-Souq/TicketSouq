@@ -53,7 +53,8 @@ public class EventService {
     public Page<EventCardResponse> getEvents(UUID userId, Pageable pageable) {
         String organization = userServiceClient.getOrganizationName(userId);
 
-        return eventRepository.findFilteredEvents(organization, List.of(EventStatus.PUBLISHED, EventStatus.ACTIVE), pageable)
+        return eventRepository.
+            findFilteredEvents(organization, List.of(EventStatus.PUBLISHED, EventStatus.ACTIVE), pageable)
             .map(EventCardResponse::from);
 
     }
@@ -91,54 +92,4 @@ public class EventService {
             event.getId(), event.getTitle(), event.getOrganization(), event.getCreatedBy(),
             event.getBookingModel().name(), event.getStartDate(), event.getFinishDate());
     }
-
-
-//    @Transactional
-//    public EventResponse updateStatus(UUID id, EventStatus newStatus) {
-//        Event event = eventRepository.findById(id)
-//            .orElseThrow(() -> new ResourceNotFoundException("Event", id));
-//        EventStatus oldStatus = event.getStatus();
-//        event.setStatus(newStatus);
-//        event = eventRepository.save(event);
-//
-//        eventPublisher.publishEvent(new EventStatusChangedEvent(
-//            event.getId(), oldStatus.name(), newStatus.name()));
-//
-//        if (newStatus == EventStatus.CANCELLED) {
-//            eventPublisher.publishEvent(new EventCancelledEvent(
-//                event.getId(), event.getOrganizationId()));
-//        }
-//
-//        return EventResponse.from(event);
-//    }
-//
-//    @Transactional
-//    public int activateScheduledEvents() {
-//        List<Event> events = eventRepository
-//            .findByStartDateBeforeAndStatus(Instant.now(), EventStatus.PUBLISHED);
-//        for (Event event : events) {
-//            EventStatus oldStatus = event.getStatus();
-//            event.setStatus(EventStatus.ACTIVE);
-//            eventRepository.save(event);
-//            eventPublisher.publishEvent(new EventStatusChangedEvent(
-//                event.getId(), oldStatus.name(), EventStatus.ACTIVE.name()));
-//        }
-//        log.info("Activated {} events", events.size());
-//        return events.size();
-//    }
-//
-//    @Transactional
-//    public int completeExpiredEvents() {
-//        List<Event> events = eventRepository
-//            .findByFinishDateBeforeAndStatus(Instant.now(), EventStatus.ACTIVE);
-//        for (Event event : events) {
-//            EventStatus oldStatus = event.getStatus();
-//            event.setStatus(EventStatus.COMPLETED);
-//            eventRepository.save(event);
-//            eventPublisher.publishEvent(new EventStatusChangedEvent(
-//                event.getId(), oldStatus.name(), EventStatus.COMPLETED.name()));
-//        }
-//        log.info("Completed {} events", events.size());
-//        return events.size();
-//    }
 }

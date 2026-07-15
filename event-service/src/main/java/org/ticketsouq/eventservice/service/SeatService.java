@@ -16,7 +16,6 @@ import org.ticketsouq.eventservice.repository.SeatRepository;
 import org.ticketsouq.sharedmodule.AuditService.events.AuditEvent;
 import org.ticketsouq.sharedmodule.GeneralExceptions.BadRequestException;
 import org.ticketsouq.sharedmodule.GeneralExceptions.ConflictException;
-import org.ticketsouq.sharedmodule.GeneralExceptions.ForbiddenException;
 import org.ticketsouq.sharedmodule.GeneralExceptions.ResourceNotFoundException;
 
 import java.time.Instant;
@@ -44,9 +43,12 @@ public class SeatService {
         applicationEventPublisher.publishEvent(new AuditEvent("Seat Status updated by Org Member", userId, "", Instant.now()));
         return SeatResponse.from(seatRepository.save(seat));
     }
+
     private void validateSeatBased(Event event) {
-        if (event.getBookingModel() != BookingModel.SEAT) throw new BadRequestException("This endpoint is only available for seat-based events.");
+        if (event.getBookingModel() != BookingModel.SEAT)
+            throw new BadRequestException("This endpoint is only available for seat-based events.");
     }
+
     private void validateSeatStatusTransition(SeatStatus current, SeatStatus target) {
 
         if (current == SeatStatus.AVAILABLE && target == SeatStatus.BOOKED_ORGANIZER) return;
@@ -55,6 +57,7 @@ public class SeatService {
 
         throw new BadRequestException("Invalid seat status transition.");
     }
+
     private void updateRemainingCapacity(Section section, SeatStatus current, SeatStatus target) {
 
         if (current == SeatStatus.AVAILABLE && target == SeatStatus.BOOKED_ORGANIZER) {
@@ -66,7 +69,9 @@ public class SeatService {
             section.setRemainingCapacity(section.getRemainingCapacity() + 1);
         }
     }
+
     private void validateEventCanBeUpdated(Event event) {
-        if (event.getStatus() != EventStatus.PUBLISHED) throw new ConflictException("Only published events can be updated.");
+        if (event.getStatus() != EventStatus.PUBLISHED)
+            throw new ConflictException("Only published events can be updated.");
     }
 }
