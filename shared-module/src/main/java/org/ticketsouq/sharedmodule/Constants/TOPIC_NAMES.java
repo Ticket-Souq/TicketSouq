@@ -61,6 +61,7 @@ public final class TOPIC_NAMES {
 
     // ─── Audit Service ────────────────────────────────────────
     public static final String AUDIT_EVENT = "audit.event";
+//    public static final String ACCOUNTS_GENERATED = "accounts.generated";
 
     // ─── Analytics Service ────────────────────────────────────
 //    public static final String ANALYTICS_EVENT = "analytics.event";
