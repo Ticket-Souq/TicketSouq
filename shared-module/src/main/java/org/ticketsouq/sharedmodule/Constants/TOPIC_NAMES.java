@@ -45,7 +45,7 @@ public final class TOPIC_NAMES {
     // ─── Payment Service ──────────────────────────────────────
 //    public static final String PAYMENT_INITIATED = "payment.initiated";
     public static final String PAYMENT_SUCCESS = "payment.success";
-//    public static final String PAYMENT_FAILED = "payment.failed";
+    public static final String PAYMENT_FAILED = "payment.failed";
     public static final String PAYMENT_REFUNDED = "payment.refunded";
 
 //

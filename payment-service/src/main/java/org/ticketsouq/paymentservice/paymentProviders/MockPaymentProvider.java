@@ -17,7 +17,7 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
 @Service
-@Profile("mock")
+@Profile("MOCK")
 public class MockPaymentProvider implements PaymentProvider {
 
     private final Map<UUID, PaymentModel> paymentStore = new ConcurrentHashMap<>();
