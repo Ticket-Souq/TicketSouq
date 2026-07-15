@@ -20,7 +20,7 @@ public interface AuthCredentialRepository extends JpaRepository<AuthCredential, 
 
     boolean existsByEmail(String email);
 
-    @Modifying
+    @Modifying(clearAutomatically = true, flushAutomatically = true)
     @Query("UPDATE AuthCredential AC SET AC.locked = false, AC.lockedUntil = null WHERE AC.lockedUntil < :now")
     void unlockExpiredAccounts(@Param("now") Instant now);
 }

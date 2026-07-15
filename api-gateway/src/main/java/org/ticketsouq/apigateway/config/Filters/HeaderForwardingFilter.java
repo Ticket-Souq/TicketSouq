@@ -28,7 +28,7 @@ public class HeaderForwardingFilter extends OncePerRequestFilter {
 
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
 
-        if (authentication != null && authentication.isAuthenticated() && !"anonymousUser".equals(authentication.getName()) && authentication.getName() != null) {
+        if (authentication != null && authentication.isAuthenticated() && !"anonymousUser".equals(authentication.getName()) && authentication.getName() != null && !authentication.getName().isEmpty()) {
             String userId = authentication.getName();
             log.debug("Injecting {} header: {}", USER_ID_HEADER, userId);
             request = new UserIdHeaderWrapper(request, userId);

@@ -1,6 +1,7 @@
 package org.ticketsouq.apigateway.config;
 
 import lombok.EqualsAndHashCode;
+import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import org.ticketsouq.apigateway.model.AuthCredential;
 import org.springframework.security.core.GrantedAuthority;
@@ -16,6 +17,7 @@ import java.util.UUID;
 @EqualsAndHashCode
 public class CustomUserDetails implements UserDetails {
 
+    @Getter
     private final AuthCredential user;
 
     // Cached authority list so Spring Security doesn't rebuild it on every permission check
@@ -33,11 +35,10 @@ public class CustomUserDetails implements UserDetails {
     }
 
     public UUID getUserId()                   { return user.getUserId(); }
-    public AuthCredential getUser()           { return user; }
     @Override public String getPassword()     { return user.getPasswordHash(); }
     @Override public String getUsername()     { return user.getEmail(); }
     @Override public boolean isAccountNonLocked()   { return !user.getLocked(); }
-    @Override public boolean isEnabled()            { return user.getIsActive(); }
-    @Override public boolean isAccountNonExpired()  { return true; }
-    @Override public boolean isCredentialsNonExpired() { return true; }
+    @Override public boolean isEnabled()            { return user.getIsVerified(); }
+    @Override public boolean isAccountNonExpired()  { return user.getIsActive(); }
+    @Override public boolean isCredentialsNonExpired() { return user.getIsActive(); }
 }

@@ -26,7 +26,7 @@ public interface RefreshTokenRepository extends JpaRepository<RefreshToken, UUID
     @Query("SELECT DISTINCT RT.userId FROM RefreshToken RT")
     List<UUID> findDistinctUserId();
 
-    @Modifying
+    @Modifying(clearAutomatically = true, flushAutomatically = true)
     @Query("DELETE FROM RefreshToken rt WHERE rt.revoked = true OR rt.expiryDate < :now")
     void deleteByRevokedTrueOrExpiryDateBefore(@Param("now") Instant now);
 }
