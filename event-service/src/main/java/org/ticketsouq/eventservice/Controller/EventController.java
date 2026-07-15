@@ -16,7 +16,6 @@ import org.ticketsouq.eventservice.service.Search.SearchService;
 import org.ticketsouq.eventservice.service.SeatService;
 import org.ticketsouq.eventservice.service.SectionService;
 
-import java.util.List;
 import java.util.UUID;
 
 @RestController
@@ -27,6 +26,13 @@ public class EventController {
     private final SearchService eventSearchService;
     private final SectionService sectionService;
     private final SeatService seatService;
+
+
+    @PostMapping("/{eventId}/sections")
+    public ResponseEntity<SectionResponse> createSection(@PathVariable UUID eventId, @Valid @RequestBody CreateSectionRequest request) {
+
+        return ResponseEntity.status(HttpStatus.CREATED).body(sectionService.createSection(eventId, request));
+    }
 
     // info tested
     @PostMapping
