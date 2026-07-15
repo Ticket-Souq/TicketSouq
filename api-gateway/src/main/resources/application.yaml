@@ -2,8 +2,12 @@ server:
   port: 8080
 
 spring:
+  banner:
+    location: classpath:banner.txt
   application:
     name: api-gateway
+    version: 1.0.0
+
   config:
     import: optional:file:./profile.properties
 

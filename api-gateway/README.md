@@ -1,6 +1,6 @@
 # API Gateway
 
-Single entry point for the TicketSouq microservices platform. Handles authentication, rate limiting, security headers, and request routing.
+Single entry point for the TicketSouq microservices platform. Handles authentication, token refresh, rate limiting, security headers, and request routing to backend services.
 
 ## Tech Stack
 
@@ -10,8 +10,11 @@ Single entry point for the TicketSouq microservices platform. Handles authentica
 - **Eureka Discovery** — service registration and load-balanced routing via `RoutesConfig`
 - **Bucket4j + Caffeine** — in-memory token-bucket rate limiting
 - **JJWT** — JWT creation and signature verification (HMAC-SHA256)
+- **PostgreSQL** — persistent auth credentials and refresh token sessions
+- **Redis** — access token JTI blacklist and active session tracking (Lua scripts)
+- **Kafka** — async event publishing (email verification, password reset, audit, account generation)
+- **OpenFeign** — inter-service HTTP calls to `user-service`
 - **Lombok** — boilerplate reduction
-- **MapStruct** — DTO/entity mapping
 
 ## Dependencies
 
@@ -19,7 +22,7 @@ Single entry point for the TicketSouq microservices platform. Handles authentica
 |---------|---------|
 | `config-server` | Serves config at startup (port 8888) |
 | `discovery-server` | Service registry (Eureka, port 8761) |
-| `user-service` | User identity, profile, and email verification |
+| `user-service` | User identity, profile, org membership checks, and bulk member generation |
 
 Infrastructure required: PostgreSQL (per-service DB), Redis (token blacklist + session tracking), Kafka (async events), Prometheus + Loki + Tempo (observability).
 
@@ -28,67 +31,136 @@ Infrastructure required: PostgreSQL (per-service DB), Redis (token blacklist + s
 All flows are in `AuthService` and `AuthTokenService`.
 
 ### Register
-1. `POST /api/v1/auth/register` → validates input, calls `user-service` to create user
-2. Creates a local `AuthCredential` with hashed password
-3. Emits `EmailVerificationEvent` via Kafka
-4. Returns tokens
+`POST /api/v1/auth/register`
+1. Validates email uniqueness
+2. Creates `AuthCredential` with BCrypt-hashed password (role `CUSTOMER` or `ORG_HEAD`)
+3. Calls `user-service` to create the user profile
+4. Emits `EmailVerificationEvent` via Kafka
 
 ### Login
-1. `POST /api/v1/auth/login` → looks up `AuthCredential` by email
-2. Checks `assertLoginAllowed()` — locked? inactive? unverified?
-3. Verifies password hash against BCrypt
-4. Generates access token (JWT, short-lived) + refresh token (DB row, rotated on use)
-5. Stores JTI in Redis for server-side validation
+`POST /api/v1/auth/login`
+1. Looks up `AuthCredential` by email
+2. Checks `assertLoginAllowed()` — locked? inactive? unverified? banned org?
+3. Verifies password against BCrypt hash
+4. Tracks failed attempts (locks account after 5 failures for 2 minutes)
+5. Generates access token (JWT, 5min TTL) + refresh token (DB row, 7d TTL)
+6. Stores JTI in Redis for server-side validation
 
-### Refresh Token Rotation
-1. `POST /api/v1/auth/refresh` — validates the refresh JWT, checks type=REFRESH
-2. Looks up DB session row (PESSIMISTIC_WRITE lock)
-3. If revoked → token theft detected → nukes ALL sessions for that user
-4. Marks old row revoked, creates new row, returns new tokens
+### Token Refresh (auto)
+The `JwtAuthenticationFilter` intercepts every request and checks for:
+- **`Authentication` header** — the access token (plain, no `Bearer` prefix)
+- **`refresh` header** — the refresh token
+
+| Scenario | Behavior |
+|----------|----------|
+| Valid access token, with or without refresh | Authenticated, no refresh |
+| Invalid/expired access token + valid refresh | Refresh: new tokens returned in response headers, then authenticated with new access token |
+| Only refresh token (no access) | Refresh: same as above |
+| Invalid/expired access token, no refresh | Anonymous |
+| No headers | Anonymous |
+
+When refresh succeeds, the response includes `Authentication` and `refresh` headers containing the new token pair. If refresh fails, the filter falls back to the original access token if still valid.
 
 ### Logout
-1. `POST /api/v1/auth/logout` — extracts access token, deletes refresh row, removes JTI from Redis
+`POST /api/v1/auth/logout` — requires authentication
+1. Extracts access token, deletes refresh token row, removes JTI from Redis
+
+`POST /api/v1/auth/logout-all` — requires authentication
+1. Deletes ALL refresh tokens for the user, removes all JTIs from Redis
 
 ### Password Change
-1. `PUT /api/v1/auth/password` — verifies old password, validates new, updates hash in `AuthCredential` **and** calls `user-service` to update there too
+`PUT /api/v1/auth/password` — requires authentication
+1. Verifies current password against BCrypt hash
+2. Updates hash locally and calls `user-service` to update there too
+3. Invalidates all sessions (forces re-login everywhere)
 
 ### Password Reset
-1. Sends email with short-lived JWT → validates token → updates hash
+1. `GET /api/v1/auth/password-forgot?email=` — sends email with short-lived JWT
+2. `POST /api/v1/auth/password-forgot` — validates token, updates hash, invalidates all sessions
 
 ### Email Verification
-1. Sends email with short-lived JWT → validates token → marks `isVerified = true`
+1. `GET /api/v1/auth/email-varification?email=` — sends email with short-lived JWT
+2. `POST /api/v1/auth/email-varification` — validates token, marks `isVerified = true`
+
+### Org Account Generation
+`POST /api/v1/auth/org/generate-accounts` — requires `ORG_HEAD` role
+1. Creates N `ORG_Agent` and M `ORG_Consumer` accounts with random passwords
+2. Calls `user-service` to register members
+3. Emits `AccountsGeneratedEvent` via Kafka
 
 ## Security Architecture
 
-### Filter Order (top to bottom)
+### Filter Chain (in order)
 
-| Order | Filter | Responsibility |
-|-------|--------|----------------|
-| 1 | `SecurityHeadersFilter` | Sets HSTS, CSP, X-Frame-Options, Permissions-Policy, COOP, CORP headers on every response |
+| # | Filter | Responsibility |
+|---|--------|----------------|
+| 1 | `SecurityHeadersFilter` | Sets HSTS, CSP, X-Frame-Options, Permissions-Policy, COOP, CORP, X-Content-Type-Options, Referrer-Policy headers on every response |
 | 2 | `RateLimitFilter` | Token-bucket per IP, configurable paths, returns `X-RateLimit-*` headers + 429 |
-| 3 | `JwtAuthenticationFilter` | Extracts `Bearer` token, validates signature + JTI in Redis, populates `SecurityContext` |
-| 4 | Spring Security's `UsernamePasswordAuthenticationFilter` | Form/login auth (if applicable) |
+| 3 | `JwtAuthenticationFilter` | Extracts `Authentication` + `refresh` headers, validates/sets auth context, handles auto-refresh |
+| 4 | Spring Security's `UsernamePasswordAuthenticationFilter` | Standard security filter (form/login auth) |
+| 5 | `HeaderForwardingFilter` | Injects `X-User-Id` header from security context into proxied requests |
+
+Additionally, `HttpRequestLoggingFilter` wraps the entire chain to log method, URI, status, and duration.
+
+### URL Access Rules
+
+Defined in `SecurityRulesConfig`
 
 ### Auth Credential vs User Service
 
-- `AuthCredential` (local DB) is the authority for authentication — email, password hash, role, locked/active/verified flags
-- `user-service` is only called for: registration, email verification, profile updates, and deactivation
+- `AuthCredential` (local PostgreSQL) is the authority for authentication — email, password hash, role, locked/active/verified flags
+- `user-service` is called for: registration, org membership checks, and member generation
 - This keeps auth working even if `user-service` is temporarily down
+
+### Token Types
+
+| Type | Purpose | TTL |
+|------|---------|-----|
+| `ACCESS` | API authentication, stored in Redis as JTI | 5 min |
+| `REFRESH` | Session identifier, stored in PostgreSQL row | 7 days |
+| `EMAIL_VERIFICATION` | Email verification link | 5 min |
+| `PASSWORD_RESET` | Password reset link | 5 min |
 
 ### Token Validation
 
 - `parseToken()` — verifies JWT signature only (no expiry check)
 - `isAccessTokenValid()` — checks type=ACCESS + JTI exists in Redis (Redis TTL enforces expiry)
-- Email/password-reset tokens → expiry checked manually via `parseAndValidate()`
+- Email/password-reset tokens — expiry checked manually via `parseAndValidate()`
 
-### Rate Limiting
+### Refresh Token Rotation & Theft Detection
+
+When a refresh token is used:
+1. The old session row is locked with `PESSIMISTIC_WRITE`
+2. If already revoked → token theft detected → ALL sessions for that user are revoked
+3. Old row marked revoked, new row created with fresh `sessionId`
+4. New access + refresh tokens issued
+
+## Service Routing
+
+Defined in `RoutesConfig`. The gateway routes `/api/v1/{service}/**` to the corresponding Eureka service using load-balanced URIs:
+
+| Path Prefix | Target Service |
+|-------------|----------------|
+| `/api/v1/user/**` | `user-service` |
+| `/api/v1/analytics/**` | `analytics-service` |
+| `/api/v1/audit/**` | `audit-service` |
+| `/api/v1/availability-locking/**` | `availability-locking-service` |
+| `/api/v1/event/**` | `event-service` |
+| `/api/v1/notification/**` | `notification-service` |
+| `/api/v1/payment/**` | `payment-service` |
+| `/api/v1/reservation/**` | `reservation-service` |
+| `/api/v1/ticket/**` | `ticket-service` |
+| `/api/v1/venue/**` | `venue-service` |
+
+Each service also exposes aggregated OpenAPI docs at `/aggregate/{service}/v3/api-docs`.
+
+## Rate Limiting
 
 Configured in `application.yaml`:
 
 ```yaml
 rate-limit:
-  paths:
-    - /api/v1/auth/**
+  paths: /**
   capacity: 20
   refill: 20
   refill-period: 1m
@@ -99,27 +171,58 @@ rate-limit:
 - Respects `X-Forwarded-For` / `X-Real-IP` headers behind proxies
 - Returns `X-RateLimit-Limit`, `X-RateLimit-Remaining`, `X-RateLimit-Reset` headers
 
+## Event Publishing
+
+All events are published via Kafka after the local transaction commits (`@TransactionalEventListener(phase = AFTER_COMMIT)`):
+
+| Event | Topic | Trigger |
+|-------|-------|---------|
+| `EmailVerificationEvent` | `user_email_verification` | Register / resend verification |
+| `PasswordResetEvent` | `user_password_reset` | Password forgot request |
+| `AuditEvent` | `audit_event` | Register, deactivate, unlock org |
+| `AccountsGeneratedEvent` | `accounts_generated` | Org account generation |
+
+## Scheduled Jobs
+
+| Job | Cron | Description |
+|-----|------|-------------|
+| `RedisTokenSessionCleanUpJob` | Every 2 hours | Removes stale JTIs from Redis user session sets |
+| `RefreshTokenCleanupJob` | Daily at midnight | Deletes revoked/expired refresh token rows |
+| `UnlockUsers` | Every minute | Unlocks accounts whose lock period has expired |
+
+## Private API (Inter-service)
+
+**Base path:** `/api/v1/service/auth`
+
+| Endpoint | Description                                                  |
+|----------|--------------------------------------------------------------|
+| `POST /unlock-org` | Unlocks an org head account (called by admin in his service) |
+
 ## Project Structure
 
 ```
 src/main/java/org/ticketsouq/apigateway/
-├── ApiGatewayApplication.java       # Entry point
+├── ApiGatewayApplication.java          # Entry point
+├── client/
+│   └── UserServiceClient.java          # Feign client to user-service
 ├── config/
-│   ├── CustomUserDetails.java       # Spring Security principal
-│   ├── RedisConfig.java             # Redis connection + template
-│   ├── RoutesConfig.java            # Eureka-based routing
-│   ├── SecurityConfig.java          # Security filter chain
+│   ├── CustomUserDetails.java          # Spring Security principal
+│   ├── RedisConfig.java                # Redis connection + template
+│   ├── RoutesConfig.java               # Eureka-based routing
+│   ├── SecurityConfig.java             # Security filter chain
+│   ├── SecurityRule.java               # URL access rule record
+│   ├── SecurityRulesConfig.java        # Bean for URL access rules
 │   └── Filters/
-│       ├── HttpRequestLoggingFilter.java
-│       ├── JwtAuthenticationFilter.java
-│       ├── SecurityHeadersFilter.java
+│       ├── HeaderForwardingFilter.java # Injects X-User-Id
+│       ├── HttpRequestLoggingFilter.java # Request/response logging
+│       ├── JwtAuthenticationFilter.java # JWT auth + auto-refresh
+│       ├── SecurityHeadersFilter.java  # Security response headers
 │       └── RateLimit/
 │           ├── RateLimitFilter.java
 │           └── RateLimitProperties.java
-├── client/
-│   └── UserServiceClient.java       # Feign client to user-service
 ├── controller/
-│   └── AuthController.java          # /api/v1/auth/**
+│   ├── AuthController.java             # /api/v1/auth/**
+│   └── AuthPrivateController.java      # /api/v1/service/auth/**
 ├── dto/
 │   ├── AuthResponse.java
 │   ├── ChangePasswordRequest.java
@@ -127,38 +230,22 @@ src/main/java/org/ticketsouq/apigateway/
 │   ├── RegisterRequest.java
 │   └── ResetPasswordRequest.java
 ├── event/
-│   └── AuthEventPublisher.java      # Kafka event emitter
+│   └── AuthEventPublisher.java         # Kafka event emitter
 ├── jobs/
-│   └── CleaningJobs.java            # Scheduled token cleanup
+│   └── CleaningJobs.java               # Scheduled token cleanup
 ├── model/
 │   ├── AuthCredential.java
 │   ├── RefreshToken.java
 │   ├── Role.java
 │   └── TokenType.java
 ├── repository/
-│   ├── AccessTokenRepository.java   # Redis JTI store
+│   ├── AccessTokenRepository.java      # Redis JTI store (Lua scripts)
 │   ├── AuthCredentialRepository.java
 │   └── RefreshTokenRepository.java
 └── service/
-    ├── AuthService.java             # Auth orchestration
-    └── AuthTokenService.java        # JWT + token lifecycle
+    ├── AuthService.java                # Auth orchestration
+    └── AuthTokenService.java           # JWT + token lifecycle
 ```
-
-## Configuration
-
-Most properties come from `config-server` (`config-repo/`). Service-specific overrides:
-
-| Key | Default | Description |
-|-----|---------|-------------|
-| `server.port` | `8080` | Gateway port |
-| `jwt.secret` | — | HMAC key (min 32 bytes) |
-| `jwt.access-token-expiry-ms` | `900000` (15min) | Access token TTL |
-| `jwt.refresh-token-expiry-ms` | `604800000` (7d) | Refresh token TTL |
-| `jwt.email-token-expiry-ms` | `900000` (15min) | Email verification TTL |
-| `jwt.password-reset-expiry-ms` | `900000` (15min) | Password reset TTL |
-| `rate-limit.capacity` | `20` | Token bucket max |
-| `rate-limit.refill` | `20` | Tokens per window |
-| `rate-limit.refill-period` | `1m` | Refill window |
 
 ## Running Locally
 
@@ -180,3 +267,19 @@ cd user-service && mvn spring-boot:run
 ```
 
 The gateway will be available at `http://localhost:8080`.
+
+## API Headers Reference
+
+When calling the gateway as an authenticated client:
+
+```
+Authentication: <access_token>
+refresh: <refresh_token>          # optional — only needed when access token is expired
+```
+
+On successful refresh, the response includes:
+
+```
+Authentication: <new_access_token>
+refresh: <new_refresh_token>
+```
