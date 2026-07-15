@@ -12,6 +12,7 @@ import org.ticketsouq.apigateway.dto.*;
 import org.ticketsouq.apigateway.service.AuthService;
 import org.ticketsouq.sharedmodule.ApiGateway.dto.GenerateAccountRequest;
 import org.ticketsouq.sharedmodule.ApiGateway.dto.GeneratedAccount;
+import org.ticketsouq.sharedmodule.utils.UUIDUtils;
 
 import java.util.List;
 import java.util.UUID;
@@ -39,11 +40,11 @@ public class AuthController {
         return ResponseEntity.ok(authService.login(req));
     }
 
-    @PostMapping("/refresh")
-    public ResponseEntity<AuthResponse> refresh(@RequestHeader("Authorization") String authHeader) {
-        String token = authHeader.startsWith("Bearer ") ? authHeader.substring(7) : authHeader;
-        return ResponseEntity.ok(authService.refresh(token));
-    }
+//    @PostMapping("/refresh")
+//    public ResponseEntity<AuthResponse> refresh(@RequestHeader("Authorization") String authHeader) {
+//        String token = authHeader.startsWith("Bearer ") ? authHeader.substring(7) : authHeader;
+//        return ResponseEntity.ok(authService.refresh(token));
+//    }
 
     // ── SESSION MANAGEMENT ────────────────────────────────────────────────────
 
@@ -58,7 +59,7 @@ public class AuthController {
     @PostMapping("/logout-all")
     @PreAuthorize("isAuthenticated()")
     public ResponseEntity<Void> logoutAll(@AuthenticationPrincipal String userId) {
-        authService.logoutFromAllDevices(UUID.fromString(userId));
+        authService.logoutFromAllDevices(UUIDUtils.parse(userId));
         return ResponseEntity.noContent().build();
     }
 
