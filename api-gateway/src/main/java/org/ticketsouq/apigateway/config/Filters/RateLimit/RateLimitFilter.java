@@ -22,6 +22,7 @@ import org.ticketsouq.sharedmodule.GeneralExceptions.ErrorResponse;
 import java.io.IOException;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.List;
 
 @Component
 @Slf4j
@@ -31,8 +32,6 @@ public class RateLimitFilter extends OncePerRequestFilter {
 
     private final ObjectMapper objectMapper;
     private final RateLimitProperties rateLimitProperties;
-
-    // Matches request URIs against configured patterns like /api/v1/auth/**
     private final PathMatcher pathMatcher = new AntPathMatcher();
 
     // Per-IP token buckets, evicted after 2min of inactivity, max 100k entries
@@ -52,6 +51,29 @@ public class RateLimitFilter extends OncePerRequestFilter {
             return xri;
         }
         return req.getRemoteAddr();
+    }
+
+    // Check if request originated from a configured frontend origin — skip rate limiting
+    private boolean isFromFrontend(HttpServletRequest req) {
+        List<String> allowedOrigins = rateLimitProperties.getAllowedOrigins();
+        if (allowedOrigins == null || allowedOrigins.isEmpty()) {
+            return false;
+        }
+        String origin = req.getHeader("Origin");
+        if (origin != null && allowedOrigins.contains(origin)) {
+            return true;
+        }
+        String referer = req.getHeader("Referer");
+        if (referer != null) {
+            try {
+                java.net.URI uri = new java.net.URI(referer);
+                String refererOrigin = uri.getScheme() + "://" + uri.getAuthority();
+                if (allowedOrigins.contains(refererOrigin)) {
+                    return true;
+                }
+            } catch (Exception ignored) {}
+        }
+        return false;
     }
 
     // Get or create a token bucket for this key (tokens refill in full every period, no bursting)
@@ -76,6 +98,12 @@ public class RateLimitFilter extends OncePerRequestFilter {
     @Override
     protected void doFilterInternal(HttpServletRequest req, HttpServletResponse res, FilterChain chain)
             throws ServletException, IOException {
+
+        // Skip rate limiting for requests from frontend origins
+        if (isFromFrontend(req)) {
+            chain.doFilter(req, res);
+            return;
+        }
 
         // Only rate-limit paths matching the configured patterns
         String path = req.getRequestURI();

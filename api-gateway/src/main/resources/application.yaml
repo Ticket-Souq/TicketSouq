@@ -52,7 +52,11 @@ jwt:
   issuer: ticket-souq
 
 rate-limit:
-  paths: /api/v1/auth/**
+  paths: /**
   capacity: 20
   refill: 20
   refill-period: 1m
+  allowed-origins:
+    - http://localhost:4200
+    - http://localhost:3000
+    - http://localhost:5173

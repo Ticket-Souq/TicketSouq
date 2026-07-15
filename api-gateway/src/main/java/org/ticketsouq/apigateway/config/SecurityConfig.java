@@ -24,6 +24,7 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 import org.ticketsouq.apigateway.config.Filters.HeaderForwardingFilter;
 import org.ticketsouq.apigateway.config.Filters.JwtAuthenticationFilter;
 import org.ticketsouq.apigateway.config.Filters.RateLimit.RateLimitFilter;
+import org.ticketsouq.apigateway.config.Filters.RateLimit.RateLimitProperties;
 import org.ticketsouq.apigateway.config.Filters.SecurityHeadersFilter;
 import org.ticketsouq.apigateway.model.AuthCredential;
 import org.ticketsouq.apigateway.repository.AuthCredentialRepository;
@@ -42,6 +43,7 @@ public class SecurityConfig {
     private final SecurityHeadersFilter securityHeadersFilter;
     private final HeaderForwardingFilter headerForwardingFilter;
     private final AuthCredentialRepository authCredentialRepository;
+    private final RateLimitProperties rateLimitProperties;
 
     // ── Security filter chain ──────────────────────────────────────────────
     // Defines which requests are public, which are internal-only, and which
@@ -49,7 +51,6 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         return http
-            // Allow frontend origins (Angular 4200, React 3000) to call the API
             .cors(Customizer.withDefaults())
 
             // Stateless API — no CSRF tokens needed
@@ -112,12 +113,10 @@ public class SecurityConfig {
         return config.getAuthenticationManager();
     }
 
-    // Allows http://localhost:4200 (Angular) and http://localhost:3000 (React)
-    // to access the API with credentials (cookies, auth headers).
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration config = new CorsConfiguration();
-        config.setAllowedOriginPatterns(List.of("http://localhost:4200", "http://localhost:3000","http://localhost:5173"));
+        config.setAllowedOriginPatterns(rateLimitProperties.getAllowedOrigins());
         config.setAllowedMethods(List.of("*"));
         config.setAllowedHeaders(List.of("*"));
         config.setAllowCredentials(true);
