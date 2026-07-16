@@ -17,7 +17,10 @@ import org.ticketsouq.eventservice.model.Event;
 import org.ticketsouq.eventservice.repository.ElasticsearchEventRepository;
 import org.ticketsouq.eventservice.repository.EventRepository;
 
+import java.util.Comparator;
 import java.util.List;
+import java.util.UUID;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -28,6 +31,10 @@ public class ESSearchService implements SearchService {
     private final EventRepository eventRepository;
 
     public Page<EventCardResponse> searchBy(EventSearchRequest request, Pageable pageable) {
+        if (request.title() == null && request.organization() == null && request.category() == null) {
+            return Page.empty();
+        }
+
         BoolQuery.Builder boolQuery = new BoolQuery.Builder();
 
         if (request.title() != null) addFilterLayer(boolQuery,"title",request.title());
@@ -41,13 +48,17 @@ public class ESSearchService implements SearchService {
 
         SearchHits<EventIndex> searchHits = elasticsearchOperations.search(query, EventIndex.class);
 
-        List<EventCardResponse> content = searchHits.stream()
+        List<UUID> matchingIds = searchHits.stream()
             .map(SearchHit::getContent)
-            .map(this::getEntity)
+            .map(EventIndex::getId)
+            .toList();
+        List<EventCardResponse> events = eventRepository.findAllById(matchingIds).stream()
             .map(EventCardResponse::from)
+            .sorted(Comparator.comparing(EventCardResponse::startDate))
             .toList();
 
-        return new PageImpl<>(content, pageable, searchHits.getTotalHits());
+
+        return new PageImpl<>(events, pageable, searchHits.getTotalHits());
     }
 
     private void addFilterLayer(BoolQuery.Builder boolQuery,String field, String value) {
@@ -68,8 +79,5 @@ public class ESSearchService implements SearchService {
         elasticsearchEventRepository.deleteById(event.getId());
     }
 
-    private Event getEntity(EventIndex index) {
-        return eventRepository.findById(index.getId()).orElseThrow();
-    }
 
 }

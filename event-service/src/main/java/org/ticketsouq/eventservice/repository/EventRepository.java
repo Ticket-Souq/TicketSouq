@@ -21,7 +21,7 @@ public interface EventRepository extends JpaRepository<Event, UUID> {
     Page<Event> findFilteredEvents(@Param("organization") String organization, @Param("statuses") List<EventStatus> statuses, Pageable pageable);
 
     @Query(value = """
-        SELECT DISTINCT e.* FROM events e
+        SELECT e.* FROM events e
         LEFT JOIN event_categories ec ON ec.id = e.event_category_id
         WHERE (:title IS NULL OR e.title % :title)
           AND (:organization IS NULL OR e.organization % :organization)

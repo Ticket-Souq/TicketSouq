@@ -10,7 +10,7 @@ import org.ticketsouq.eventservice.model.Section;
 import org.ticketsouq.eventservice.model.enums.BookingModel;
 import org.ticketsouq.eventservice.model.enums.EventStatus;
 import org.ticketsouq.eventservice.model.enums.SeatStatus;
-import org.ticketsouq.eventservice.repository.EventCategoriesRepository;
+import org.ticketsouq.eventservice.repository.EventCategoryRepository;
 import org.ticketsouq.sharedmodule.utils.UUIDUtils;
 
 import java.util.*;
@@ -19,35 +19,33 @@ import java.util.*;
 @RequiredArgsConstructor
 public class EventFrontendMapper {
 
-    private final EventCategoriesRepository eventCategoriesRepository;
+    private final EventCategoryRepository eventCategoriesRepository;
     private final UserServiceClient userServiceClient;
 
     /// DTO to Entity
     public Event buildEvent(UUID createdBy, CreateEventWithLayoutRequest request) {
         Event event = Event.builder()
-                .title(request.name())
-                .description(request.description())
-                .venueTemplateId(request.id())
-                .eventCategory(
-                    eventCategoriesRepository.findByNameIgnoreCase(request.categoryName())
-                        .orElseGet(() ->
-                            eventCategoriesRepository.save(
-                                EventCategory.builder()
-                                    .name(request.categoryName())
-                                    .build()
-                            )
+            .title(request.name())
+            .description(request.description())
+            .venueTemplateId(request.id())
+            .eventCategory(
+                eventCategoriesRepository.findByNameIgnoreCase(request.categoryName())
+                    .orElseGet(() ->
+                        eventCategoriesRepository.save(
+                            EventCategory.builder()
+                                .name(request.categoryName())
+                                .build()
                         )
-                )
-                // TODO make mock in user service
-//                .organization(userServiceClient.getOrganizationName(createdBy))
-                .organization("org name")
-                .createdBy(createdBy)
-                .PosterUrl(request.posterUrl())
-                .status(EventStatus.PUBLISHED)
-                .bookingModel(mapBookingModel(request.mode()))
-                .startDate(request.startDate())
-                .finishDate(request.finishDate())
-                .build();
+                    )
+            )
+            .organization(userServiceClient.getOrganizationName(createdBy))
+            .createdBy(createdBy)
+            .PosterUrl(request.posterUrl())
+            .status(EventStatus.PUBLISHED)
+            .bookingModel(mapBookingModel(request.mode()))
+            .startDate(request.startDate())
+            .finishDate(request.finishDate())
+            .build();
 
         Map<UUID, Section> categorySectionMap = buildSections(request.categories(), event);
         if (event.getBookingModel() == BookingModel.SEAT) {
@@ -57,6 +55,7 @@ public class EventFrontendMapper {
         event.setSections(new ArrayList<>(categorySectionMap.values()));
         return event;
     }
+
     private Map<UUID, Section> buildSections(List<CreateEventWithLayoutRequest.CategoryDto> categories, Event event) {
         Map<UUID, Section> map = new LinkedHashMap<>();
 
@@ -64,19 +63,20 @@ public class EventFrontendMapper {
 
         for (CreateEventWithLayoutRequest.CategoryDto cat : categories) {
             Section section = Section.builder()
-                    .id(UUIDUtils.parse(cat.id()))
-                    .event(event)
-                    .name(cat.name())
-                    .capacity(cat.capacity())
-                    .remainingCapacity(cat.capacity())
-                    .color(cat.color())
-                    .price(cat.price())
-                    .build();
+                .id(UUIDUtils.parse(cat.id()))
+                .event(event)
+                .name(cat.name())
+                .capacity(cat.capacity())
+                .remainingCapacity(cat.capacity())
+                .color(cat.color())
+                .price(cat.price())
+                .build();
             map.put(section.getId(), section);
 
         }
         return map;
     }
+
     private void buildSeats(List<CreateEventWithLayoutRequest.RowDto> rows, Map<UUID, Section> categorySectionMap) {
         if (rows == null) return;
 
@@ -92,23 +92,24 @@ public class EventFrontendMapper {
                 if (section == null) continue;
 
                 Seat seat = Seat.builder()
-                        .id(UUIDUtils.parse(cell.id()))
-                        .section(section)
-                        .row(rowIdx)
-                        .col(colIdx)
-                        .lable(cell.number())
-                        .status(mapSeatStatus(cell.status()))
-                        .build();
+                    .id(UUIDUtils.parse(cell.id()))
+                    .section(section)
+                    .row(rowIdx)
+                    .col(colIdx)
+                    .lable(cell.number())
+                    .status(mapSeatStatus(cell.status()))
+                    .build();
                 section.getSeats().add(seat);
 
                 if (seat.getStatus().equals(SeatStatus.BOOKED)) {
                     seat.setStatus(SeatStatus.BOOKED_ORGANIZER);
-                    section.setRemainingCapacity(section.getRemainingCapacity()-1);
+                    section.setRemainingCapacity(section.getRemainingCapacity() - 1);
                 }
 
             }
         }
     }
+
     private BookingModel mapBookingModel(String mode) {
         if (mode == null) return BookingModel.SEAT;
         return switch (mode.toUpperCase()) {
@@ -117,6 +118,7 @@ public class EventFrontendMapper {
             default -> BookingModel.SEAT;
         };
     }
+
     private SeatStatus mapSeatStatus(String frontendStatus) {
         if (frontendStatus == null) return SeatStatus.AVAILABLE;
         return switch (frontendStatus.toLowerCase()) {
@@ -152,6 +154,7 @@ public class EventFrontendMapper {
             categories
         );
     }
+
     private EventLayoutResponse.CategoryResponse toCategoryResponse(Section section) {
         return new EventLayoutResponse.CategoryResponse(
             section.getId(),
@@ -162,6 +165,7 @@ public class EventFrontendMapper {
             section.getPrice()
         );
     }
+
     private List<EventLayoutResponse.RowResponse> buildRows(List<Section> sections) {
         Map<Integer, List<Seat>> seatsByRow = new TreeMap<>();
 
@@ -191,6 +195,7 @@ public class EventFrontendMapper {
 
         return rows;
     }
+
     private String toRowLabel(int rowIndex) {
         StringBuilder sb = new StringBuilder();
         int n = rowIndex;
@@ -200,6 +205,7 @@ public class EventFrontendMapper {
         } while (n >= 0);
         return sb.reverse().toString();
     }
+
     private EventLayoutResponse.CellResponse toCellResponse(Seat seat) {
         return new EventLayoutResponse.CellResponse(
             seat.getId(),
@@ -209,6 +215,7 @@ public class EventFrontendMapper {
             seat.getSection().getId()
         );
     }
+
     private String toFrontendStatus(SeatStatus status) {
         if (status == null) return "available";
         return switch (status) {
@@ -217,6 +224,7 @@ public class EventFrontendMapper {
             case BOOKED, BOOKED_ORGANIZER -> "reserved";
         };
     }
+
     private String toFrontendMode(BookingModel model) {
         if (model == null) return "SEAT_BASED";
         return switch (model) {
