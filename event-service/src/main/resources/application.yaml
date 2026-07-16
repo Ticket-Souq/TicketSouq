@@ -1,8 +1,11 @@
 EurekaOrigin : http://localhost:8761
 
 spring:
+  banner:
+    location: classpath:banner.txt
   application:
     name:  event-service
+    version: 1.0.0
   config:
     import: optional:file:./profile.properties
 
