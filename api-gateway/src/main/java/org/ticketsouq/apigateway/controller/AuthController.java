@@ -109,7 +109,19 @@ public class AuthController {
         return ResponseEntity.noContent().build();
     }
 
-    // ── ORG ACCOUNT GENERATION ────────────────────────────────────────────────
+    // ── ORG HEAD options ────────────────────────────────────────────────
+
+    @DeleteMapping("/org")
+    public ResponseEntity<Void> deactivateEmployeeAccount(@RequestBody String userId) {
+        authService.deactivateEmployeeAccount(UUID.fromString(userId));
+        return ResponseEntity.noContent().build();
+    }
+
+    @PostMapping("/org")
+    public ResponseEntity<Void> reactivateEmployeeAccount(@RequestBody String userId) {
+        authService.reactivateEmployeeAccount(UUID.fromString(userId));
+        return ResponseEntity.noContent().build();
+    }
 
     @PostMapping("/org/generate-accounts")
     public ResponseEntity<List<GeneratedAccount>> generateAccounts(@AuthenticationPrincipal String orgHeadUserId, @RequestBody GenerateAccountRequest req) {

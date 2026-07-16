@@ -254,6 +254,23 @@ public class AuthService {
     }
 
     @Transactional
+    public void deactivateEmployeeAccount(UUID userId) {
+        AuthCredential credential = getCredentialByUserId(userId);
+        credential.setIsActive(false);
+        credentialRepository.save(credential);
+        logoutFromAllDevices(userId);
+        sendAuditEventWithNoReason("Organization head deActivate Account", credential.getUserId());
+    }
+
+    @Transactional
+    public void reactivateEmployeeAccount(UUID userId) {
+        AuthCredential credential = getCredentialByUserId(userId);
+        credential.setIsActive(true);
+        credentialRepository.save(credential);
+        sendAuditEventWithNoReason("Organization head deActivate Account", credential.getUserId());
+    }
+
+    @Transactional
     public void unlockOrg(UUID orgHeadId) {
         AuthCredential credential = getCredentialByUserId(orgHeadId);
         credential.setLocked(false);
