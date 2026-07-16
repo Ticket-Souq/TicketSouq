@@ -39,7 +39,10 @@ spring:
         spring.json.use.type.headers: false
         spring.json.value.default.type: org.ticketsouq.sharedmodule.AuditService.events.AuditEvent
 
+
 server:
-  port: 55012
+  port: 0
+
+#for testing purposes
 #server:
-#  port: 0
+#  port: 55012
