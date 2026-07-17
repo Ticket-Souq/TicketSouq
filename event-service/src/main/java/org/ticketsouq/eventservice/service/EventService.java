@@ -9,8 +9,10 @@ import org.springframework.transaction.annotation.Transactional;
 import org.ticketsouq.eventservice.Client.UserServiceClient;
 import org.ticketsouq.eventservice.dto.FrontendMap.*;
 import org.ticketsouq.eventservice.model.Event;
+import org.ticketsouq.eventservice.model.SeatLock;
 import org.ticketsouq.eventservice.model.enums.EventStatus;
 import org.ticketsouq.eventservice.repository.EventRepository;
+import org.ticketsouq.eventservice.repository.SeatLockRepository;
 import org.ticketsouq.eventservice.service.Search.SearchService;
 import org.ticketsouq.sharedmodule.AuditService.events.AuditEvent;
 import org.ticketsouq.sharedmodule.EventService.events.EventCancelledEvent;
@@ -20,8 +22,12 @@ import org.ticketsouq.sharedmodule.GeneralExceptions.ResourceNotFoundException;
 
 import java.time.Duration;
 import java.time.Instant;
+import java.time.LocalDateTime;
+import java.util.Collections;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 
 @Service
@@ -33,6 +39,7 @@ public class EventService {
     private final ApplicationEventPublisher eventPublisher;
     private final EventFrontendMapper eventFrontendMapper;
     private final UserServiceClient userServiceClient;
+    private final SeatLockRepository seatLockRepository;
 
     @Transactional
     public void create(UUID userId, CreateEventWithLayoutRequest request) {
@@ -46,12 +53,29 @@ public class EventService {
     @Transactional(readOnly = true)
     public EventLayoutResponse getById(UUID id) {
         Event event = eventRepository.findById(id).orElseThrow(() -> new ResourceNotFoundException("Event", id));
-        return eventFrontendMapper.toEventLayoutResponse(event);
+
+        if (event.getBookingModel() == org.ticketsouq.eventservice.model.enums.BookingModel.SEAT && event.getSections() != null) {
+            List<UUID> allSeatIds = event.getSections().stream()
+                .flatMap(s -> s.getSeats().stream())
+                .map(seat -> seat.getId())
+                .toList();
+
+            if (!allSeatIds.isEmpty()) {
+                List<SeatLock> activeLocks = seatLockRepository.findBySeatIdInAndExpiresAtAfter(allSeatIds, LocalDateTime.now());
+                Set<UUID> lockedSeatIds = activeLocks.stream()
+                    .map(SeatLock::getSeatId)
+                    .collect(Collectors.toSet());
+                return eventFrontendMapper.toEventLayoutResponse(event, lockedSeatIds);
+            }
+        }
+
+        return eventFrontendMapper.toEventLayoutResponse(event, Collections.emptySet());
     }
 
     @Transactional(readOnly = true)
     public Page<EventCardResponse> getEvents(UUID userId, Pageable pageable) {
         String organization = userServiceClient.getOrganizationName(userId);
+//        String organization = null ;
 
         return eventRepository.
             findFilteredEvents(organization, List.of(EventStatus.PUBLISHED, EventStatus.ACTIVE), pageable)
