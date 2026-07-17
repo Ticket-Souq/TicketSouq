@@ -39,6 +39,7 @@ public class EventFrontendMapper {
                     )
             )
             .organization(userServiceClient.getOrganizationName(createdBy))
+//            .organization("el lap bemoooot")
             .createdBy(createdBy)
             .PosterUrl(request.posterUrl())
             .status(EventStatus.PUBLISHED)
@@ -122,21 +123,20 @@ public class EventFrontendMapper {
     private SeatStatus mapSeatStatus(String frontendStatus) {
         if (frontendStatus == null) return SeatStatus.AVAILABLE;
         return switch (frontendStatus.toLowerCase()) {
-            case "blocked" -> SeatStatus.LOCKED;
-            case "reserved" -> SeatStatus.BOOKED;
+            case "blocked", "reserved" -> SeatStatus.BOOKED;
             default -> SeatStatus.AVAILABLE;
         };
     }
 
     /// Entity to DTO
-    public EventLayoutResponse toEventLayoutResponse(Event event) {
+    public EventLayoutResponse toEventLayoutResponse(Event event, Set<UUID> lockedSeatIds) {
         List<Section> sections = event.getSections() != null ? event.getSections() : List.of();
 
         List<EventLayoutResponse.CategoryResponse> categories = sections.stream()
             .map(this::toCategoryResponse)
             .toList();
 
-        List<EventLayoutResponse.RowResponse> rows = event.getBookingModel() == BookingModel.SEAT ? buildRows(sections) : List.of();
+        List<EventLayoutResponse.RowResponse> rows = event.getBookingModel() == BookingModel.SEAT ? buildRows(sections, lockedSeatIds) : List.of();
 
         return new EventLayoutResponse(
             event.getId(),
@@ -166,7 +166,7 @@ public class EventFrontendMapper {
         );
     }
 
-    private List<EventLayoutResponse.RowResponse> buildRows(List<Section> sections) {
+    private List<EventLayoutResponse.RowResponse> buildRows(List<Section> sections, Set<UUID> lockedSeatIds) {
         Map<Integer, List<Seat>> seatsByRow = new TreeMap<>();
 
         for (Section section : sections) {
@@ -183,7 +183,7 @@ public class EventFrontendMapper {
             seatsInRow.sort(Comparator.comparingInt(Seat::getCol));
 
             List<EventLayoutResponse.CellResponse> cells = seatsInRow.stream()
-                .map(this::toCellResponse)
+                .map(seat -> toCellResponse(seat, lockedSeatIds))
                 .toList();
 
             rows.add(new EventLayoutResponse.RowResponse(
@@ -206,21 +206,22 @@ public class EventFrontendMapper {
         return sb.reverse().toString();
     }
 
-    private EventLayoutResponse.CellResponse toCellResponse(Seat seat) {
+    private EventLayoutResponse.CellResponse toCellResponse(Seat seat, Set<UUID> lockedSeatIds) {
+        boolean isLocked = lockedSeatIds.contains(seat.getId());
         return new EventLayoutResponse.CellResponse(
             seat.getId(),
             "seat",
             seat.getLable(),
-            toFrontendStatus(seat.getStatus()),
+            toFrontendStatus(seat.getStatus(), isLocked),
             seat.getSection().getId()
         );
     }
 
-    private String toFrontendStatus(SeatStatus status) {
+    private String toFrontendStatus(SeatStatus status, boolean isLocked) {
+        if (status == SeatStatus.AVAILABLE && isLocked) return "blocked";
         if (status == null) return "available";
         return switch (status) {
             case AVAILABLE -> "available";
-            case LOCKED -> "blocked";
             case BOOKED, BOOKED_ORGANIZER -> "reserved";
         };
     }
