@@ -11,7 +11,7 @@ services:
       POSTGRES_DB: auth_db
     restart: unless-stopped
     ports:
-      - "5432:5432"
+      - "15432:5432"
     volumes:
       - postgres_auth_data:/var/lib/postgresql
     networks:
