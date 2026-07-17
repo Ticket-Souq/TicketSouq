@@ -1,4 +1,4 @@
-package org.ticketsouq.eventservice.exception;
+package org.ticketsouq.sharedmodule.ReservationService.exception;
 
 import org.ticketsouq.sharedmodule.GeneralExceptions.ConflictException;
 
