@@ -12,10 +12,12 @@ import org.ticketsouq.eventservice.dto.FrontendMap.CreateEventWithLayoutRequest;
 import org.ticketsouq.eventservice.dto.FrontendMap.EventCardResponse;
 import org.ticketsouq.eventservice.dto.FrontendMap.EventLayoutResponse;
 import org.ticketsouq.eventservice.service.EventService;
+import org.ticketsouq.eventservice.service.LockService;
 import org.ticketsouq.eventservice.service.Search.SearchService;
 import org.ticketsouq.eventservice.service.SeatService;
 import org.ticketsouq.eventservice.service.SectionService;
 
+import java.util.List;
 import java.util.UUID;
 
 @RestController
@@ -26,6 +28,7 @@ public class EventController {
     private final SearchService eventSearchService;
     private final SectionService sectionService;
     private final SeatService seatService;
+    private final LockService lockService;
 
 
     @PostMapping("/{eventId}/sections")
@@ -74,4 +77,8 @@ public class EventController {
         return ResponseEntity.ok(seatService.updateOrganizerSeatStatus(seatId, request, userId));
     }
 
+    @GetMapping("/{eventId}/zones")
+    public ResponseEntity<List<ZoneStatusResponse>> getZoneStatuses(@PathVariable UUID eventId) {
+        return ResponseEntity.ok(lockService.getZoneStatuses(eventId));
+    }
 }
