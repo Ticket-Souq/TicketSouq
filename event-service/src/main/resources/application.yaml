@@ -46,5 +46,9 @@ spring:
         spring.json.trusted.packages: "*"
         spring.json.use.type.headers: true
 
+app:
+  lock:
+    ttl: 10
+
 server:
   port: 0
