@@ -1,12 +1,9 @@
 package org.ticketsouq.auditservice.controller;
 
-import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.ticketsouq.auditservice.dto.AuditLogResponse;
-import org.ticketsouq.auditservice.dto.CreateAuditLogRequest;
 import org.ticketsouq.auditservice.service.AuditService;
 
 import java.time.Instant;
@@ -20,11 +17,11 @@ public class AuditController {
 
     private final AuditService auditService;
 
-    @PostMapping
-    public ResponseEntity<Void> create(@Valid @RequestBody CreateAuditLogRequest request) {
-        auditService.produceEvent(request);
-        return ResponseEntity.status(HttpStatus.ACCEPTED).build();
-    }
+//    @PostMapping
+//    public ResponseEntity<Void> create(@Valid @RequestBody CreateAuditLogRequest request) {
+//        auditService.produceEvent(request);
+//        return ResponseEntity.status(HttpStatus.ACCEPTED).build();
+//    }
 
     @GetMapping
     public ResponseEntity<List<AuditLogResponse>> getAll() {

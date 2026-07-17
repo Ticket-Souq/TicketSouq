@@ -5,7 +5,6 @@ import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.ticketsouq.auditservice.dto.AuditLogResponse;
-import org.ticketsouq.auditservice.dto.CreateAuditLogRequest;
 import org.ticketsouq.auditservice.mapper.AuditLogMapper;
 import org.ticketsouq.auditservice.repository.AuditLogRepository;
 import org.ticketsouq.auditservice.service.AuditService;
@@ -16,8 +15,6 @@ import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 
-import static org.ticketsouq.sharedmodule.Constants.TOPIC_NAMES.AUDIT_EVENT;
-
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
@@ -25,19 +22,19 @@ public class AuditServiceImpl implements AuditService {
 
     private final AuditLogRepository repository;
     private final AuditLogMapper mapper;
-    private final KafkaTemplate<String, AuditEvent> kafkaTemplate;
+//    private final KafkaTemplate<String, AuditEvent> kafkaTemplate;
 
-    @Override
-    @Transactional
-    public void produceEvent(CreateAuditLogRequest request) {
-        var event = new AuditEvent(
-                request.action(),
-                request.madeById(),
-                request.reason(),
-                request.madeAt() != null ? request.madeAt() : Instant.now()
-        );
-        kafkaTemplate.send(AUDIT_EVENT, event);
-    }
+
+//    @Transactional
+//    public void produceEvent(AuditEvent request) {
+//        var event = new AuditEvent(
+//                request.action(),
+//                request.madeById(),
+//                request.reason(),
+//                request.madeAt() != null ? request.madeAt() : Instant.now()
+//        );
+//        kafkaTemplate.send(AUDIT_EVENT, event);
+//    }
 
     @Override
     public AuditLogResponse findById(UUID id) {

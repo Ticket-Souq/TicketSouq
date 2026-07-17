@@ -8,6 +8,4 @@ import org.ticketsouq.auditservice.entity.AuditLog;
 public interface AuditLogMapper {
 
     AuditLogResponse toResponse(AuditLog entity);
-
-//    AuditLog toEntity(AuditLogResponse entity);
 }
