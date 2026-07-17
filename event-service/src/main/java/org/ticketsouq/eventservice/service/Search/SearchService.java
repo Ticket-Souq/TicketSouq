@@ -10,9 +10,9 @@ import java.util.List;
 
 public interface SearchService {
 
-    public Page<EventCardResponse> searchBy(EventSearchRequest request , Pageable pageable);
+    Page<EventCardResponse> searchBy(EventSearchRequest request , Pageable pageable);
 
-    public void indexEvent(Event event);
+    void indexEvent(Event event);
 
-    public void deleteFromIndex(Event event);
+    void deleteFromIndex(Event event);
 }

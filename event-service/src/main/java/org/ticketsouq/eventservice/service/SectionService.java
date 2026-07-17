@@ -83,7 +83,14 @@ public class SectionService {
 
         validateSectionName(eventId, request.name());
 
-        Section section = Section.builder().id(UUID.randomUUID()).event(event).name(request.name()).capacity(request.capacity()).remainingCapacity(request.capacity()).price(request.price()).build();
+        Section section = Section.builder()
+            .id(UUID.randomUUID())
+            .event(event)
+            .name(request.name())
+            .capacity(request.capacity())
+            .remainingCapacity(request.capacity())
+            .price(request.price())
+            .build();
 
         return SectionResponse.from(sectionRepository.save(section));
     }

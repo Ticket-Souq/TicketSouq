@@ -37,5 +37,4 @@ public class ZoneLock {
     @CreatedDate
     @Column(name = "created_at", updatable = false)
     private LocalDateTime createdAt;
-    ///  may we want to add @ prepersist
 }

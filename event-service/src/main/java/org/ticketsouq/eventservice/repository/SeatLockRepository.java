@@ -15,17 +15,9 @@ import java.util.UUID;
 
 public interface SeatLockRepository extends JpaRepository<SeatLock, UUID> {
 
-    List<SeatLock> findBySeatIdIn(List<UUID> seatIds);
 
     List<SeatLock> findBySeatIdInAndExpiresAtAfter(List<UUID> seatIds, LocalDateTime now);
-
-    List<SeatLock> findBySeatIdInAndExpiresAtAfterOrderBySeatIdAsc(List<UUID> seatIds, LocalDateTime now);
-
     List<SeatLock> findByReservationId(String reservationId);
-
-    @Lock(LockModeType.PESSIMISTIC_WRITE)
-    @Query("SELECT sl FROM SeatLock sl WHERE sl.reservationId = :reservationId")
-    List<SeatLock> findByReservationIdWithLock(@Param("reservationId") String reservationId);
 
     void deleteByReservationId(String reservationId);
 

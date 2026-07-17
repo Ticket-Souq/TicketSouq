@@ -9,9 +9,18 @@ import org.ticketsouq.eventservice.model.Event;
 import org.ticketsouq.eventservice.model.enums.EventStatus;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 public interface EventRepository extends JpaRepository<Event, UUID> {
+
+    @Query("""
+            SELECT e FROM Event e
+            LEFT JOIN FETCH e.sections s
+            LEFT JOIN FETCH s.seats
+            WHERE e.id = :id
+        """)
+    Optional<Event> findEventById(UUID uuid);
 
     @Query("""
         SELECT e FROM Event e

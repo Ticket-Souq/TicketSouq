@@ -20,10 +20,6 @@ public interface ZoneLockRepository extends JpaRepository<ZoneLock, UUID> {
 
     Optional<ZoneLock> findByReservationId(String reservationId);
 
-    @Lock(LockModeType.PESSIMISTIC_WRITE)
-    @Query("SELECT zl FROM ZoneLock zl WHERE zl.reservationId = :reservationId")
-    Optional<ZoneLock> findByReservationIdWithLock(@Param("reservationId") String reservationId);
-
     void deleteByReservationId(String reservationId);
 
     @Modifying

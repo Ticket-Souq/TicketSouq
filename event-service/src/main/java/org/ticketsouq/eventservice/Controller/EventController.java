@@ -33,11 +33,9 @@ public class EventController {
 
     @PostMapping("/{eventId}/sections")
     public ResponseEntity<SectionResponse> createSection(@PathVariable UUID eventId, @Valid @RequestBody CreateSectionRequest request) {
-
         return ResponseEntity.status(HttpStatus.CREATED).body(sectionService.createSection(eventId, request));
     }
 
-    // info tested
     @PostMapping
     public ResponseEntity<Void> create(@RequestHeader("X-User-Id") UUID userId, @RequestBody CreateEventWithLayoutRequest request) {
         eventService.create(userId, request);
@@ -49,13 +47,11 @@ public class EventController {
         return ResponseEntity.ok(eventService.getEvents(userId, pageable));
     }
 
-    // info tested (need to handle stage and axiel only)
     @GetMapping("/{id}")
     public ResponseEntity<EventLayoutResponse> getById(@PathVariable UUID id) {
         return ResponseEntity.ok(eventService.getById(id));
     }
 
-    //
     @PatchMapping("/sections/{sectionId}")
     public ResponseEntity<SectionResponse> updateSection(@PathVariable UUID sectionId, @Valid @RequestBody UpdateSectionRequest request, @RequestHeader("X-User-Id") UUID userId) {
         return ResponseEntity.ok(sectionService.updateSection(sectionId, request, userId));

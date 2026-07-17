@@ -8,10 +8,13 @@ import org.ticketsouq.eventservice.model.Seat;
 import jakarta.persistence.LockModeType;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 public interface SeatRepository extends JpaRepository<Seat, UUID> {
 
+    @Query("SELECT s FROM Seat s JOIN FETCH s.section sec JOIN FETCH sec.event e WHERE s.id = :seatId")
+    Optional<Seat> findByIdWithSectionAndEvent(@Param("seatId") UUID seatId);
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("SELECT s FROM Seat s JOIN FETCH s.section sec JOIN FETCH sec.event e " +
            "WHERE s.id IN :seatIds AND e.id = :eventId " +
@@ -22,4 +25,6 @@ public interface SeatRepository extends JpaRepository<Seat, UUID> {
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("SELECT s FROM Seat s WHERE s.id IN :seatIds ORDER BY s.id ASC")
     List<Seat> findByIdInWithLock(@Param("seatIds") List<UUID> seatIds);
+
+    List<Seat> findBySectionIdIn(List<UUID> sectionIds);
 }

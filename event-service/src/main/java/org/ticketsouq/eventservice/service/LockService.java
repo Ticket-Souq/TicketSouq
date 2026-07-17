@@ -5,17 +5,20 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.ticketsouq.eventservice.dto.*;
-import org.ticketsouq.eventservice.exception.*;
 import org.ticketsouq.eventservice.model.*;
 import org.ticketsouq.eventservice.model.enums.BookingModel;
 import org.ticketsouq.eventservice.model.enums.EventStatus;
 import org.ticketsouq.eventservice.model.enums.SeatStatus;
 import org.ticketsouq.eventservice.repository.*;
+import org.ticketsouq.sharedmodule.EventService.exception.*;
 import org.ticketsouq.sharedmodule.GeneralExceptions.ConflictException;
 import org.ticketsouq.sharedmodule.GeneralExceptions.ResourceNotFoundException;
 
 import java.time.LocalDateTime;
-import java.util.*;
+import java.util.List;
+import java.util.Optional;
+import java.util.Set;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 @Service
@@ -34,13 +37,13 @@ public class LockService {
     @Transactional
     public LockSeatsResponse acquireSeatLocks(UUID eventId, LockSeatsRequest request) {
         Event event = eventRepository.findById(eventId)
-            .orElseThrow(() -> new EventNotFoundException(eventId));
+            .orElseThrow(() -> new ResourceNotFoundException("Event", eventId));
 
         if (event.getStatus() != EventStatus.PUBLISHED) {
             throw new ConflictException("Only published events can be locked.");
         }
         if (event.getBookingModel() != BookingModel.SEAT) {
-            throw new InvalidEventTypeException(BookingModel.SEAT);
+            throw new InvalidEventTypeException(BookingModel.SEAT.name());
         }
 
         List<Seat> seats = seatRepository.findByIdInAndEventIdWithLock(request.seatIds(), eventId);
@@ -86,13 +89,13 @@ public class LockService {
     @Transactional
     public LockZoneResponse acquireZoneLock(UUID eventId, LockZoneRequest request) {
         Event event = eventRepository.findById(eventId)
-            .orElseThrow(() -> new EventNotFoundException(eventId));
+            .orElseThrow(() -> new ResourceNotFoundException("Event", eventId));
 
         if (event.getStatus() != EventStatus.PUBLISHED) {
             throw new ConflictException("Only published events can be locked.");
         }
         if (event.getBookingModel() != BookingModel.ZONE) {
-            throw new InvalidEventTypeException(BookingModel.ZONE);
+            throw new InvalidEventTypeException(BookingModel.ZONE.name());
         }
 
         Section section = sectionRepository.findByIdAndEventIdWithLock(request.zoneId(), eventId)
@@ -186,10 +189,10 @@ public class LockService {
     @Transactional(readOnly = true)
     public List<ZoneStatusResponse> getZoneStatuses(UUID eventId) {
         Event event = eventRepository.findById(eventId)
-            .orElseThrow(() -> new EventNotFoundException(eventId));
+            .orElseThrow(() -> new ResourceNotFoundException("Event", eventId));
 
         if (event.getBookingModel() != BookingModel.ZONE) {
-            throw new InvalidEventTypeException(BookingModel.ZONE);
+            throw new InvalidEventTypeException(BookingModel.ZONE.name());
         }
 
         List<Section> sections = event.getSections();

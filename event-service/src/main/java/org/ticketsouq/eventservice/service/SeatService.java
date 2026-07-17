@@ -32,7 +32,7 @@ public class SeatService {
     @Transactional
     public SeatResponse updateOrganizerSeatStatus(UUID seatId, UpdateSeatStatusRequest request, UUID userId) {
 
-        Seat seat = seatRepository.findById(seatId).orElseThrow(() -> new ResourceNotFoundException("Seat not found.", seatId));
+        Seat seat = seatRepository.findByIdWithSectionAndEvent(seatId).orElseThrow(() -> new ResourceNotFoundException("Seat not found.", seatId));
 
         Event event = seat.getSection().getEvent();
         validateEventCanBeUpdated(event);
