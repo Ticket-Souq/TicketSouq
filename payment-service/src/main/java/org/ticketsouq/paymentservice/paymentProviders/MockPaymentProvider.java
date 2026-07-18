@@ -1,13 +1,9 @@
 package org.ticketsouq.paymentservice.paymentProviders;
 
-import org.springframework.context.annotation.Profile;
-import org.springframework.stereotype.Service;
 import org.ticketsouq.paymentservice.dto.PaymentRequest;
 import org.ticketsouq.paymentservice.dto.PaymentResponse;
-import org.ticketsouq.paymentservice.enums.PaymentProviderEnum;
 import org.ticketsouq.paymentservice.enums.PaymentStatus;
 import org.ticketsouq.paymentservice.model.PaymentModel;
-
 import org.ticketsouq.sharedmodule.GeneralExceptions.ResourceNotFoundException;
 
 import java.math.BigDecimal;
@@ -16,8 +12,6 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
-@Service
-@Profile("MOCK")
 public class MockPaymentProvider implements PaymentProvider {
 
     private final Map<UUID, PaymentModel> paymentStore = new ConcurrentHashMap<>();
@@ -37,7 +31,6 @@ public class MockPaymentProvider implements PaymentProvider {
                 .amount(request.amount())
                 .currency(request.currency())
                 .paymentStatus(status)
-                .paymentProvider(PaymentProviderEnum.MOCK_PAYMENT)
                 .transactionRef(UUID.randomUUID().toString())
                 .build();
 

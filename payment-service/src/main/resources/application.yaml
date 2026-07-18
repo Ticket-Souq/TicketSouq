@@ -27,5 +27,8 @@ spring:
       properties:
         spring.json.add.type.headers: true
 
+payment:
+  provider: stripe
+
 server:
   port: 0

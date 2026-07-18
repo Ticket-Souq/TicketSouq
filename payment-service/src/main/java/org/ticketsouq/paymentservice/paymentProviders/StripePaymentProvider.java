@@ -5,12 +5,10 @@ import com.stripe.model.PaymentIntent;
 import com.stripe.model.Refund;
 import com.stripe.param.PaymentIntentCreateParams;
 import com.stripe.param.RefundCreateParams;
-import org.springframework.context.annotation.Profile;
-import org.springframework.stereotype.Service;
+import lombok.RequiredArgsConstructor;
 import org.springframework.transaction.annotation.Transactional;
 import org.ticketsouq.paymentservice.dto.PaymentRequest;
 import org.ticketsouq.paymentservice.dto.PaymentResponse;
-import org.ticketsouq.paymentservice.enums.PaymentProviderEnum;
 import org.ticketsouq.paymentservice.enums.PaymentStatus;
 import org.ticketsouq.paymentservice.exception.PaymentException;
 import org.ticketsouq.paymentservice.model.PaymentModel;
@@ -21,15 +19,10 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.Currency;
 
-@Service
-@Profile("STRIPE")
+@RequiredArgsConstructor
 public class StripePaymentProvider implements PaymentProvider {
 
     private final PaymentRepository paymentRepository;
-
-    public StripePaymentProvider(PaymentRepository paymentRepository) {
-        this.paymentRepository = paymentRepository;
-    }
 
     @Override
     @Transactional
@@ -54,7 +47,6 @@ public class StripePaymentProvider implements PaymentProvider {
                     .amount(request.amount())
                     .currency(request.currency())
                     .paymentStatus(PaymentStatus.PENDING)
-                    .paymentProvider(PaymentProviderEnum.STRIPE_PAYMENT)
                     .stripePaymentIntentId(intent.getId())
                     .transactionRef(intent.getId())
                     .build();
