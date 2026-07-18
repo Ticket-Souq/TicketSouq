@@ -33,7 +33,7 @@
 <!--        <module>availability-locking-service</module>-->
         <module>event-service</module>
         <module>notification-service</module>
-<!--        <module>payment-service</module>-->
+        <module>payment-service</module>
 <!--        <module>reservation-service</module>-->
 <!--        <module>ticket-service</module>-->
         <module>user-service</module>
