@@ -1,15 +1,15 @@
 package org.ticketsouq.paymentservice.service;
 
-import com.stripe.model.Charge;
-import com.stripe.model.Event;
-import com.stripe.model.EventDataObjectDeserializer;
-import com.stripe.model.PaymentIntent;
-import com.stripe.model.StripeObject;
+import com.stripe.model.*;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.TransactionDefinition;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionTemplate;
 import org.ticketsouq.paymentservice.dto.PaymentRequest;
 import org.ticketsouq.paymentservice.dto.PaymentResponse;
 import org.ticketsouq.paymentservice.enums.PaymentStatus;
@@ -18,6 +18,9 @@ import org.ticketsouq.paymentservice.model.PaymentModel;
 import org.ticketsouq.paymentservice.paymentProviders.PaymentProvider;
 import org.ticketsouq.paymentservice.repository.PaymentRepository;
 import org.ticketsouq.sharedmodule.GeneralExceptions.ResourceNotFoundException;
+import org.ticketsouq.sharedmodule.PaymentService.events.PaymentFailedEvent;
+import org.ticketsouq.sharedmodule.PaymentService.events.PaymentSuccessEvent;
+import org.ticketsouq.sharedmodule.PaymentService.events.RefundCompletedEvent;
 
 import java.util.UUID;
 
@@ -28,7 +31,9 @@ public class PaymentService {
 
     private final PaymentProvider paymentProvider;
     private final PaymentRepository paymentRepository;
-    private final PaymentEventPublisher eventPublisher;
+    private final ApplicationEventPublisher applicationEventPublisher;
+    private final PlatformTransactionManager transactionManager;
+
 
     public ResponseEntity<PaymentResponse> pay(PaymentRequest request) {
         PaymentResponse paymentResponse = paymentProvider.pay(request);
@@ -81,16 +86,32 @@ public class PaymentService {
         PaymentModel payment = findPaymentByStripeId(stripePaymentIntentId);
         payment.setPaymentStatus(PaymentStatus.SUCCESS);
         paymentRepository.save(payment);
-        eventPublisher.publishPaymentSuccess(payment);
+        PaymentSuccessEvent event = new PaymentSuccessEvent(
+            UUID.randomUUID(),
+            payment.getCustomerID(),
+            payment.getReservationID(),
+            payment.getAmount()
+        );
+        applicationEventPublisher.publishEvent(event);
     }
 
-    @Transactional
     public void handlePaymentFailed(String stripePaymentIntentId) {
-        PaymentModel payment = findPaymentByStripeId(stripePaymentIntentId);
-        payment.setPaymentStatus(PaymentStatus.FAILED);
-        paymentRepository.save(payment);
-        eventPublisher.publishPaymentFailed(payment);
-        throw new PaymentException("Payment failed for reservation: " + payment.getReservationID());
+        TransactionTemplate tx = new TransactionTemplate(transactionManager);
+        tx.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
+        tx.execute(status -> {
+            PaymentModel payment = findPaymentByStripeId(stripePaymentIntentId);
+            payment.setPaymentStatus(PaymentStatus.FAILED);
+            paymentRepository.save(payment);
+            PaymentFailedEvent event = new PaymentFailedEvent(
+                UUID.randomUUID(),
+                payment.getCustomerID(),
+                payment.getReservationID(),
+                payment.getAmount()
+            );
+            applicationEventPublisher.publishEvent(event);
+            return null;
+        });
+        throw new PaymentException("Payment failed for reservation");
     }
 
     @Transactional
@@ -98,11 +119,17 @@ public class PaymentService {
         PaymentModel payment = findPaymentByStripeId(stripePaymentIntentId);
         payment.setPaymentStatus(PaymentStatus.REFUNDED);
         paymentRepository.save(payment);
-        eventPublisher.publishRefundCompleted(payment);
+        RefundCompletedEvent event = new RefundCompletedEvent(
+            UUID.randomUUID(),
+            payment.getCustomerID(),
+            payment.getReservationID(),
+            payment.getAmount()
+        );
+        applicationEventPublisher.publishEvent(event);
     }
 
     private PaymentModel findPaymentByStripeId(String stripePaymentIntentId) {
         return paymentRepository.findByStripePaymentIntentId(stripePaymentIntentId)
-                .orElseThrow(() -> new ResourceNotFoundException("Payment with Stripe ID", stripePaymentIntentId));
+            .orElseThrow(() -> new ResourceNotFoundException("Payment with Stripe ID", stripePaymentIntentId));
     }
 }

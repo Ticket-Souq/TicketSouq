@@ -32,6 +32,21 @@ services:
     networks:
       - Ticket-Souq-Microservice
 
+  payment-db:
+    image: postgres
+    container_name: payment-db
+    environment:
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: admin
+      POSTGRES_DB: payment_db
+    ports:
+      - "5436:5432"
+    restart: unless-stopped
+    volumes:
+      - postgres_payment_data:/var/lib/postgresql
+    networks:
+      - Ticket-Souq-Microservice
+
   venue-db:
     image: postgres
     container_name: venue-db
