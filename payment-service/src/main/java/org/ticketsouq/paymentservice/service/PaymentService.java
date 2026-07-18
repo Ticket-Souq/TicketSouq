@@ -8,7 +8,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.TransactionDefinition;
-import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionTemplate;
 import org.ticketsouq.paymentservice.dto.PaymentRequest;
 import org.ticketsouq.paymentservice.dto.PaymentResponse;
@@ -81,18 +80,26 @@ public class PaymentService {
         }
     }
 
-    @Transactional
     public void handlePaymentSucceeded(String stripePaymentIntentId) {
-        PaymentModel payment = findPaymentByStripeId(stripePaymentIntentId);
-        payment.setPaymentStatus(PaymentStatus.SUCCESS);
-        paymentRepository.save(payment);
-        PaymentSuccessEvent event = new PaymentSuccessEvent(
-            UUID.randomUUID(),
-            payment.getCustomerID(),
-            payment.getReservationID(),
-            payment.getAmount()
-        );
-        applicationEventPublisher.publishEvent(event);
+        TransactionTemplate tx = new TransactionTemplate(transactionManager);
+        tx.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
+        tx.execute(status -> {
+            PaymentModel payment = findPaymentByStripeId(stripePaymentIntentId);
+            if (payment.getPaymentStatus() == PaymentStatus.SUCCESS) {
+                log.info("Payment already in SUCCESS status, skipping duplicate event for Stripe ID: {}", stripePaymentIntentId);
+                return null;
+            }
+            payment.setPaymentStatus(PaymentStatus.SUCCESS);
+            paymentRepository.save(payment);
+            PaymentSuccessEvent event = new PaymentSuccessEvent(
+                UUID.randomUUID(),
+                payment.getCustomerID(),
+                payment.getReservationID(),
+                payment.getAmount()
+            );
+            applicationEventPublisher.publishEvent(event);
+            return null;
+        });
     }
 
     public void handlePaymentFailed(String stripePaymentIntentId) {
@@ -100,6 +107,10 @@ public class PaymentService {
         tx.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
         tx.execute(status -> {
             PaymentModel payment = findPaymentByStripeId(stripePaymentIntentId);
+            if (payment.getPaymentStatus() == PaymentStatus.FAILED) {
+                log.info("Payment already in FAILED status, skipping duplicate event for Stripe ID: {}", stripePaymentIntentId);
+                return null;
+            }
             payment.setPaymentStatus(PaymentStatus.FAILED);
             paymentRepository.save(payment);
             PaymentFailedEvent event = new PaymentFailedEvent(
@@ -114,18 +125,26 @@ public class PaymentService {
         throw new PaymentException("Payment failed for reservation");
     }
 
-    @Transactional
     public void handleRefundCompleted(String stripePaymentIntentId) {
-        PaymentModel payment = findPaymentByStripeId(stripePaymentIntentId);
-        payment.setPaymentStatus(PaymentStatus.REFUNDED);
-        paymentRepository.save(payment);
-        RefundCompletedEvent event = new RefundCompletedEvent(
-            UUID.randomUUID(),
-            payment.getCustomerID(),
-            payment.getReservationID(),
-            payment.getAmount()
-        );
-        applicationEventPublisher.publishEvent(event);
+        TransactionTemplate tx = new TransactionTemplate(transactionManager);
+        tx.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
+        tx.execute(status -> {
+            PaymentModel payment = findPaymentByStripeId(stripePaymentIntentId);
+            if (payment.getPaymentStatus() == PaymentStatus.REFUNDED) {
+                log.info("Payment already in REFUNDED status, skipping duplicate event for Stripe ID: {}", stripePaymentIntentId);
+                return null;
+            }
+            payment.setPaymentStatus(PaymentStatus.REFUNDED);
+            paymentRepository.save(payment);
+            RefundCompletedEvent event = new RefundCompletedEvent(
+                UUID.randomUUID(),
+                payment.getCustomerID(),
+                payment.getReservationID(),
+                payment.getAmount()
+            );
+            applicationEventPublisher.publishEvent(event);
+            return null;
+        });
     }
 
     private PaymentModel findPaymentByStripeId(String stripePaymentIntentId) {
