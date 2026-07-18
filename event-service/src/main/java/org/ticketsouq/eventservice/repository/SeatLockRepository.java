@@ -1,7 +1,6 @@
 package org.ticketsouq.eventservice.repository;
 
 import jakarta.persistence.LockModeType;
-import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Modifying;
@@ -18,6 +17,10 @@ public interface SeatLockRepository extends JpaRepository<SeatLock, UUID> {
 
     List<SeatLock> findBySeatIdInAndExpiresAtAfter(List<UUID> seatIds, LocalDateTime now);
     List<SeatLock> findByReservationId(String reservationId);
+
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("SELECT sl FROM SeatLock sl WHERE sl.reservationId = :reservationId")
+    List<SeatLock> findByReservationIdWithLock(@Param("reservationId") String reservationId);
 
     void deleteByReservationId(String reservationId);
 

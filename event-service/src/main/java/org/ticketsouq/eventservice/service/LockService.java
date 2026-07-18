@@ -122,8 +122,8 @@ public class LockService {
 
     @Transactional
     public ConfirmResponse confirm(String reservationId) {
-        List<SeatLock> seatLocks = seatLockRepository.findByReservationId(reservationId);
-        Optional<ZoneLock> zoneLockOpt = zoneLockRepository.findByReservationId(reservationId);
+        List<SeatLock> seatLocks = seatLockRepository.findByReservationIdWithLock(reservationId);
+        Optional<ZoneLock> zoneLockOpt = zoneLockRepository.findByReservationIdWithLock(reservationId);
 
         if (seatLocks.isEmpty() && zoneLockOpt.isEmpty()) {
             return ConfirmResponse.CONFIRMED;
