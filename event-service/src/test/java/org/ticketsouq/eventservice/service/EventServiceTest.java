@@ -28,8 +28,11 @@ import org.ticketsouq.eventservice.repository.SeatLockRepository;
 import org.ticketsouq.eventservice.repository.SeatRepository;
 import org.ticketsouq.eventservice.service.Search.SearchService;
 import org.ticketsouq.sharedmodule.AuditService.events.AuditEvent;
+import org.ticketsouq.sharedmodule.EventService.events.EventActivatedEvent;
 import org.ticketsouq.sharedmodule.EventService.events.EventCancelledEvent;
+import org.ticketsouq.sharedmodule.EventService.events.EventCompletedEvent;
 import org.ticketsouq.sharedmodule.EventService.events.EventCreatedEvent;
+import org.ticketsouq.sharedmodule.EventService.events.EventPayoutReleaseEvent;
 import org.ticketsouq.sharedmodule.GeneralExceptions.ConflictException;
 import org.ticketsouq.sharedmodule.GeneralExceptions.ResourceNotFoundException;
 
@@ -45,6 +48,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -260,5 +264,119 @@ class EventServiceTest {
 
         verify(seatLockRepository).findBySeatIdInAndExpiresAtAfter(eq(List.of(seatId)), any());
         verify(eventFrontendMapper).toEventLayoutResponse(eq(event), eq(Set.of()));
+    }
+
+    @Test
+    @DisplayName("Should activate event when it exists and is PUBLISHED")
+    void givenPublishedEvent_whenActivateEvent_thenSetActiveAndPublishEvent() {
+        UUID eventId = UUID.randomUUID();
+        Event event = Event.builder().id(eventId).status(EventStatus.PUBLISHED).build();
+        when(eventRepository.findById(eventId)).thenReturn(Optional.of(event));
+
+        eventService.activateEvent(eventId);
+
+        assertThat(event.getStatus()).isEqualTo(EventStatus.ACTIVE);
+        verify(eventRepository).save(event);
+        verify(eventPublisher).publishEvent(any(EventActivatedEvent.class));
+    }
+
+    @Test
+    @DisplayName("Should not activate event when it is not PUBLISHED")
+    void givenNonPublishedEvent_whenActivateEvent_thenDoNothing() {
+        UUID eventId = UUID.randomUUID();
+        Event event = Event.builder().id(eventId).status(EventStatus.CANCELLED).build();
+        when(eventRepository.findById(eventId)).thenReturn(Optional.of(event));
+
+        eventService.activateEvent(eventId);
+
+        verify(eventRepository, never()).save(any());
+        verify(eventPublisher, never()).publishEvent(any(EventActivatedEvent.class));
+    }
+
+    @Test
+    @DisplayName("Should do nothing when activating a non-existent event")
+    void givenNonExistentEvent_whenActivateEvent_thenDoNothing() {
+        UUID eventId = UUID.randomUUID();
+        when(eventRepository.findById(eventId)).thenReturn(Optional.empty());
+
+        eventService.activateEvent(eventId);
+
+        verify(eventRepository, never()).save(any());
+        verify(eventPublisher, never()).publishEvent(any(EventActivatedEvent.class));
+    }
+
+    @Test
+    @DisplayName("Should complete event and release payout when it exists and is ACTIVE")
+    void givenActiveEvent_whenCompleteEvent_thenSetCompletedAndPublishEvents() {
+        UUID eventId = UUID.randomUUID();
+        Event event = Event.builder().id(eventId).status(EventStatus.ACTIVE).organization("Org").build();
+        when(eventRepository.findById(eventId)).thenReturn(Optional.of(event));
+
+        eventService.completeEvent(eventId);
+
+        assertThat(event.getStatus()).isEqualTo(EventStatus.COMPLETED);
+        verify(eventRepository).save(event);
+        verify(eventPublisher).publishEvent(any(EventCompletedEvent.class));
+        verify(eventPublisher).publishEvent(any(EventPayoutReleaseEvent.class));
+    }
+
+    @Test
+    @DisplayName("Should not complete event when it is not ACTIVE")
+    void givenNonActiveEvent_whenCompleteEvent_thenDoNothing() {
+        UUID eventId = UUID.randomUUID();
+        Event event = Event.builder().id(eventId).status(EventStatus.PUBLISHED).build();
+        when(eventRepository.findById(eventId)).thenReturn(Optional.of(event));
+
+        eventService.completeEvent(eventId);
+
+        verify(eventRepository, never()).save(any());
+    }
+
+    @Test
+    @DisplayName("Should do nothing when completing a non-existent event")
+    void givenNonExistentEvent_whenCompleteEvent_thenDoNothing() {
+        UUID eventId = UUID.randomUUID();
+        when(eventRepository.findById(eventId)).thenReturn(Optional.empty());
+
+        eventService.completeEvent(eventId);
+
+        verify(eventRepository, never()).save(any());
+    }
+
+    @Test
+    @DisplayName("Should complete event directly and release payout when PUBLISHED")
+    void givenPublishedEvent_whenCompleteEventDirectly_thenSetCompletedAndReleasePayout() {
+        UUID eventId = UUID.randomUUID();
+        Event event = Event.builder().id(eventId).status(EventStatus.PUBLISHED).organization("Org").build();
+        when(eventRepository.findById(eventId)).thenReturn(Optional.of(event));
+
+        eventService.completeEventDirectly(eventId);
+
+        assertThat(event.getStatus()).isEqualTo(EventStatus.COMPLETED);
+        verify(eventRepository).save(event);
+        verify(eventPublisher).publishEvent(any(EventPayoutReleaseEvent.class));
+    }
+
+    @Test
+    @DisplayName("Should not complete directly when event is not PUBLISHED")
+    void givenNonPublishedEvent_whenCompleteEventDirectly_thenDoNothing() {
+        UUID eventId = UUID.randomUUID();
+        Event event = Event.builder().id(eventId).status(EventStatus.ACTIVE).build();
+        when(eventRepository.findById(eventId)).thenReturn(Optional.of(event));
+
+        eventService.completeEventDirectly(eventId);
+
+        verify(eventRepository, never()).save(any());
+    }
+
+    @Test
+    @DisplayName("Should do nothing when completing a non-existent event directly")
+    void givenNonExistentEvent_whenCompleteEventDirectly_thenDoNothing() {
+        UUID eventId = UUID.randomUUID();
+        when(eventRepository.findById(eventId)).thenReturn(Optional.empty());
+
+        eventService.completeEventDirectly(eventId);
+
+        verify(eventRepository, never()).save(any());
     }
 }
