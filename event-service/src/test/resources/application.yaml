@@ -1,20 +1,11 @@
+logging:
+  loki:
+    enabled: false
+
 spring:
-  config:
-    import: ""
   cloud:
     config:
       enabled: false
-      import-check:
-        enabled: false
-  autoconfigure:
-    exclude:
-      - org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration
-      - org.springframework.boot.autoconfigure.orm.jpa.HibernateJpaAutoConfiguration
-      - org.springframework.boot.autoconfigure.data.elasticsearch.ElasticsearchDataAutoConfiguration
-      - org.springframework.boot.autoconfigure.data.elasticsearch.ElasticsearchRepositoriesAutoConfiguration
-      - org.springframework.boot.autoconfigure.kafka.KafkaAutoConfiguration
-      - org.springframework.cloud.netflix.eureka.EurekaClientAutoConfiguration
-      - org.springframework.cloud.netflix.eureka.config.EurekaDiscoveryClientConfigServiceAutoConfiguration
 
 eureka:
   client:

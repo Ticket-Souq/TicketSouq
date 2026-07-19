@@ -15,6 +15,9 @@ spring:
     password: admin
     driver-class-name: org.postgresql.Driver
 
+  sql:
+    init:
+      schema-locations: pg_trgm.sql
   jpa:
     hibernate:
       ddl-auto: update
