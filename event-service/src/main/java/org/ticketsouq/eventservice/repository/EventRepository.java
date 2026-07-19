@@ -16,11 +16,10 @@ public interface EventRepository extends JpaRepository<Event, UUID> {
 
     @Query("""
             SELECT e FROM Event e
-            LEFT JOIN FETCH e.sections s
-            LEFT JOIN FETCH s.seats
+            LEFT JOIN FETCH e.sections
             WHERE e.id = :id
         """)
-    Optional<Event> findEventById(UUID uuid);
+    Optional<Event> findEventById(@Param("id") UUID uuid);
 
     @Query("""
         SELECT e FROM Event e

@@ -1,7 +1,6 @@
 package org.ticketsouq.eventservice.repository;
 
 import jakarta.persistence.LockModeType;
-import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Modifying;
@@ -19,6 +18,10 @@ public interface ZoneLockRepository extends JpaRepository<ZoneLock, UUID> {
     int sumActiveQuantityByZoneId(@Param("zoneId") UUID zoneId, @Param("now") LocalDateTime now);
 
     Optional<ZoneLock> findByReservationId(String reservationId);
+
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("SELECT zl FROM ZoneLock zl WHERE zl.reservationId = :reservationId")
+    Optional<ZoneLock> findByReservationIdWithLock(@Param("reservationId") String reservationId);
 
     void deleteByReservationId(String reservationId);
 

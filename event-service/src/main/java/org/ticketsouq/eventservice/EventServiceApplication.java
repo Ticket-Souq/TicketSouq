@@ -8,10 +8,10 @@ import org.springframework.kafka.annotation.EnableKafka;
 import org.springframework.scheduling.annotation.EnableScheduling;
 
 @SpringBootApplication(scanBasePackages = "org.ticketsouq")
-@EnableJpaAuditing
 @EnableScheduling
 @EnableKafka
 @EnableFeignClients
+@EnableJpaAuditing
 public class EventServiceApplication {
 
     public static void main(String[] args) {
