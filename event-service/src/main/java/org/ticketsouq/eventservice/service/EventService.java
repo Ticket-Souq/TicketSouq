@@ -1,6 +1,7 @@
 package org.ticketsouq.eventservice.service;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -19,8 +20,11 @@ import org.ticketsouq.eventservice.repository.SeatLockRepository;
 import org.ticketsouq.eventservice.repository.SeatRepository;
 import org.ticketsouq.eventservice.service.Search.SearchService;
 import org.ticketsouq.sharedmodule.AuditService.events.AuditEvent;
+import org.ticketsouq.sharedmodule.EventService.events.EventActivatedEvent;
 import org.ticketsouq.sharedmodule.EventService.events.EventCancelledEvent;
+import org.ticketsouq.sharedmodule.EventService.events.EventCompletedEvent;
 import org.ticketsouq.sharedmodule.EventService.events.EventCreatedEvent;
+import org.ticketsouq.sharedmodule.EventService.events.EventPayoutReleaseEvent;
 import org.ticketsouq.sharedmodule.GeneralExceptions.ConflictException;
 import org.ticketsouq.sharedmodule.GeneralExceptions.ResourceNotFoundException;
 
@@ -87,6 +91,40 @@ public class EventService {
         return eventRepository.
             findFilteredEvents(organization, List.of(EventStatus.PUBLISHED, EventStatus.ACTIVE), pageable)
             .map(EventCardResponse::from);
+    }
+
+    @Transactional
+    public void activateEvent(UUID eventId) {
+        eventRepository.findById(eventId).ifPresent(event -> {
+            if (event.getStatus() == EventStatus.PUBLISHED) {
+                event.setStatus(EventStatus.ACTIVE);
+                eventRepository.save(event);
+                eventPublisher.publishEvent(new EventActivatedEvent(eventId, Instant.now()));
+            }
+        });
+    }
+
+    @Transactional
+    public void completeEvent(UUID eventId) {
+        eventRepository.findById(eventId).ifPresent(event -> {
+            if (event.getStatus() == EventStatus.ACTIVE) {
+                event.setStatus(EventStatus.COMPLETED);
+                eventRepository.save(event);
+                eventPublisher.publishEvent(new EventCompletedEvent(eventId, Instant.now()));
+                eventPublisher.publishEvent(new EventPayoutReleaseEvent(eventId,event.getOrganization(), Instant.now()));
+            }
+        });
+    }
+
+    @Transactional
+    public void completeEventDirectly(UUID eventId) {
+        eventRepository.findById(eventId).ifPresent(event -> {
+            if (event.getStatus() == EventStatus.PUBLISHED) {
+                event.setStatus(EventStatus.COMPLETED);
+                eventRepository.save(event);
+                eventPublisher.publishEvent(new EventPayoutReleaseEvent(eventId,event.getOrganization(), Instant.now()));
+            }
+        });
     }
 
     @Transactional

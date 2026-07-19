@@ -28,6 +28,8 @@ public interface EventRepository extends JpaRepository<Event, UUID> {
         """)
     Page<Event> findFilteredEvents(@Param("organization") String organization, @Param("statuses") List<EventStatus> statuses, Pageable pageable);
 
+    List<Event> findByStatusIn(List<EventStatus> statuses);
+
     @Query(value = """
         SELECT e.* FROM events e
         LEFT JOIN event_categories ec ON ec.id = e.event_category_id
