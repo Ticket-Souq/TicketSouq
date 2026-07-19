@@ -14,6 +14,7 @@ import org.ticketsouq.userservice.model.OrgMember;
 import org.ticketsouq.userservice.model.OrgStatus;
 import org.ticketsouq.userservice.model.Organization;
 import org.ticketsouq.userservice.model.User;
+import org.ticketsouq.userservice.dto.MemberSummaryResponse;
 import org.ticketsouq.userservice.repository.OrgMemberRepository;
 import org.ticketsouq.userservice.repository.OrganizationRepository;
 import org.ticketsouq.userservice.repository.UserRepository;
@@ -134,5 +135,11 @@ public class UserService {
                 .map(User::getName)
                 .orElseThrow(() -> new BusinessException(
                     "User not found with ID: " + userId, HttpStatus.NOT_FOUND)));
+    }
+
+    @Transactional(readOnly = true)
+    public List<MemberSummaryResponse> getMembersByIds(List<UUID> ids) {
+        if (ids == null || ids.isEmpty()) return List.of();
+        return userRepository.findMemberSummariesByIds(ids);
     }
 }
