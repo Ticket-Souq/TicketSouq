@@ -21,10 +21,12 @@ public final class TOPIC_NAMES {
 //    public static final String USER_DELETED = "user.deleted";
 //
     // ─── Event Service ────────────────────────────────────────
-//    public static final String EVENT_CREATED = "event.created";
-//    public static final String EVENT_UPDATED = "event.updated";
-//    public static final String EVENT_CANCELLED = "event.cancelled";
-//
+    public static final String EVENT_CREATED = "event.created";
+    public static final String EVENT_ACTIVATED = "event.activated";
+    public static final String EVENT_COMPLETED = "event.completed";
+    public static final String EVENT_PAYOUT_RELEASED = "event.payout-released";
+    public static final String EVENT_CANCELLED = "event.cancelled";
+
     // ─── Venue Service ────────────────────────────────────────
 //    public static final String VENUE_CREATED = "venue.created";
 //    public static final String VENUE_UPDATED = "venue.updated";
@@ -62,6 +64,7 @@ public final class TOPIC_NAMES {
 
     // ─── Audit Service ────────────────────────────────────────
     public static final String AUDIT_EVENT = "audit.event";
+//    public static final String ACCOUNTS_GENERATED = "accounts.generated";
 
     // ─── Analytics Service ────────────────────────────────────
 //    public static final String ANALYTICS_EVENT = "analytics.event";
