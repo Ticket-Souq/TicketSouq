@@ -22,6 +22,9 @@ public final class TOPIC_NAMES {
 //
     // ─── Event Service ────────────────────────────────────────
     public static final String EVENT_CREATED = "event.created";
+    public static final String EVENT_ACTIVATED = "event.activated";
+    public static final String EVENT_COMPLETED = "event.completed";
+    public static final String EVENT_PAYOUT_RELEASED = "event.payout-released";
     public static final String EVENT_CANCELLED = "event.cancelled";
 
     // ─── Venue Service ────────────────────────────────────────
