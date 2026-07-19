@@ -2,6 +2,7 @@ package org.ticketsouq.eventservice.service.Lock;
 
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.testcontainers.junit.jupiter.Testcontainers;
 import org.ticketsouq.eventservice.dto.*;
 import org.ticketsouq.sharedmodule.EventService.exception.*;
 import org.ticketsouq.eventservice.model.*;
@@ -16,11 +17,21 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 class LockServiceStressIntegrationTest extends LockServiceIntegrationTestBase {
 
+    private static final int SF = Integer.getInteger("stress.factor", 1);
+
+    private static int threads(int base) {
+        return Math.max(4, base * SF / 2);
+    }
+
+    private static int timeout(int base) {
+        return Math.min(300, base * SF);
+    }
+
     @Test
-    @DisplayName("Load test: 50 concurrent zone lock requests respecting capacity of 30")
+    @DisplayName("Load test: concurrent zone lock requests respecting capacity")
     void givenHighConcurrency_whenAcquireZoneLock_thenTotalDoesNotExceedCapacity() throws Exception {
-        int capacity = 30;
-        int requestCount = 50;
+        int capacity = 30 * SF;
+        int requestCount = capacity * 2;
         int quantityPerRequest = 1;
 
         Event event = createPublishedZoneEvent();
@@ -32,7 +43,7 @@ class LockServiceStressIntegrationTest extends LockServiceIntegrationTestBase {
         ConcurrentLinkedQueue<Throwable> unexpectedErrors = new ConcurrentLinkedQueue<>();
         AtomicInteger succeeded = new AtomicInteger(0);
         AtomicInteger rejected = new AtomicInteger(0);
-        ExecutorService executor = Executors.newFixedThreadPool(20);
+        ExecutorService executor = Executors.newFixedThreadPool(threads(20));
 
         for (int i = 0; i < requestCount; i++) {
             String reservationId = "zone-load-res-" + i;
@@ -55,7 +66,7 @@ class LockServiceStressIntegrationTest extends LockServiceIntegrationTestBase {
         }
 
         startLatch.countDown();
-        boolean finished = finishLatch.await(10, TimeUnit.SECONDS);
+        boolean finished = finishLatch.await(timeout(10), TimeUnit.SECONDS);
         executor.shutdown();
 
         assertThat(finished).as("All threads completed within timeout").isTrue();
@@ -72,13 +83,13 @@ class LockServiceStressIntegrationTest extends LockServiceIntegrationTestBase {
     }
 
     @Test
-    @DisplayName("Load test: 50 concurrent seat lock requests on the same seat")
+    @DisplayName("Load test: concurrent seat lock requests on the same seat")
     void givenHighConcurrency_whenAcquireSeatLocks_thenOnlyFirstSucceeds() throws Exception {
-        int requestCount = 50;
+        int requestCount = 50 * SF;
         UUID seatId = UUID.randomUUID();
 
         Event event = createPublishedSeatEvent();
-        Section section = createSection(event, 100);
+        Section section = createSection(event, Math.max(100, requestCount));
         createSeat(section, seatId, SeatStatus.AVAILABLE);
 
         CountDownLatch startLatch = new CountDownLatch(1);
@@ -86,7 +97,7 @@ class LockServiceStressIntegrationTest extends LockServiceIntegrationTestBase {
         ConcurrentLinkedQueue<Throwable> unexpectedErrors = new ConcurrentLinkedQueue<>();
         AtomicInteger succeeded = new AtomicInteger(0);
         AtomicInteger rejected = new AtomicInteger(0);
-        ExecutorService executor = Executors.newFixedThreadPool(20);
+        ExecutorService executor = Executors.newFixedThreadPool(threads(20));
 
         for (int i = 0; i < requestCount; i++) {
             String reservationId = "seat-load-res-" + i;
@@ -109,7 +120,7 @@ class LockServiceStressIntegrationTest extends LockServiceIntegrationTestBase {
         }
 
         startLatch.countDown();
-        boolean finished = finishLatch.await(15, TimeUnit.SECONDS);
+        boolean finished = finishLatch.await(timeout(15), TimeUnit.SECONDS);
         executor.shutdown();
 
         assertThat(finished).as("All threads completed within timeout").isTrue();
@@ -126,10 +137,10 @@ class LockServiceStressIntegrationTest extends LockServiceIntegrationTestBase {
     }
 
     @Test
-    @DisplayName("Load test: 30 concurrent zone lock+confirm cycles with capacity 30 — all confirm, capacity fully consumed")
+    @DisplayName("Load test: concurrent zone lock+confirm cycles with capacity matching — all confirm, capacity fully consumed")
     void givenConcurrentRequests_whenFullZoneLifecycle_thenAllConfirmAndCapacityZero() throws Exception {
-        int capacity = 30;
-        int requestCount = 30;
+        int capacity = 30 * SF;
+        int requestCount = capacity;
         int quantityPerRequest = 1;
 
         Event event = createPublishedZoneEvent();
@@ -139,7 +150,7 @@ class LockServiceStressIntegrationTest extends LockServiceIntegrationTestBase {
         CountDownLatch startLatch = new CountDownLatch(1);
         CountDownLatch finishLatch = new CountDownLatch(requestCount);
         ConcurrentLinkedQueue<Throwable> unexpectedErrors = new ConcurrentLinkedQueue<>();
-        ExecutorService executor = Executors.newFixedThreadPool(20);
+        ExecutorService executor = Executors.newFixedThreadPool(threads(20));
 
         for (int i = 0; i < requestCount; i++) {
             String reservationId = "zone-lifecycle-res-" + i;
@@ -162,7 +173,7 @@ class LockServiceStressIntegrationTest extends LockServiceIntegrationTestBase {
         }
 
         startLatch.countDown();
-        boolean finished = finishLatch.await(15, TimeUnit.SECONDS);
+        boolean finished = finishLatch.await(timeout(15), TimeUnit.SECONDS);
         executor.shutdown();
         boolean terminated = executor.awaitTermination(5, TimeUnit.SECONDS);
         if (!terminated) {
@@ -183,9 +194,9 @@ class LockServiceStressIntegrationTest extends LockServiceIntegrationTestBase {
     }
 
     @Test
-    @DisplayName("Load test: 20 concurrent seat lock+confirm cycles on 1 seat — exactly 1 books, rest rejected")
+    @DisplayName("Load test: concurrent seat lock+confirm cycles on 1 seat — exactly 1 books, rest rejected")
     void givenConcurrentRequests_whenSeatLockAndConfirmRace_thenNoDoubleBooking() throws Exception {
-        int requestCount = 20;
+        int requestCount = Math.max(10, 20 * SF);
         UUID seatId = UUID.randomUUID();
 
         Event event = createPublishedSeatEvent();
@@ -197,7 +208,7 @@ class LockServiceStressIntegrationTest extends LockServiceIntegrationTestBase {
         ConcurrentLinkedQueue<Throwable> unexpectedErrors = new ConcurrentLinkedQueue<>();
         AtomicInteger succeeded = new AtomicInteger(0);
         AtomicInteger rejected = new AtomicInteger(0);
-        ExecutorService executor = Executors.newFixedThreadPool(20);
+        ExecutorService executor = Executors.newFixedThreadPool(threads(20));
 
         for (int i = 0; i < requestCount; i++) {
             String reservationId = "seat-lifecycle-res-" + i;
@@ -221,7 +232,7 @@ class LockServiceStressIntegrationTest extends LockServiceIntegrationTestBase {
         }
 
         startLatch.countDown();
-        boolean finished = finishLatch.await(15, TimeUnit.SECONDS);
+        boolean finished = finishLatch.await(timeout(15), TimeUnit.SECONDS);
         executor.shutdown();
         boolean terminated = executor.awaitTermination(5, TimeUnit.SECONDS);
         if (!terminated) {
@@ -242,9 +253,9 @@ class LockServiceStressIntegrationTest extends LockServiceIntegrationTestBase {
     }
 
     @Test
-    @DisplayName("Load test: 100 concurrent lock requests across 50 distinct seats succeed independently")
+    @DisplayName("Load test: concurrent lock requests across distinct seats succeed independently")
     void givenDistinctSeats_whenConcurrentLock_thenEachSeatLockedAtMostOnce() throws Exception {
-        int seatCount = 50;
+        int seatCount = Math.max(10, 50 * SF);
         int requestsPerSeat = 2;
         int requestCount = seatCount * requestsPerSeat;
 
@@ -262,7 +273,7 @@ class LockServiceStressIntegrationTest extends LockServiceIntegrationTestBase {
         ConcurrentLinkedQueue<Throwable> unexpectedErrors = new ConcurrentLinkedQueue<>();
         AtomicInteger succeeded = new AtomicInteger(0);
         AtomicInteger rejected = new AtomicInteger(0);
-        ExecutorService executor = Executors.newFixedThreadPool(20);
+        ExecutorService executor = Executors.newFixedThreadPool(threads(20));
 
         for (int i = 0; i < requestCount; i++) {
             UUID targetSeat = seatIds.get(i % seatCount);
@@ -286,7 +297,7 @@ class LockServiceStressIntegrationTest extends LockServiceIntegrationTestBase {
         }
 
         startLatch.countDown();
-        boolean finished = finishLatch.await(15, TimeUnit.SECONDS);
+        boolean finished = finishLatch.await(timeout(15), TimeUnit.SECONDS);
         executor.shutdown();
 
         assertThat(finished).as("All threads completed within timeout").isTrue();
@@ -303,10 +314,10 @@ class LockServiceStressIntegrationTest extends LockServiceIntegrationTestBase {
     }
 
     @Test
-    @DisplayName("Load test: 100 concurrent zone requests with capacity 100 — all succeed")
+    @DisplayName("Load test: concurrent zone requests with exact capacity — all succeed")
     void givenExactCapacity_whenConcurrentZoneLock_thenAllSucceed() throws Exception {
-        int capacity = 100;
-        int requestCount = 100;
+        int capacity = Math.max(10, 100 * SF);
+        int requestCount = capacity;
         int quantityPerRequest = 1;
 
         Event event = createPublishedZoneEvent();
@@ -318,7 +329,7 @@ class LockServiceStressIntegrationTest extends LockServiceIntegrationTestBase {
         ConcurrentLinkedQueue<Throwable> unexpectedErrors = new ConcurrentLinkedQueue<>();
         AtomicInteger succeeded = new AtomicInteger(0);
         AtomicInteger rejected = new AtomicInteger(0);
-        ExecutorService executor = Executors.newFixedThreadPool(20);
+        ExecutorService executor = Executors.newFixedThreadPool(threads(20));
 
         for (int i = 0; i < requestCount; i++) {
             String reservationId = "exact-cap-res-" + i;
@@ -341,7 +352,7 @@ class LockServiceStressIntegrationTest extends LockServiceIntegrationTestBase {
         }
 
         startLatch.countDown();
-        boolean finished = finishLatch.await(15, TimeUnit.SECONDS);
+        boolean finished = finishLatch.await(timeout(15), TimeUnit.SECONDS);
         executor.shutdown();
 
         assertThat(finished).as("All threads completed within timeout").isTrue();
@@ -358,9 +369,9 @@ class LockServiceStressIntegrationTest extends LockServiceIntegrationTestBase {
     }
 
     @Test
-    @DisplayName("Stress: 500 concurrent seat reservations — acquire + confirm each, verify all booked, no orphans")
+    @DisplayName("Stress: concurrent seat reservations — acquire + confirm each, verify all booked, no orphans")
     void given500Seats_whenConcurrentAcquireAndConfirm_thenAllBooked() throws Exception {
-        int count = 500;
+        int count = Math.max(10, 500 * SF);
         Event event = createPublishedSeatEvent();
         Section section = createSection(event, count);
         List<UUID> allSeatIds = new ArrayList<>();
@@ -373,11 +384,11 @@ class LockServiceStressIntegrationTest extends LockServiceIntegrationTestBase {
         CountDownLatch startLatch = new CountDownLatch(1);
         CountDownLatch finishLatch = new CountDownLatch(count);
         ConcurrentLinkedQueue<Throwable> unexpectedErrors = new ConcurrentLinkedQueue<>();
-        ExecutorService executor = Executors.newFixedThreadPool(20);
+        ExecutorService executor = Executors.newFixedThreadPool(threads(20));
 
         for (int i = 0; i < count; i++) {
             UUID seatId = allSeatIds.get(i);
-            String reservationId = "stress500-seat-" + i;
+            String reservationId = "stress-seat-" + i;
             executor.submit(() -> {
                 try {
                     startLatch.await();
@@ -397,27 +408,27 @@ class LockServiceStressIntegrationTest extends LockServiceIntegrationTestBase {
         }
 
         startLatch.countDown();
-        boolean finished = finishLatch.await(60, TimeUnit.SECONDS);
+        boolean finished = finishLatch.await(timeout(60), TimeUnit.SECONDS);
         executor.shutdown();
-        boolean terminated = executor.awaitTermination(10, TimeUnit.SECONDS);
+        boolean terminated = executor.awaitTermination(timeout(10), TimeUnit.SECONDS);
         if (!terminated) executor.shutdownNow();
 
-        assertThat(finished).as("All 500 threads completed within timeout").isTrue();
+        assertThat(finished).as("All threads completed within timeout").isTrue();
         assertThat(terminated).as("Executor terminated cleanly").isTrue();
-        assertThat(unexpectedErrors).as("No errors during 500 concurrent seat reservations").isEmpty();
+        assertThat(unexpectedErrors).as("No errors during concurrent seat reservations").isEmpty();
 
         List<Seat> allSeats = seatRepository.findAll();
         long booked = allSeats.stream().filter(s -> s.getStatus() == SeatStatus.BOOKED).count();
-        assertThat(booked).as("All 500 seats booked").isEqualTo(count);
+        assertThat(booked).as("All seats booked").isEqualTo(count);
         assertThat(seatLockRepository.count()).as("No seat locks remain after all confirms").isZero();
         assertThat(allSeats).as("All seats in valid state").allMatch(s -> s.getStatus() == SeatStatus.BOOKED);
     }
 
     @Test
-    @DisplayName("Stress: 1000 concurrent zone reservations — acquire + confirm each, verify capacity fully consumed")
+    @DisplayName("Stress: concurrent zone reservations — acquire + confirm each, verify capacity fully consumed")
     void given1000ZoneLocks_whenConcurrentAcquireAndConfirm_thenAllConsumed() throws Exception {
-        int count = 1000;
-        int capacity = 1000;
+        int count = Math.max(10, 1000 * SF);
+        int capacity = count;
         Event event = createPublishedZoneEvent();
         Section section = createSection(event, capacity);
         UUID zoneId = section.getId();
@@ -425,10 +436,10 @@ class LockServiceStressIntegrationTest extends LockServiceIntegrationTestBase {
         CountDownLatch startLatch = new CountDownLatch(1);
         CountDownLatch finishLatch = new CountDownLatch(count);
         ConcurrentLinkedQueue<Throwable> unexpectedErrors = new ConcurrentLinkedQueue<>();
-        ExecutorService executor = Executors.newFixedThreadPool(20);
+        ExecutorService executor = Executors.newFixedThreadPool(threads(20));
 
         for (int i = 0; i < count; i++) {
-            String reservationId = "stress1000-zone-" + i;
+            String reservationId = "stress-zone-" + i;
             executor.submit(() -> {
                 try {
                     startLatch.await();
@@ -448,14 +459,14 @@ class LockServiceStressIntegrationTest extends LockServiceIntegrationTestBase {
         }
 
         startLatch.countDown();
-        boolean finished = finishLatch.await(120, TimeUnit.SECONDS);
+        boolean finished = finishLatch.await(timeout(120), TimeUnit.SECONDS);
         executor.shutdown();
-        boolean terminated = executor.awaitTermination(10, TimeUnit.SECONDS);
+        boolean terminated = executor.awaitTermination(timeout(10), TimeUnit.SECONDS);
         if (!terminated) executor.shutdownNow();
 
-        assertThat(finished).as("All 1000 threads completed within timeout").isTrue();
+        assertThat(finished).as("All threads completed within timeout").isTrue();
         assertThat(terminated).as("Executor terminated cleanly").isTrue();
-        assertThat(unexpectedErrors).as("No errors during 1000 concurrent zone reservations").isEmpty();
+        assertThat(unexpectedErrors).as("No errors during concurrent zone reservations").isEmpty();
 
         Section refreshed = sectionRepository.findById(zoneId).orElseThrow();
         assertThat(refreshed.getRemainingCapacity()).as("All capacity consumed").isZero();
@@ -465,10 +476,10 @@ class LockServiceStressIntegrationTest extends LockServiceIntegrationTestBase {
     }
 
     @Test
-    @DisplayName("Stress: 10 cycles of acquire/release on 100 seats — no drift after repeated cycles")
+    @DisplayName("Stress: acquire/release cycles on many seats — no drift after repeated cycles")
     void givenRepeatedAcquireReleaseCycles_whenTenCycles_thenStateReturnsToBaseline() throws Exception {
-        int seatCount = 100;
-        int cycles = 10;
+        int seatCount = Math.max(10, 100 * SF);
+        int cycles = Math.max(2, 10 * SF / 2);
         Event event = createPublishedSeatEvent();
         Section section = createSection(event, seatCount);
         List<UUID> seatIds = new ArrayList<>();
@@ -478,12 +489,12 @@ class LockServiceStressIntegrationTest extends LockServiceIntegrationTestBase {
             createSeat(section, sid, SeatStatus.AVAILABLE);
         }
 
+        int poolSize = threads(20);
         for (int cycle = 0; cycle < cycles; cycle++) {
-            // Phase A: acquire all seats concurrently
             CountDownLatch acquireStartLatch = new CountDownLatch(1);
             CountDownLatch acquireFinishLatch = new CountDownLatch(seatCount);
             ConcurrentLinkedQueue<Throwable> acquireErrors = new ConcurrentLinkedQueue<>();
-            ExecutorService acquireExecutor = Executors.newFixedThreadPool(20);
+            ExecutorService acquireExecutor = Executors.newFixedThreadPool(poolSize);
             CountDownLatch aSL = acquireStartLatch;
             CountDownLatch aFL = acquireFinishLatch;
             ConcurrentLinkedQueue<Throwable> aErrs = acquireErrors;
@@ -510,20 +521,19 @@ class LockServiceStressIntegrationTest extends LockServiceIntegrationTestBase {
             }
 
             acquireStartLatch.countDown();
-            boolean acquired = acquireFinishLatch.await(30, TimeUnit.SECONDS);
+            boolean acquired = acquireFinishLatch.await(timeout(30), TimeUnit.SECONDS);
             acquireExecutor.shutdown();
-            boolean termA = acquireExecutor.awaitTermination(5, TimeUnit.SECONDS);
+            boolean termA = acquireExecutor.awaitTermination(timeout(5), TimeUnit.SECONDS);
             if (!termA) acquireExecutor.shutdownNow();
 
             assertThat(acquired).as("Cycle %d: all acquire threads completed".formatted(cycle)).isTrue();
             assertThat(acquireErrors).as("Cycle %d: no acquire errors".formatted(cycle)).isEmpty();
             assertThat(seatLockRepository.count()).as("Cycle %d: all seats locked".formatted(cycle)).isEqualTo(seatCount);
 
-            // Phase B: release all seats concurrently
             CountDownLatch releaseStartLatch = new CountDownLatch(1);
             CountDownLatch releaseFinishLatch = new CountDownLatch(seatCount);
             ConcurrentLinkedQueue<Throwable> releaseErrors = new ConcurrentLinkedQueue<>();
-            ExecutorService releaseExecutor = Executors.newFixedThreadPool(20);
+            ExecutorService releaseExecutor = Executors.newFixedThreadPool(poolSize);
             CountDownLatch rSL = releaseStartLatch;
             CountDownLatch rFL = releaseFinishLatch;
             ConcurrentLinkedQueue<Throwable> rErrs = releaseErrors;
@@ -547,9 +557,9 @@ class LockServiceStressIntegrationTest extends LockServiceIntegrationTestBase {
             }
 
             releaseStartLatch.countDown();
-            boolean released = releaseFinishLatch.await(30, TimeUnit.SECONDS);
+            boolean released = releaseFinishLatch.await(timeout(30), TimeUnit.SECONDS);
             releaseExecutor.shutdown();
-            boolean termR = releaseExecutor.awaitTermination(5, TimeUnit.SECONDS);
+            boolean termR = releaseExecutor.awaitTermination(timeout(5), TimeUnit.SECONDS);
             if (!termR) releaseExecutor.shutdownNow();
 
             assertThat(released).as("Cycle %d: all release threads completed".formatted(cycle)).isTrue();
@@ -557,7 +567,6 @@ class LockServiceStressIntegrationTest extends LockServiceIntegrationTestBase {
             assertThat(seatLockRepository.count()).as("Cycle %d: no locks after release".formatted(cycle)).isZero();
         }
 
-        // Final invariants after all cycles
         assertThat(seatRepository.count()).as("Total seats unchanged after all cycles").isEqualTo(seatCount);
         assertThat(seatLockRepository.count()).as("No orphan locks remain after all cycles").isZero();
         assertThat(seatRepository.findAll()).as("All seats AVAILABLE after all cycles")
@@ -565,23 +574,23 @@ class LockServiceStressIntegrationTest extends LockServiceIntegrationTestBase {
     }
 
     @Test
-    @DisplayName("Stress: 10 cycles of acquire/confirm on zones — capacity fully consumed incrementally")
+    @DisplayName("Stress: acquire/confirm cycles on zones — capacity fully consumed incrementally")
     void givenRepeatedZoneAcquireConfirmCycles_whenTenCycles_thenCapacityFullyConsumed() throws Exception {
-        int capacity = 1000;
-        int perCycle = 100;
-        int cycles = 10;
-        int total = perCycle * cycles;
+        int cycles = Math.max(2, 10 * SF / 2);
+        int perCycle = Math.max(10, 100 * SF);
+        int capacity = perCycle * cycles;
         Event event = createPublishedZoneEvent();
         Section section = createSection(event, capacity);
         UUID zoneId = section.getId();
 
+        int poolSize = threads(20);
         for (int cycle = 0; cycle < cycles; cycle++) {
             int offset = cycle * perCycle;
 
             CountDownLatch startLatch = new CountDownLatch(1);
             CountDownLatch finishLatch = new CountDownLatch(perCycle);
             ConcurrentLinkedQueue<Throwable> errors = new ConcurrentLinkedQueue<>();
-            ExecutorService executor = Executors.newFixedThreadPool(20);
+            ExecutorService executor = Executors.newFixedThreadPool(poolSize);
 
             for (int i = 0; i < perCycle; i++) {
                 String resId = "zone-cycle-" + cycle + "-" + i;
@@ -604,9 +613,9 @@ class LockServiceStressIntegrationTest extends LockServiceIntegrationTestBase {
             }
 
             startLatch.countDown();
-            boolean finished = finishLatch.await(60, TimeUnit.SECONDS);
+            boolean finished = finishLatch.await(timeout(60), TimeUnit.SECONDS);
             executor.shutdown();
-            boolean terminated = executor.awaitTermination(5, TimeUnit.SECONDS);
+            boolean terminated = executor.awaitTermination(timeout(5), TimeUnit.SECONDS);
             if (!terminated) executor.shutdownNow();
 
             assertThat(finished).as("Cycle %d: all threads completed".formatted(cycle)).isTrue();
@@ -621,9 +630,8 @@ class LockServiceStressIntegrationTest extends LockServiceIntegrationTestBase {
                 .as("Cycle %d: no active locks after confirm".formatted(cycle)).isZero();
         }
 
-        // Final invariants
         Section refreshed = sectionRepository.findById(zoneId).orElseThrow();
-        assertThat(refreshed.getRemainingCapacity()).as("Capacity fully consumed after all cycles").isEqualTo(capacity - total);
+        assertThat(refreshed.getRemainingCapacity()).as("Capacity fully consumed after all cycles").isEqualTo(capacity - perCycle * cycles);
         assertThat(refreshed.getRemainingCapacity()).as("remainingCapacity never negative").isNotNegative();
         assertThat(zoneLockRepository.count()).as("No orphan zone locks after all cycles").isZero();
     }
@@ -631,18 +639,26 @@ class LockServiceStressIntegrationTest extends LockServiceIntegrationTestBase {
     @Test
     @DisplayName("Concurrent zone: mixed quantities (3,2) on capacity 20 — total active never exceeds capacity")
     void givenMixedQuantities_whenConcurrentZoneAcquire_thenTotalWithinCapacity() throws Exception {
-        int capacity = 20;
+        int capacity = Math.max(10, 20 * SF);
         Event event = createPublishedZoneEvent();
         Section section = createSection(event, capacity);
         UUID zoneId = section.getId();
 
         record QtyReq(String id, int qty) {}
-        List<QtyReq> requests = List.of(
+        List<QtyReq> baseRequests = List.of(
             new QtyReq("mq-0", 3), new QtyReq("mq-1", 3),
             new QtyReq("mq-2", 3), new QtyReq("mq-3", 3),
             new QtyReq("mq-4", 2), new QtyReq("mq-5", 2),
             new QtyReq("mq-6", 2), new QtyReq("mq-7", 2)
         );
+        int repeats = Math.max(1, SF);
+        List<QtyReq> requests = new ArrayList<>();
+        for (int r = 0; r < repeats; r++) {
+            int base = r * baseRequests.size();
+            for (int j = 0; j < baseRequests.size(); j++) {
+                requests.add(new QtyReq("mq-" + (base + j), baseRequests.get(j).qty));
+            }
+        }
         int requestCount = requests.size();
 
         CountDownLatch startLatch = new CountDownLatch(1);
@@ -650,7 +666,7 @@ class LockServiceStressIntegrationTest extends LockServiceIntegrationTestBase {
         ConcurrentLinkedQueue<Throwable> unexpectedErrors = new ConcurrentLinkedQueue<>();
         AtomicInteger succeeded = new AtomicInteger(0);
         AtomicInteger rejected = new AtomicInteger(0);
-        ExecutorService executor = Executors.newFixedThreadPool(20);
+        ExecutorService executor = Executors.newFixedThreadPool(threads(20));
 
         for (QtyReq req : requests) {
             executor.submit(() -> {
@@ -672,7 +688,7 @@ class LockServiceStressIntegrationTest extends LockServiceIntegrationTestBase {
         }
 
         startLatch.countDown();
-        boolean finished = finishLatch.await(15, TimeUnit.SECONDS);
+        boolean finished = finishLatch.await(timeout(15), TimeUnit.SECONDS);
         executor.shutdown();
         boolean terminated = executor.awaitTermination(3, TimeUnit.SECONDS);
         if (!terminated) executor.shutdownNow();

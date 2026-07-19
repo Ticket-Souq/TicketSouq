@@ -8,6 +8,7 @@ import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.testcontainers.containers.PostgreSQLContainer;
+import org.testcontainers.junit.jupiter.Testcontainers;
 import org.ticketsouq.eventservice.Client.UserServiceClient;
 import org.ticketsouq.eventservice.EventServiceApplication;
 import org.ticketsouq.eventservice.model.*;
@@ -25,6 +26,7 @@ import java.time.Instant;
 import java.util.UUID;
 
 @SpringBootTest(classes = EventServiceApplication.class, webEnvironment = SpringBootTest.WebEnvironment.NONE)
+@Testcontainers(disabledWithoutDocker = true)
 abstract class LockServiceIntegrationTestBase {
 
     static PostgreSQLContainer<?> postgres = new PostgreSQLContainer<>("postgres")
