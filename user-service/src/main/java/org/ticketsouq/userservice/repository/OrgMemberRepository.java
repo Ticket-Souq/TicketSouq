@@ -26,6 +26,8 @@ public interface OrgMemberRepository extends JpaRepository<OrgMember, UUID> {
 
     Optional<OrgMember> findByOrganization_NameAndMemberRole(String organizationName, MemberRole role);
 
+    Optional<OrgMember> findByUserId(UUID userId);
+
     @Query("SELECT new org.ticketsouq.userservice.dto.OrganizationWithHeadResponse(" +
            "om.organization.id, om.organization.name, om.user.email) " +
            "FROM OrgMember om " +

@@ -8,6 +8,7 @@ import org.ticketsouq.userservice.client.AuthServiceClient;
 import org.ticketsouq.userservice.dto.OrganizationWithHeadResponse;
 import org.ticketsouq.userservice.model.OrgStatus;
 import org.ticketsouq.userservice.service.OrganizationService;
+import org.ticketsouq.userservice.service.UserService;
 
 import java.util.List;
 import java.util.UUID;
@@ -20,6 +21,7 @@ public class UserPublicController {
 
     private final AuthServiceClient authServiceClient;
     private final OrganizationService orgService;
+    private final UserService userService;
 
     // ── Org approval / banning ────────────────────────────────────────────────
 
@@ -46,5 +48,10 @@ public class UserPublicController {
     @GetMapping("/organizations")
     public ResponseEntity<List<OrganizationWithHeadResponse>> getAllOrganizations() {
         return ResponseEntity.ok(orgService.getAllOrganizations());
+    }
+
+    @GetMapping("/{id}/display-name")
+    public ResponseEntity<String> getUserDisplayRoleOrName(@PathVariable("id") UUID id) {
+        return ResponseEntity.ok(userService.getUserDisplayRoleOrName(id));
     }
 }

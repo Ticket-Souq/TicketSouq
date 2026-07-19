@@ -125,4 +125,14 @@ public class UserService {
                 "Organization not found or has no HEAD", HttpStatus.NOT_FOUND));
         return head.getUser().getEmail();
     }
+
+    @Transactional(readOnly = true)
+    public String getUserDisplayRoleOrName(UUID userId) {
+        return orgMemberRepository.findByUserId(userId)
+            .map(member -> member.getMemberRole().name())
+            .orElseGet(() -> userRepository.findById(userId)
+                .map(User::getName)
+                .orElseThrow(() -> new BusinessException(
+                    "User not found with ID: " + userId, HttpStatus.NOT_FOUND)));
+    }
 }
