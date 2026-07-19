@@ -22,4 +22,6 @@ public interface OrgMemberRepository extends JpaRepository<OrgMember, UUID> {
 
     @Query("SELECT om.organization.name FROM OrgMember om WHERE om.userId = :userId")
     Optional<String> findOrganizationNameByUserId(@Param("userId") UUID userId);
+
+    Optional<OrgMember> findByOrganization_NameAndMemberRole(String organizationName, MemberRole role);
 }

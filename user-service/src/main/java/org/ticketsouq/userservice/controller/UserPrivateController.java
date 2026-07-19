@@ -46,4 +46,9 @@ public class UserPrivateController {
     public ResponseEntity<String> getOrganizationNameByUserId(@RequestParam UUID id) {
         return ResponseEntity.ok(userService.getOrganizationNameByUserId(id));
     }
+
+    @GetMapping("/org-head-email")
+    public ResponseEntity<String> getOrgHeadEmail(@RequestParam String organizationName) {
+        return ResponseEntity.ok(userService.getOrgHeadEmailByOrgName(organizationName));
+    }
 }

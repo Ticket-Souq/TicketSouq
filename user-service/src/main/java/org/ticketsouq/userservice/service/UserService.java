@@ -116,4 +116,13 @@ public class UserService {
     public String getOrganizationNameByUserId(UUID userId) {
         return orgMemberRepository.findOrganizationNameByUserId(userId).orElse(null);
     }
+
+    @Transactional(readOnly = true)
+    public String getOrgHeadEmailByOrgName(String organizationName) {
+        OrgMember head = orgMemberRepository
+            .findByOrganization_NameAndMemberRole(organizationName, MemberRole.HEAD)
+            .orElseThrow(() -> new BusinessException(
+                "Organization not found or has no HEAD", HttpStatus.NOT_FOUND));
+        return head.getUser().getEmail();
+    }
 }
