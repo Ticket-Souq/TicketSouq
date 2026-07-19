@@ -30,7 +30,6 @@
         <module>api-gateway</module>
 <!--        <module>analytics-service</module>-->
 <!--        <module>audit-service</module>-->
-<!--        <module>availability-locking-service</module>-->
         <module>event-service</module>
         <module>notification-service</module>
 <!--        <module>payment-service</module>-->
