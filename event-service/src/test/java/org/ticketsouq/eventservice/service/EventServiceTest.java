@@ -18,7 +18,9 @@ import org.ticketsouq.eventservice.dto.FrontendMap.EventCardResponse;
 import org.ticketsouq.eventservice.dto.FrontendMap.EventFrontendMapper;
 import org.ticketsouq.eventservice.dto.FrontendMap.EventLayoutResponse;
 import org.ticketsouq.eventservice.model.Event;
+import org.ticketsouq.eventservice.model.Seat;
 import org.ticketsouq.eventservice.model.SeatLock;
+import org.ticketsouq.eventservice.model.Section;
 import org.ticketsouq.eventservice.model.enums.BookingModel;
 import org.ticketsouq.eventservice.model.enums.EventStatus;
 import org.ticketsouq.eventservice.repository.EventRepository;
@@ -101,17 +103,17 @@ class EventServiceTest {
     @DisplayName("Should include locked seat IDs when event has seat model with locks")
     void givenSeatModelWithLocks_whenGetById_thenIncludeLockedSeatIds() {
         UUID id = UUID.randomUUID();
-        org.ticketsouq.eventservice.model.Section section = org.ticketsouq.eventservice.model.Section.builder()
+        Section section = Section.builder()
             .id(UUID.randomUUID()).build();
         section.setSeats(List.of(
-            org.ticketsouq.eventservice.model.Seat.builder().id(UUID.randomUUID()).build()
+            Seat.builder().id(UUID.randomUUID()).build()
         ));
         Event event = Event.builder()
             .id(id)
             .bookingModel(BookingModel.SEAT)
             .sections(List.of(section))
             .build();
-        List<org.ticketsouq.eventservice.model.Seat> seats = section.getSeats();
+        List<Seat> seats = section.getSeats();
         when(seatRepository.findBySectionIdIn(List.of(section.getId()))).thenReturn(seats);
         when(eventRepository.findEventById(id)).thenReturn(Optional.of(event));
 
@@ -236,11 +238,11 @@ class EventServiceTest {
     void givenSeatModelWithSectionsAndSeats_whenGetById_thenCheckLocks() {
         UUID id = UUID.randomUUID();
         UUID seatId = UUID.randomUUID();
-        org.ticketsouq.eventservice.model.Section section = org.ticketsouq.eventservice.model.Section.builder()
+        Section section = Section.builder()
             .id(UUID.randomUUID())
             .build();
         section.setSeats(List.of(
-            org.ticketsouq.eventservice.model.Seat.builder().id(seatId).build()
+            Seat.builder().id(seatId).build()
         ));
         Event event = Event.builder()
             .id(id)
@@ -248,7 +250,7 @@ class EventServiceTest {
             .sections(List.of(section))
             .build();
 
-        List<org.ticketsouq.eventservice.model.Seat> seats = section.getSeats();
+        List<Seat> seats = section.getSeats();
         when(seatRepository.findBySectionIdIn(List.of(section.getId()))).thenReturn(seats);
         when(eventRepository.findEventById(id)).thenReturn(Optional.of(event));
         when(seatLockRepository.findBySeatIdInAndExpiresAtAfter(

@@ -1,4 +1,4 @@
-package org.ticketsouq.eventservice.service;
+package org.ticketsouq.eventservice.service.Lock;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -13,6 +13,7 @@ import org.ticketsouq.eventservice.model.enums.BookingModel;
 import org.ticketsouq.eventservice.model.enums.EventStatus;
 import org.ticketsouq.eventservice.model.enums.SeatStatus;
 import org.ticketsouq.eventservice.repository.*;
+import org.ticketsouq.eventservice.service.LockService;
 import org.ticketsouq.sharedmodule.EventService.exception.*;
 import org.ticketsouq.sharedmodule.GeneralExceptions.ConflictException;
 import org.ticketsouq.sharedmodule.GeneralExceptions.ResourceNotFoundException;

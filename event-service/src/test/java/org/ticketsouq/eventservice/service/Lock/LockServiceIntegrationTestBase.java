@@ -1,10 +1,9 @@
-package org.ticketsouq.eventservice.service;
+package org.ticketsouq.eventservice.service.Lock;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.kafka.core.KafkaTemplate;
-import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
@@ -17,6 +16,7 @@ import org.ticketsouq.eventservice.model.enums.EventStatus;
 import org.ticketsouq.eventservice.model.enums.SeatStatus;
 import org.ticketsouq.eventservice.repository.*;
 import org.ticketsouq.eventservice.repository.ElasticsearchEventRepository;
+import org.ticketsouq.eventservice.service.LockService;
 import org.ticketsouq.eventservice.service.Search.ESSearchService;
 import org.springframework.transaction.PlatformTransactionManager;
 
@@ -24,14 +24,14 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.UUID;
 
-@SpringBootTest(classes = EventServiceApplication.class)
-@ActiveProfiles("integrationtest")
+@SpringBootTest(classes = EventServiceApplication.class, webEnvironment = SpringBootTest.WebEnvironment.NONE)
 abstract class LockServiceIntegrationTestBase {
 
-    static PostgreSQLContainer<?> postgres = new PostgreSQLContainer<>("postgres:16")
+    static PostgreSQLContainer<?> postgres = new PostgreSQLContainer<>("postgres")
         .withDatabaseName("testdb")
         .withUsername("test")
-        .withPassword("test");
+        .withPassword("test")
+        .withReuse(true);
 
     static {
         postgres.start();
@@ -42,6 +42,7 @@ abstract class LockServiceIntegrationTestBase {
         registry.add("spring.datasource.url", postgres::getJdbcUrl);
         registry.add("spring.datasource.username", postgres::getUsername);
         registry.add("spring.datasource.password", postgres::getPassword);
+        registry.add("spring.jpa.hibernate.ddl-auto", () -> "create-drop");
         registry.add("spring.datasource.driver-class-name", () -> "org.postgresql.Driver");
     }
 
@@ -102,7 +103,7 @@ abstract class LockServiceIntegrationTestBase {
         return sectionRepository.save(section);
     }
 
-    protected Seat createSeat(Section section, UUID seatId, SeatStatus status) {
+    protected void createSeat(Section section, UUID seatId, SeatStatus status) {
         Seat seat = Seat.builder()
             .id(seatId)
             .section(section)
@@ -111,6 +112,6 @@ abstract class LockServiceIntegrationTestBase {
             .lable("A1")
             .status(status)
             .build();
-        return seatRepository.save(seat);
+        seatRepository.save(seat);
     }
 }

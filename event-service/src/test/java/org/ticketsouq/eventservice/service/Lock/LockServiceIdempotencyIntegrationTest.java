@@ -1,4 +1,4 @@
-package org.ticketsouq.eventservice.service;
+package org.ticketsouq.eventservice.service.Lock;
 
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
