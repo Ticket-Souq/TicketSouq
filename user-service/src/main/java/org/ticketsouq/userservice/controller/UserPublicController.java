@@ -5,9 +5,11 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.ticketsouq.userservice.client.AuthServiceClient;
+import org.ticketsouq.userservice.dto.OrganizationWithHeadResponse;
 import org.ticketsouq.userservice.model.OrgStatus;
 import org.ticketsouq.userservice.service.OrganizationService;
 
+import java.util.List;
 import java.util.UUID;
 
 @RestController
@@ -41,4 +43,8 @@ public class UserPublicController {
         return ResponseEntity.ok().build();
     }
 
+    @GetMapping("/organizations")
+    public ResponseEntity<List<OrganizationWithHeadResponse>> getAllOrganizations() {
+        return ResponseEntity.ok(orgService.getAllOrganizations());
+    }
 }

@@ -12,9 +12,11 @@ import org.ticketsouq.userservice.model.MemberRole;
 import org.ticketsouq.userservice.model.OrgMember;
 import org.ticketsouq.userservice.model.OrgStatus;
 import org.ticketsouq.userservice.model.Organization;
+import org.ticketsouq.userservice.dto.OrganizationWithHeadResponse;
 import org.ticketsouq.userservice.repository.OrgMemberRepository;
 
 import java.time.Instant;
+import java.util.List;
 import java.util.UUID;
 
 @Slf4j
@@ -39,5 +41,10 @@ public class OrganizationService {
         ));
 
         log.info("Admin {} changed status of Organization {} to {}", adminId, org.getName(), newStatus);
+    }
+
+    @Transactional(readOnly = true)
+    public List<OrganizationWithHeadResponse> getAllOrganizations() {
+        return orgMemberRepository.findAllOrganizationsWithHeadEmail();
     }
 }
