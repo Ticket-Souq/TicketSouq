@@ -102,6 +102,20 @@ services:
     networks:
       - Ticket-Souq-Microservice
 
+  reservation-db:
+    image: postgres
+    container_name: reservation-db
+    environment:
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: admin
+      POSTGRES_DB: reservation_db
+    ports:
+      - "5437:5432"
+    volumes:
+      - postgres_reservation_data:/var/lib/postgresql
+    networks:
+      - Ticket-Souq-Microservice
+
 #  analytics-db:
 #    <<: *postgres
 #    container_name: analytics-db
@@ -113,18 +127,7 @@ services:
 #      - "5441:5432"
 #    volumes:
 #      - postgres_analytics_data:/var/lib/postgresql
-#
-#  availability-locking-db:
-#    <<: *postgres
-#    container_name: availability-locking-db
-#    environment:
-#      POSTGRES_USER: admin
-#      POSTGRES_PASSWORD: admin
-#      POSTGRES_DB: availability_locking_db
-#    ports:
-#      - "5442:5432"
-#    volumes:
-#      - postgres_availability_locking_data:/var/lib/postgresql
+
 
   # ─── Messaging ──────────────────────────────────────────────
 
