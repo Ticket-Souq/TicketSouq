@@ -1,4 +1,4 @@
-package org.ticketsouq.eventservice.dto;
+package org.ticketsouq.sharedmodule.EventService.dto;
 
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotEmpty;

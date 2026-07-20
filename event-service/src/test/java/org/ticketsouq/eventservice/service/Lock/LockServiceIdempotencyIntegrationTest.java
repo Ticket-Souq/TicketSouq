@@ -2,9 +2,10 @@ package org.ticketsouq.eventservice.service.Lock;
 
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import org.ticketsouq.eventservice.dto.*;
 import org.ticketsouq.eventservice.model.*;
 import org.ticketsouq.eventservice.model.enums.SeatStatus;
+import org.ticketsouq.sharedmodule.EventService.dto.LockSeatsRequest;
+import org.ticketsouq.sharedmodule.EventService.dto.LockZoneRequest;
 
 import java.util.*;
 

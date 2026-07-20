@@ -2,9 +2,9 @@ package org.ticketsouq.eventservice.service.Lock;
 
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import org.ticketsouq.eventservice.dto.*;
 import org.ticketsouq.eventservice.model.*;
 import org.springframework.transaction.support.TransactionTemplate;
+import org.ticketsouq.sharedmodule.EventService.dto.LockZoneRequest;
 import org.ticketsouq.sharedmodule.EventService.exception.LockExpiredException;
 import org.ticketsouq.sharedmodule.EventService.exception.ZoneCapacityExceededException;
 

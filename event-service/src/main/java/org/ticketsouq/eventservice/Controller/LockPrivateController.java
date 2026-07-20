@@ -5,8 +5,9 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import org.ticketsouq.eventservice.dto.*;
 import org.ticketsouq.eventservice.service.LockService;
+import org.ticketsouq.sharedmodule.EventService.dto.*;
+import org.ticketsouq.sharedmodule.ReservationService.dto.*;
 
 import java.util.UUID;
 
@@ -34,18 +35,14 @@ public class LockPrivateController {
         return ResponseEntity.ok(response);
     }
 
-    @PostMapping("/{eventId}/confirm")
-    public ResponseEntity<ConfirmResponse> confirm(
-        @PathVariable UUID eventId,
-        @Valid @RequestBody ConfirmRequest request) {
+    @PostMapping("/confirm")
+    public ResponseEntity<ConfirmResponse> confirm(@Valid @RequestBody ConfirmRequest request) {
         ConfirmResponse response = lockService.confirm(request.reservationId());
         return ResponseEntity.ok(response);
     }
 
-    @PostMapping("/{eventId}/release")
-    public ResponseEntity<ReleaseResponse> release(
-        @PathVariable UUID eventId,
-        @Valid @RequestBody ReleaseRequest request) {
+    @PostMapping("/release")
+    public ResponseEntity<ReleaseResponse> release(@Valid @RequestBody ReleaseRequest request) {
         ReleaseResponse response = lockService.release(request.reservationId());
         return ResponseEntity.ok(response);
     }

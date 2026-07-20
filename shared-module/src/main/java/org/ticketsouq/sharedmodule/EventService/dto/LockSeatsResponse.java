@@ -1,4 +1,4 @@
-package org.ticketsouq.eventservice.dto;
+package org.ticketsouq.sharedmodule.EventService.dto;
 
 import java.time.LocalDateTime;
 import java.util.List;

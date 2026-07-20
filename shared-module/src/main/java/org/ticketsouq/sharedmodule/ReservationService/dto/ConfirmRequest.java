@@ -1,7 +1,7 @@
-package org.ticketsouq.eventservice.dto;
+package org.ticketsouq.sharedmodule.ReservationService.dto;
 
 import jakarta.validation.constraints.NotBlank;
 
-public record ReleaseRequest(
+public record ConfirmRequest(
     @NotBlank String reservationId
 ) {}

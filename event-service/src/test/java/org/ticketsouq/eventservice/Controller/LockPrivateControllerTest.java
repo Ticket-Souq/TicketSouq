@@ -9,8 +9,12 @@ import org.springframework.data.jpa.mapping.JpaMetamodelMappingContext;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
-import org.ticketsouq.eventservice.dto.*;
 import org.ticketsouq.eventservice.service.LockService;
+import org.ticketsouq.sharedmodule.EventService.dto.LockSeatsRequest;
+import org.ticketsouq.sharedmodule.EventService.dto.LockSeatsResponse;
+import org.ticketsouq.sharedmodule.EventService.dto.LockZoneRequest;
+import org.ticketsouq.sharedmodule.EventService.dto.LockZoneResponse;
+import org.ticketsouq.sharedmodule.ReservationService.dto.*;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -63,11 +67,10 @@ class LockPrivateControllerTest {
     @Test
     @DisplayName("Should return 200 with CONFIRMED status when confirming a reservation")
     void givenReservationId_whenConfirm_thenReturn200() throws Exception {
-        UUID eventId = UUID.randomUUID();
         ConfirmRequest request = new ConfirmRequest("res-1");
         when(lockService.confirm("res-1")).thenReturn(ConfirmResponse.CONFIRMED);
 
-        mockMvc.perform(post("/api/v1/private/events/{eventId}/confirm", eventId)
+        mockMvc.perform(post("/api/v1/private/events/confirm")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(request)))
             .andExpect(status().isOk())
@@ -77,11 +80,10 @@ class LockPrivateControllerTest {
     @Test
     @DisplayName("Should return 200 with RELEASED status when releasing a reservation")
     void givenReservationId_whenRelease_thenReturn200() throws Exception {
-        UUID eventId = UUID.randomUUID();
         ReleaseRequest request = new ReleaseRequest("res-1");
         when(lockService.release("res-1")).thenReturn(ReleaseResponse.RELEASED);
 
-        mockMvc.perform(post("/api/v1/private/events/{eventId}/release", eventId)
+        mockMvc.perform(post("/api/v1/private/events/release")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(request)))
             .andExpect(status().isOk())

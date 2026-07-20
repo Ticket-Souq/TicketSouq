@@ -1,4 +1,4 @@
-package org.ticketsouq.eventservice.dto;
+package org.ticketsouq.sharedmodule.ReservationService.dto;
 
 public record ConfirmResponse(
     String status

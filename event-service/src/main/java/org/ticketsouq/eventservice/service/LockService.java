@@ -10,9 +10,15 @@ import org.ticketsouq.eventservice.model.enums.BookingModel;
 import org.ticketsouq.eventservice.model.enums.EventStatus;
 import org.ticketsouq.eventservice.model.enums.SeatStatus;
 import org.ticketsouq.eventservice.repository.*;
+import org.ticketsouq.sharedmodule.EventService.dto.LockZoneRequest;
+import org.ticketsouq.sharedmodule.EventService.dto.LockZoneResponse;
 import org.ticketsouq.sharedmodule.EventService.exception.*;
 import org.ticketsouq.sharedmodule.GeneralExceptions.ConflictException;
 import org.ticketsouq.sharedmodule.GeneralExceptions.ResourceNotFoundException;
+import org.ticketsouq.sharedmodule.ReservationService.dto.ConfirmResponse;
+import org.ticketsouq.sharedmodule.EventService.dto.LockSeatsRequest;
+import org.ticketsouq.sharedmodule.EventService.dto.LockSeatsResponse;
+import org.ticketsouq.sharedmodule.ReservationService.dto.ReleaseResponse;
 
 import java.time.LocalDateTime;
 import java.util.List;
