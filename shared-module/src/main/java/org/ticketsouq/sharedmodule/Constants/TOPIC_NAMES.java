@@ -39,8 +39,8 @@ public final class TOPIC_NAMES {
 //    public static final String TICKET_AVAILABILITY_CHANGED = "ticket.availability.changed";
 //
     // ─── Reservation Service ──────────────────────────────────
-//    public static final String RESERVATION_CREATED = "reservation.created";
-//    public static final String RESERVATION_CONFIRMED = "reservation.confirmed";
+    public static final String RESERVATION_BEGIN = "reservation.begin";
+    public static final String RESERVATION_COMPLETED = "reservation.completed";
 //    public static final String RESERVATION_EXPIRED = "reservation.expired";
 //    public static final String RESERVATION_CANCELLED = "reservation.cancelled";
 //

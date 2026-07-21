@@ -7,6 +7,5 @@ import java.util.List;
 import java.util.UUID;
 
 public record LockSeatsRequest(
-    @NotBlank String reservationId,
     @NotEmpty List<UUID> seatIds
 ) {}

@@ -1,4 +1,4 @@
-package org.ticketsouq.reservationservice.enums;
+package org.ticketsouq.sharedmodule.ReservationService.enums;
 
 public enum ReservationStatus {
     PENDING,
