@@ -8,6 +8,7 @@ import org.ticketsouq.reservationservice.enums.ReservationStatus;
 
 import java.math.BigDecimal;
 import java.time.Instant;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
 
@@ -30,34 +31,33 @@ public class Reservation {
     @Column(nullable = false)
     private UUID eventId;
 
-    private UUID paymentId;
-
-    @Column(nullable = false)
-    private BigDecimal totalAmount;
-
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private ReservationStatus status;
 
-    private UUID zoneId;
+//    private UUID zoneId;
 
-    private Integer quantity;
+//    private Integer quantity;
 
-    @ElementCollection
-    @CollectionTable(name = "reservation_seats", joinColumns = @JoinColumn(name = "reservation_id"))
-    @Column(name = "seat_id")
-    private List<UUID> seatIds;
+//    @ElementCollection
+//    @CollectionTable(name = "reservation_seats", joinColumns = @JoinColumn(name = "reservation_id"))
+//    @Column(name = "seat_id")
+//    private List<UUID> seatIds;
 
-    private UUID ticketId;
+    @Column(nullable = false)
+    private BigDecimal totalAmount;
 
-    private String failureReason;
+//    @Column(nullable = false)
+//    private LocalDateTime expiresAt;
+
+//    private String failureReason;
 
     @CreatedDate
-    @Column(nullable = false)
+    @Column(nullable = false, updatable = false)
     private Instant createdAt;
 
     private Instant completedAt;
 
-    @Version
-    private Long version;
+//    @Version
+//    private Long version;
 }
