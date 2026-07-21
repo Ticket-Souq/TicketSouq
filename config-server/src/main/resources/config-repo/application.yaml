@@ -2,17 +2,17 @@ spring:
 
   # ── Database defaults (services override only what differs) ──────────
 #  datasource:
-#    url: jdbc:${database.vendor}://${database.host}:${database.port}/${database.name}
+#    url: jdbc:postgresql://${database.host}:${database.port}/${database.name}
 #    username: ${database.username}
 #    password: ${database.password}
-#    driver-class-name: ${database.driver}
+#    driver-class-name: org.postgresql.Driver
 #  jpa:
 #    hibernate:
 #      ddl-auto: update
 #    show-sql: true
 #    properties:
 #      hibernate:
-#        dialect: ${database.dialect}
+#        dialect: org.hibernate.dialect.PostgreSQLDialect
 #        format_sql: true
 
   # ── Kafka defaults (services override only what differs) ──────────

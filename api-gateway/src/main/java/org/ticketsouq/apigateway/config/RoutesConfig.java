@@ -37,7 +37,6 @@ public class RoutesConfig {
             "user-service",
             "analytics-service",
             "audit-service",
-            "availability-locking-service",
             "event-service",
             "notification-service",
             "payment-service",
