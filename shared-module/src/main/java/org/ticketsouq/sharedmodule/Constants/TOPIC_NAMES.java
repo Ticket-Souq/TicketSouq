@@ -40,10 +40,14 @@ public final class TOPIC_NAMES {
 //
     // ─── Reservation Service ──────────────────────────────────
     public static final String RESERVATION_BEGIN = "reservation.begin";
+    public static final String RESERVATION_CREATED = "reservation.created";
+    public static final String RESERVATION_CONFIRMED = "reservation.confirmed";
+    public static final String RESERVATION_EXPIRED = "reservation.expired";
+    public static final String RESERVATION_CANCELLED = "reservation.cancelled";
     public static final String RESERVATION_COMPLETED = "reservation.completed";
-//    public static final String RESERVATION_EXPIRED = "reservation.expired";
-//    public static final String RESERVATION_CANCELLED = "reservation.cancelled";
-//
+
+    // ─── Ticket Service ───────────────────────────────────────
+    public static final String TICKET_ISSUED = "ticket.issued";
     // ─── Payment Service ──────────────────────────────────────
 //    public static final String PAYMENT_INITIATED = "payment.initiated";
     public static final String PAYMENT_SUCCESS = "payment.success";

@@ -1,6 +1,7 @@
 package org.ticketsouq.reservationservice.dto;
 
-import org.ticketsouq.reservationservice.enums.ReservationStatus;
+
+import org.ticketsouq.sharedmodule.ReservationService.enums.ReservationStatus;
 
 import java.math.BigDecimal;
 import java.time.Instant;
