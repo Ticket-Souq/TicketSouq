@@ -46,5 +46,9 @@ spring:
       hibernate:
         dialect: org.hibernate.dialect.PostgreSQLDialect
 
+app:
+  lock:
+    ttl: 10
+
 server:
   port: 0
