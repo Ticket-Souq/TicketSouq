@@ -1,6 +1,7 @@
 package org.ticketsouq.eventservice.Controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import java.math.BigDecimal;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -38,7 +39,7 @@ class LockPrivateControllerTest {
     void givenSeatLockRequest_whenLockSeats_thenReturn200() throws Exception {
         UUID eventId = UUID.randomUUID();
         LockSeatsRequest request = new LockSeatsRequest("res-1", List.of(UUID.randomUUID()));
-        LockSeatsResponse response = new LockSeatsResponse("LOCKED", LocalDateTime.now().plusMinutes(10), request.seatIds());
+        LockSeatsResponse response = new LockSeatsResponse("LOCKED", LocalDateTime.now().plusMinutes(10), List.of(), BigDecimal.ZERO);
         when(lockService.acquireSeatLocks(eq(eventId), any(LockSeatsRequest.class))).thenReturn(response);
 
         mockMvc.perform(post("/api/v1/private/events/{eventId}/locks/seats", eventId)
@@ -53,7 +54,7 @@ class LockPrivateControllerTest {
     void givenZoneLockRequest_whenLockZone_thenReturn200() throws Exception {
         UUID eventId = UUID.randomUUID();
         LockZoneRequest request = new LockZoneRequest("res-1", UUID.randomUUID(), 5);
-        LockZoneResponse response = new LockZoneResponse("LOCKED", LocalDateTime.now().plusMinutes(10), request.zoneId(), 5);
+        LockZoneResponse response = new LockZoneResponse("LOCKED", LocalDateTime.now().plusMinutes(10), request.zoneId(), 5, BigDecimal.valueOf(500));
         when(lockService.acquireZoneLock(eq(eventId), any(LockZoneRequest.class))).thenReturn(response);
 
         mockMvc.perform(post("/api/v1/private/events/{eventId}/locks/zones", eventId)
