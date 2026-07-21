@@ -8,6 +8,8 @@ import org.ticketsouq.sharedmodule.EventService.dto.LockSeatsRequest;
 import org.ticketsouq.sharedmodule.EventService.dto.LockSeatsResponse;
 import org.ticketsouq.sharedmodule.EventService.dto.LockZoneRequest;
 import org.ticketsouq.sharedmodule.EventService.dto.LockZoneResponse;
+import org.ticketsouq.sharedmodule.ReservationService.dto.ReleaseRequest;
+import org.ticketsouq.sharedmodule.ReservationService.dto.ReleaseResponse;
 
 import java.util.UUID;
 
@@ -25,4 +27,7 @@ public interface EventServiceClient {
         @PathVariable UUID eventId,
         @RequestBody LockZoneRequest request
     );
+
+    @PostMapping("/release")
+    ReleaseResponse release(@RequestBody ReleaseRequest request);
 }

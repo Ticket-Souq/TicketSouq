@@ -25,6 +25,9 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
 
+import org.mockito.ArgumentCaptor;
+import org.ticketsouq.sharedmodule.ReservationService.dto.ReleaseRequest;
+
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.*;
@@ -45,7 +48,7 @@ class ReservationServiceTest {
     }
 
     @Test
-    @DisplayName("Should create HOLDING reservation, call Event Service for seat lock, return LOCKED response")
+    @DisplayName("Should lock seats via Event Service, then save LOCKED reservation")
     void givenSeatCheckoutRequest_whenCreateCheckout_thenSucceed() {
         UUID customerId = UUID.randomUUID();
         UUID eventId = UUID.randomUUID();
@@ -66,12 +69,12 @@ class ReservationServiceTest {
         assertThat(response.items()).hasSize(1);
         assertThat(response.totalPrice()).isEqualByComparingTo(BigDecimal.valueOf(250));
 
-        verify(reservationRepository, times(2)).save(any(Reservation.class));
+        verify(reservationRepository, times(1)).save(argThat(r -> r.getStatus() == ReservationStatus.LOCKED));
         verify(eventServiceClient).lockSeats(eq(eventId), any(LockSeatsRequest.class));
     }
 
     @Test
-    @DisplayName("Should create HOLDING reservation, call Event Service for zone lock, return LOCKED response")
+    @DisplayName("Should lock zone via Event Service, then save LOCKED reservation")
     void givenZoneCheckoutRequest_whenCreateCheckout_thenSucceed() {
         UUID customerId = UUID.randomUUID();
         UUID eventId = UUID.randomUUID();
@@ -82,6 +85,7 @@ class ReservationServiceTest {
             "LOCKED", LocalDateTime.now().plusMinutes(10), zoneId, 3, BigDecimal.valueOf(300));
 
         when(eventServiceClient.lockZone(eq(eventId), any(LockZoneRequest.class))).thenReturn(lockResponse);
+        when(reservationRepository.save(any(Reservation.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
         CheckoutResponse response = reservationService.createCheckout(customerId, request);
 
@@ -90,7 +94,7 @@ class ReservationServiceTest {
         assertThat(response.items()).isEmpty();
         assertThat(response.totalPrice()).isEqualByComparingTo(BigDecimal.valueOf(300));
 
-        verify(reservationRepository, times(2)).save(any(Reservation.class));
+        verify(reservationRepository, times(1)).save(any(Reservation.class));
         verify(eventServiceClient).lockZone(eq(eventId), any(LockZoneRequest.class));
     }
 
@@ -122,8 +126,26 @@ class ReservationServiceTest {
     }
 
     @Test
-    @DisplayName("Persistence: reservation is saved with HOLDING status before lock call")
-    void givenCheckoutRequest_whenCreatingReservation_thenHoldingPersisted() {
+    @DisplayName("No reservation saved and no release called if lock fails")
+    void givenLockFails_thenNoReservationSaved() {
+        UUID customerId = UUID.randomUUID();
+        UUID eventId = UUID.randomUUID();
+        UUID seatId = UUID.randomUUID();
+        CheckoutRequest request = new CheckoutRequest(eventId, List.of(seatId), null, null);
+
+        when(eventServiceClient.lockSeats(eq(eventId), any(LockSeatsRequest.class)))
+            .thenThrow(new RuntimeException("Event Service unavailable"));
+
+        assertThatThrownBy(() -> reservationService.createCheckout(customerId, request))
+            .isInstanceOf(RuntimeException.class);
+
+        verify(reservationRepository, never()).save(any());
+        verify(eventServiceClient, never()).release(any());
+    }
+
+    @Test
+    @DisplayName("Release called if lock succeeds but save fails")
+    void givenSaveFails_thenReleaseCalled() {
         UUID customerId = UUID.randomUUID();
         UUID eventId = UUID.randomUUID();
         UUID seatId = UUID.randomUUID();
@@ -135,11 +157,14 @@ class ReservationServiceTest {
             List.of(item), BigDecimal.valueOf(250));
 
         when(eventServiceClient.lockSeats(eq(eventId), any(LockSeatsRequest.class))).thenReturn(lockResponse);
+        when(reservationRepository.save(any(Reservation.class))).thenThrow(new RuntimeException("DB error"));
 
-        reservationService.createCheckout(customerId, request);
+        assertThatThrownBy(() -> reservationService.createCheckout(customerId, request))
+            .isInstanceOf(RuntimeException.class);
 
-        verify(reservationRepository, times(2)).save(argThat(r ->
-            r.getStatus() == ReservationStatus.HOLDING || r.getStatus() == ReservationStatus.LOCKED));
+        ArgumentCaptor<ReleaseRequest> releaseCaptor = ArgumentCaptor.forClass(ReleaseRequest.class);
+        verify(eventServiceClient).release(releaseCaptor.capture());
+        assertThat(releaseCaptor.getValue().reservationId()).isNotNull();
     }
 
     @Test

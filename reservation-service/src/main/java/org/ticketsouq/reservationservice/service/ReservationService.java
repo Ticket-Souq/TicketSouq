@@ -21,6 +21,7 @@ import org.ticketsouq.sharedmodule.EventService.dto.LockZoneResponse;
 import org.ticketsouq.reservationservice.dto.ReservationResponse;
 import org.ticketsouq.sharedmodule.GeneralExceptions.BadRequestException;
 import org.ticketsouq.sharedmodule.GeneralExceptions.ResourceNotFoundException;
+import org.ticketsouq.sharedmodule.ReservationService.dto.ReleaseRequest;
 
 import java.math.BigDecimal;
 import java.time.Duration;
@@ -53,35 +54,29 @@ public class ReservationService {
         idempotencyCache.put(idempotencyKey, response);
     }
 
-    @Transactional
     public CheckoutResponse createCheckout(UUID customerId, CheckoutRequest request) {
         validateCheckoutRequest(request);
 
         UUID reservationId = UUID.randomUUID();
 
-        Reservation reservation = Reservation.builder()
-            .id(reservationId)
-            .customerId(customerId)
-            .eventId(request.eventId())
-            .status(ReservationStatus.HOLDING)
-            .totalAmount(BigDecimal.ZERO)
-            .build();
-        reservationRepository.save(reservation);
+        CheckoutResponse response = callEventService(request, reservationId);
 
         try {
-            CheckoutResponse response = callEventService(request, reservationId);
-
-            reservation.setStatus(ReservationStatus.LOCKED);
-            reservation.setTotalAmount(response.totalPrice());
+            Reservation reservation = Reservation.builder()
+                .id(reservationId)
+                .customerId(customerId)
+                .eventId(request.eventId())
+                .status(ReservationStatus.LOCKED)
+                .totalAmount(response.totalPrice())
+                .build();
             reservationRepository.save(reservation);
-
-            return response;
         } catch (RuntimeException ex) {
-            log.warn("Lock failed for reservation {}: {}", reservationId, ex.getMessage());
-            reservation.setStatus(ReservationStatus.FAILED);
-            reservationRepository.save(reservation);
+            log.warn("Reservation save failed for {}, releasing lock: {}", reservationId, ex.getMessage());
+            eventServiceClient.release(new ReleaseRequest(reservationId.toString()));
             throw ex;
         }
+
+        return response;
     }
 
     private void validateCheckoutRequest(CheckoutRequest request) {
