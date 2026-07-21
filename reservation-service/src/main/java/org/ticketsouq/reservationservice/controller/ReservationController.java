@@ -5,6 +5,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.ticketsouq.reservationservice.dto.CheckoutRequest;
+import org.ticketsouq.reservationservice.dto.CheckoutResponse;
 import org.ticketsouq.reservationservice.dto.ReservationRequest;
 import org.ticketsouq.reservationservice.dto.ReservationResponse;
 import org.ticketsouq.reservationservice.service.ReservationService;
@@ -19,9 +21,25 @@ public class ReservationController {
 
     private final ReservationService reservationService;
 
-    @PostMapping
-    public ResponseEntity<ReservationResponse> createReservation(@RequestHeader("X-User-Id") UUID customerId, @Valid @RequestBody ReservationRequest request) {
-        ReservationResponse response = reservationService.createReservation(customerId, request);
+    @PostMapping("/checkout")
+    public ResponseEntity<CheckoutResponse> checkout(
+        @RequestHeader("X-User-Id") UUID customerId,
+        @Valid @RequestBody CheckoutRequest request,
+        @RequestHeader(value = "Idempotency-Key", required = false) String idempotencyKey
+    ) {
+        if (idempotencyKey != null && !idempotencyKey.isBlank()) {
+            CheckoutResponse cached = reservationService.getIdempotentResponse(idempotencyKey);
+            if (cached != null) {
+                return ResponseEntity.ok(cached);
+            }
+        }
+
+        CheckoutResponse response = reservationService.createCheckout(customerId, request);
+
+        if (idempotencyKey != null && !idempotencyKey.isBlank()) {
+            reservationService.cacheIdempotentResponse(idempotencyKey, response);
+        }
+
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
