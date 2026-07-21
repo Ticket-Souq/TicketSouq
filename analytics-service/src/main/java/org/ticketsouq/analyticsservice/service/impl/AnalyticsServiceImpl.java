@@ -14,6 +14,9 @@ public class AnalyticsServiceImpl implements AnalyticsService {
 
     @Override
     public OverviewKpiResponse getOverviewKpis(String range) {
+
+
+
         return new OverviewKpiResponse(
             new OverviewKpiResponse.RevenueKpi(182400, "USD", 12.4),
             new OverviewKpiResponse.TicketsSoldKpi(6840, 8500),
