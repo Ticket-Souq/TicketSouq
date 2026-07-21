@@ -4,7 +4,6 @@ import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.ticketsouq.reservationservice.client.EventServiceClient;
@@ -38,9 +37,6 @@ public class ReservationService {
     private final ReservationRepository reservationRepository;
     private final EventServiceClient eventServiceClient;
 
-    @Value("${app.lock.ttl:10}")
-    private int lockTtlMinutes;
-
     private final Cache<String, CheckoutResponse> idempotencyCache = Caffeine.newBuilder()
         .expireAfterWrite(Duration.ofMinutes(30))
         .maximumSize(50_000)
@@ -54,6 +50,7 @@ public class ReservationService {
         idempotencyCache.put(idempotencyKey, response);
     }
 
+    @Transactional
     public CheckoutResponse createCheckout(UUID customerId, CheckoutRequest request) {
         validateCheckoutRequest(request);
 

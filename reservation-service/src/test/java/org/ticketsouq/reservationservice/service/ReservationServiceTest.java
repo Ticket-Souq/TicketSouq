@@ -6,7 +6,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.test.util.ReflectionTestUtils;
+
 import org.ticketsouq.reservationservice.client.EventServiceClient;
 import org.ticketsouq.reservationservice.dto.CheckoutRequest;
 import org.ticketsouq.reservationservice.dto.CheckoutResponse;
@@ -44,7 +44,6 @@ class ReservationServiceTest {
     @BeforeEach
     void setUp() {
         reservationService = new ReservationService(reservationRepository, eventServiceClient);
-        ReflectionTestUtils.setField(reservationService, "lockTtlMinutes", 10);
     }
 
     @Test
