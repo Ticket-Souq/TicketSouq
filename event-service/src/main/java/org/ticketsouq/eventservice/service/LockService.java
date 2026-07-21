@@ -2,29 +2,26 @@ package org.ticketsouq.eventservice.service;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.ticketsouq.eventservice.dto.*;
+import org.ticketsouq.sharedmodule.EventService.dto.ReservationRequest;
+import org.ticketsouq.eventservice.dto.ZoneStatusResponse;
 import org.ticketsouq.eventservice.model.*;
 import org.ticketsouq.eventservice.model.enums.BookingModel;
 import org.ticketsouq.eventservice.model.enums.EventStatus;
 import org.ticketsouq.eventservice.model.enums.SeatStatus;
 import org.ticketsouq.eventservice.repository.*;
-import org.ticketsouq.sharedmodule.EventService.dto.LockZoneRequest;
-import org.ticketsouq.sharedmodule.EventService.dto.LockZoneResponse;
+import org.ticketsouq.sharedmodule.EventService.dto.*;
+import org.ticketsouq.sharedmodule.EventService.events.BeginReservationEvent;
 import org.ticketsouq.sharedmodule.EventService.exception.*;
 import org.ticketsouq.sharedmodule.GeneralExceptions.ConflictException;
 import org.ticketsouq.sharedmodule.GeneralExceptions.ResourceNotFoundException;
 import org.ticketsouq.sharedmodule.ReservationService.dto.ConfirmResponse;
-import org.ticketsouq.sharedmodule.EventService.dto.LockSeatsRequest;
-import org.ticketsouq.sharedmodule.EventService.dto.LockSeatsResponse;
 import org.ticketsouq.sharedmodule.ReservationService.dto.ReleaseResponse;
 
 import java.time.LocalDateTime;
-import java.util.List;
-import java.util.Optional;
-import java.util.Set;
-import java.util.UUID;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
@@ -36,6 +33,7 @@ public class LockService {
     private final SectionRepository sectionRepository;
     private final SeatLockRepository seatLockRepository;
     private final ZoneLockRepository zoneLockRepository;
+    private final ApplicationEventPublisher eventPublisher;
 
     @Value("${app.lock.ttl:10}")
     private int lockTtlMinutes;
@@ -78,18 +76,18 @@ public class LockService {
                 .toList();
             throw new SeatAlreadyLockedException(conflicting);
         }
-
+        UUID reservationId = UUID.randomUUID();
         LocalDateTime expiresAt = LocalDateTime.now().plusMinutes(lockTtlMinutes);
         List<SeatLock> locks = request.seatIds().stream()
             .map(seatId -> SeatLock.builder()
                 .seatId(seatId)
-                .reservationId(request.reservationId())
+                .reservationId(String.valueOf(reservationId))
                 .expiresAt(expiresAt)
                 .build())
             .toList();
         seatLockRepository.saveAll(locks);
 
-        return new LockSeatsResponse("LOCKED", expiresAt, request.seatIds());
+        return new LockSeatsResponse(reservationId, "LOCKED", expiresAt, request.seatIds());
     }
 
     @Transactional
@@ -114,16 +112,16 @@ public class LockService {
         if (available < request.quantity()) {
             throw new ZoneCapacityExceededException(available);
         }
-
+        UUID reservationId = UUID.randomUUID();
         ZoneLock zoneLock = ZoneLock.builder()
             .zoneId(request.zoneId())
-            .reservationId(request.reservationId())
+            .reservationId(String.valueOf(reservationId))
             .quantity(request.quantity())
             .expiresAt(LocalDateTime.now().plusMinutes(lockTtlMinutes))
             .build();
         zoneLockRepository.save(zoneLock);
 
-        return new LockZoneResponse("LOCKED", zoneLock.getExpiresAt(), request.zoneId(), request.quantity());
+        return new LockZoneResponse(reservationId, "LOCKED", zoneLock.getExpiresAt(), request.zoneId(), request.quantity());
     }
 
     @Transactional
@@ -157,7 +155,7 @@ public class LockService {
             .sorted()
             .toList();
 
-        List<Seat> seats = seatRepository.findByIdInWithLock(seatIds);
+            List<Seat> seats = seatRepository.findByIdsWithSection(seatIds);
 
         List<UUID> bookedSeats = seats.stream()
             .filter(s -> s.getStatus() == SeatStatus.BOOKED)
@@ -219,5 +217,39 @@ public class LockService {
                 );
             })
             .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public void reserve(ReservationRequest request,UUID userId) {
+        List<SeatLock> seatLocks = seatLockRepository.findByReservationId(request.reservationId());
+        Optional<ZoneLock> zoneLockOpt = zoneLockRepository.findByReservationId(request.reservationId());
+        List<TicketReservationDto> tickets = new ArrayList<>();
+        BeginReservationEvent event = new BeginReservationEvent(request.eventId(), UUID.fromString(request.reservationId()), userId, tickets);
+
+
+        if (zoneLockOpt.isPresent()) {
+            ZoneLock zoneLock = zoneLockOpt.get();
+            Section section = sectionRepository.findById(zoneLock.getZoneId())
+                .orElseThrow(() -> new ResourceNotFoundException("Section", zoneLock.getZoneId()));
+            for (int i = 0; i < zoneLock.getQuantity(); i++) {
+                tickets.add(new TicketReservationDto(section.getPrice(), null, null, section.getName()));
+            }
+            eventPublisher.publishEvent(event);
+            return;
+        }
+
+        if (!seatLocks.isEmpty()) {
+            List<UUID> seatIds = seatLocks.stream()
+                .map(SeatLock::getSeatId)
+                .toList();
+            List<Seat> seats = seatRepository.findByIdsWithSection(seatIds);
+            for (Seat seat : seats) {
+                tickets.add(new TicketReservationDto(seat.getSection().getPrice(), seat.getRow(), seat.getLable(), seat.getSection().getName()));
+            }
+            eventPublisher.publishEvent(event);
+            return;
+        }
+
+        throw new LockExpiredException(request.reservationId());
     }
 }

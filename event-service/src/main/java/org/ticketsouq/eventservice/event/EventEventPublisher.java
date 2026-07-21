@@ -7,6 +7,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.transaction.event.TransactionPhase;
 import org.springframework.transaction.event.TransactionalEventListener;
 import org.ticketsouq.sharedmodule.AuditService.events.AuditEvent;
+import org.ticketsouq.sharedmodule.EventService.events.BeginReservationEvent;
 import org.ticketsouq.sharedmodule.EventService.events.EventActivatedEvent;
 import org.ticketsouq.sharedmodule.EventService.events.EventCancelledEvent;
 import org.ticketsouq.sharedmodule.EventService.events.EventCompletedEvent;
@@ -52,6 +53,12 @@ public class EventEventPublisher {
     public void sendEventPayoutRelease(EventPayoutReleaseEvent event) {
         LogUtils.logEventPublished(EVENT_SERVICE, EVENT_PAYOUT_RELEASED);
         kafkaTemplate.send(EVENT_PAYOUT_RELEASED, event.eventId().toString(), event);
+    }
+
+    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
+    public void sendBeginReservation(BeginReservationEvent event) {
+        LogUtils.logEventPublished(EVENT_SERVICE, RESERVATION_BEGIN);
+        kafkaTemplate.send(RESERVATION_BEGIN, event.reservationId().toString(), event);
     }
 
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)

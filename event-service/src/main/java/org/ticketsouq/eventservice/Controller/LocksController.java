@@ -1,10 +1,10 @@
 package org.ticketsouq.eventservice.Controller;
 
-import io.swagger.v3.oas.annotations.Hidden;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.ticketsouq.sharedmodule.EventService.dto.ReservationRequest;
 import org.ticketsouq.eventservice.service.LockService;
 import org.ticketsouq.sharedmodule.EventService.dto.*;
 import org.ticketsouq.sharedmodule.ReservationService.dto.*;
@@ -12,14 +12,13 @@ import org.ticketsouq.sharedmodule.ReservationService.dto.*;
 import java.util.UUID;
 
 @RestController
-@RequestMapping("/api/v1/private/events")
+@RequestMapping("/api/v1/events/locks")
 @RequiredArgsConstructor
-@Hidden
-public class LockPrivateController {
+public class LocksController {
 
     private final LockService lockService;
 
-    @PostMapping("/{eventId}/locks/seats")
+    @PostMapping("/{eventId}/seats")
     public ResponseEntity<LockSeatsResponse> lockSeats(
         @PathVariable UUID eventId,
         @Valid @RequestBody LockSeatsRequest request) {
@@ -27,12 +26,18 @@ public class LockPrivateController {
         return ResponseEntity.ok(response);
     }
 
-    @PostMapping("/{eventId}/locks/zones")
+    @PostMapping("/{eventId}/zones")
     public ResponseEntity<LockZoneResponse> lockZone(
         @PathVariable UUID eventId,
         @Valid @RequestBody LockZoneRequest request) {
         LockZoneResponse response = lockService.acquireZoneLock(eventId, request);
         return ResponseEntity.ok(response);
+    }
+
+    @PostMapping("/reserve")
+    public ResponseEntity<Void> reserve(@Valid @RequestBody ReservationRequest request , @RequestHeader("X-User-Id") UUID userId) {
+        lockService.reserve(request,userId);
+        return ResponseEntity.ok().build();
     }
 
     @PostMapping("/confirm")
