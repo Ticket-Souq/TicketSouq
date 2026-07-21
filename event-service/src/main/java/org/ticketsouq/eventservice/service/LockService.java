@@ -10,6 +10,7 @@ import org.ticketsouq.eventservice.model.enums.BookingModel;
 import org.ticketsouq.eventservice.model.enums.EventStatus;
 import org.ticketsouq.eventservice.model.enums.SeatStatus;
 import org.ticketsouq.eventservice.repository.*;
+import org.ticketsouq.sharedmodule.EventService.dto.LockItem;
 import org.ticketsouq.sharedmodule.EventService.dto.LockZoneRequest;
 import org.ticketsouq.sharedmodule.EventService.dto.LockZoneResponse;
 import org.ticketsouq.sharedmodule.EventService.exception.*;
@@ -20,6 +21,7 @@ import org.ticketsouq.sharedmodule.EventService.dto.LockSeatsRequest;
 import org.ticketsouq.sharedmodule.EventService.dto.LockSeatsResponse;
 import org.ticketsouq.sharedmodule.ReservationService.dto.ReleaseResponse;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
@@ -89,7 +91,22 @@ public class LockService {
             .toList();
         seatLockRepository.saveAll(locks);
 
-        return new LockSeatsResponse("LOCKED", expiresAt, request.seatIds());
+        List<LockItem> items = seats.stream()
+            .map(seat -> new LockItem(
+                seat.getId(),
+                toRowLabel(seat.getRow()),
+                seat.getLable(),
+                seat.getSection().getName(),
+                seat.getSection().getPrice(),
+                1
+            ))
+            .toList();
+
+        BigDecimal totalPrice = items.stream()
+            .map(LockItem::price)
+            .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+        return new LockSeatsResponse("LOCKED", expiresAt, items, totalPrice);
     }
 
     @Transactional
@@ -123,7 +140,9 @@ public class LockService {
             .build();
         zoneLockRepository.save(zoneLock);
 
-        return new LockZoneResponse("LOCKED", zoneLock.getExpiresAt(), request.zoneId(), request.quantity());
+        BigDecimal totalPrice = section.getPrice().multiply(BigDecimal.valueOf(request.quantity()));
+
+        return new LockZoneResponse("LOCKED", zoneLock.getExpiresAt(), request.zoneId(), request.quantity(), totalPrice);
     }
 
     @Transactional
@@ -219,5 +238,15 @@ public class LockService {
                 );
             })
             .toList();
+    }
+
+    static String toRowLabel(int rowIndex) {
+        StringBuilder sb = new StringBuilder();
+        int n = rowIndex;
+        do {
+            sb.append((char) ('A' + (n % 26)));
+            n = n / 26 - 1;
+        } while (n >= 0);
+        return sb.reverse().toString();
     }
 }

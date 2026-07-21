@@ -68,7 +68,8 @@ class LockServiceTest {
         LockSeatsResponse response = lockService.acquireSeatLocks(eventId, request);
 
         assertThat(response.status()).isEqualTo("LOCKED");
-        assertThat(response.lockedSeats()).containsExactly(seatId);
+        assertThat(response.items()).hasSize(1);
+        assertThat(response.items().getFirst().seatId()).isEqualTo(seatId);
         verify(seatLockRepository).saveAll(anyList());
     }
 
