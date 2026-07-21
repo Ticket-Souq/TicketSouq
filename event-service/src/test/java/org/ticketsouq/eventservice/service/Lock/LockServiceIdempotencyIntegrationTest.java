@@ -5,7 +5,9 @@ import org.junit.jupiter.api.Test;
 import org.ticketsouq.eventservice.model.*;
 import org.ticketsouq.eventservice.model.enums.SeatStatus;
 import org.ticketsouq.sharedmodule.EventService.dto.LockSeatsRequest;
+import org.ticketsouq.sharedmodule.EventService.dto.LockSeatsResponse;
 import org.ticketsouq.sharedmodule.EventService.dto.LockZoneRequest;
+import org.ticketsouq.sharedmodule.EventService.dto.LockZoneResponse;
 
 import java.util.*;
 
@@ -21,9 +23,9 @@ class LockServiceIdempotencyIntegrationTest extends LockServiceIntegrationTestBa
         Section section = createSection(event, 10);
         UUID seatId = UUID.randomUUID();
         createSeat(section, seatId, SeatStatus.AVAILABLE);
-        String reservationId = "confirm-idem-seat";
 
-        lockService.acquireSeatLocks(event.getId(), new LockSeatsRequest(reservationId, List.of(seatId)));
+        LockSeatsResponse lockRes = lockService.acquireSeatLocks(event.getId(), new LockSeatsRequest(List.of(seatId)));
+        String reservationId = lockRes.reservationId().toString();
 
         lockService.confirm(reservationId);
         Seat seat = seatRepository.findById(seatId).orElseThrow();
@@ -41,9 +43,9 @@ class LockServiceIdempotencyIntegrationTest extends LockServiceIntegrationTestBa
     void givenZoneReservation_whenConfirmTwice_thenStatePreserved() {
         Event event = createPublishedZoneEvent();
         Section section = createSection(event, 100);
-        String reservationId = "confirm-idem-zone";
 
-        lockService.acquireZoneLock(event.getId(), new LockZoneRequest(reservationId, section.getId(), 1));
+        LockZoneResponse lockRes = lockService.acquireZoneLock(event.getId(), new LockZoneRequest(section.getId(), 1));
+        String reservationId = lockRes.reservationId().toString();
 
         lockService.confirm(reservationId);
         Section refreshed = sectionRepository.findById(section.getId()).orElseThrow();
@@ -63,9 +65,9 @@ class LockServiceIdempotencyIntegrationTest extends LockServiceIntegrationTestBa
         Section seatSection = createSection(seatEvent, 10);
         UUID seatId = UUID.randomUUID();
         createSeat(seatSection, seatId, SeatStatus.AVAILABLE);
-        String seatResId = "release-idem-seat";
 
-        lockService.acquireSeatLocks(seatEvent.getId(), new LockSeatsRequest(seatResId, List.of(seatId)));
+        LockSeatsResponse seatLockRes = lockService.acquireSeatLocks(seatEvent.getId(), new LockSeatsRequest(List.of(seatId)));
+        String seatResId = seatLockRes.reservationId().toString();
         assertThat(seatLockRepository.findByReservationId(seatResId)).isNotEmpty();
 
         lockService.release(seatResId);
@@ -78,9 +80,9 @@ class LockServiceIdempotencyIntegrationTest extends LockServiceIntegrationTestBa
 
         Event zoneEvent = createPublishedZoneEvent();
         Section zoneSection = createSection(zoneEvent, 100);
-        String zoneResId = "release-idem-zone";
 
-        lockService.acquireZoneLock(zoneEvent.getId(), new LockZoneRequest(zoneResId, zoneSection.getId(), 5));
+        LockZoneResponse zoneLockRes = lockService.acquireZoneLock(zoneEvent.getId(), new LockZoneRequest(zoneSection.getId(), 5));
+        String zoneResId = zoneLockRes.reservationId().toString();
         assertThat(zoneLockRepository.findByReservationId(zoneResId)).isPresent();
 
         lockService.release(zoneResId);
@@ -95,13 +97,6 @@ class LockServiceIdempotencyIntegrationTest extends LockServiceIntegrationTestBa
     @Test
     @DisplayName("Idempotency: confirm() without prior acquire — no state corruption, no orphan locks")
     void givenUnknownReservation_whenConfirmCalled_thenNoSideEffects() {
-        // Production bug: A caller or retry mechanism might invoke confirm() for
-        // a reservation that never acquired locks (e.g. after TTL cleanup, or
-        // a duplicate RPC with a stale reservation ID). If confirm() blindly
-        // updates state, it could corrupt seat status or capacity.
-        // Business invariant: confirm() at the "no locks exist" boundary is a
-        // safe no-op — it returns CONFIRMED without any side effects.
-
         Event seatEvent = createPublishedSeatEvent();
         Section seatSection = createSection(seatEvent, 10);
         UUID seatId = UUID.randomUUID();
@@ -126,13 +121,6 @@ class LockServiceIdempotencyIntegrationTest extends LockServiceIntegrationTestBa
     @Test
     @DisplayName("Idempotency: release() without prior acquire — no state corruption, no orphan locks")
     void givenUnknownReservation_whenReleaseCalled_thenNoSideEffects() {
-        // Production bug: A cleanup job or a manual cancellation might call
-        // release() for a reservation that already expired or was already
-        // released. If release() corrupts state on an empty reservation,
-        // seat status or capacity could drift.
-        // Business invariant: release() is always safe — it is a no-op when
-        // no locks exist for the given reservation ID.
-
         Event seatEvent = createPublishedSeatEvent();
         Section seatSection = createSection(seatEvent, 10);
         UUID seatId = UUID.randomUUID();
@@ -157,21 +145,13 @@ class LockServiceIdempotencyIntegrationTest extends LockServiceIntegrationTestBa
     @Test
     @DisplayName("State transition: seat acquire -> confirm -> release — release after confirm does not revert booking")
     void givenSeatReservation_whenConfirmThenRelease_thenBookingPreserved() {
-        // Production bug: A "cancel" or "timeout" flow that runs after a
-        // successful confirm must not silently undo the booking. If release()
-        // blindly deletes the entity and flips the seat back to AVAILABLE,
-        // a confirmed ticket would disappear.
-        // Business invariant: confirm() is terminal — once a seat transitions
-        // to BOOKED, only an explicit refund/rollback (a different operation)
-        // should revert it. release() after confirm() is a no-op.
-
         Event event = createPublishedSeatEvent();
         Section section = createSection(event, 10);
         UUID seatId = UUID.randomUUID();
         createSeat(section, seatId, SeatStatus.AVAILABLE);
-        String reservationId = "seat-confirm-then-release";
 
-        lockService.acquireSeatLocks(event.getId(), new LockSeatsRequest(reservationId, List.of(seatId)));
+        LockSeatsResponse lockRes = lockService.acquireSeatLocks(event.getId(), new LockSeatsRequest(List.of(seatId)));
+        String reservationId = lockRes.reservationId().toString();
         lockService.confirm(reservationId);
 
         assertThat(seatRepository.findById(seatId).orElseThrow().getStatus())
@@ -189,17 +169,11 @@ class LockServiceIdempotencyIntegrationTest extends LockServiceIntegrationTestBa
     @Test
     @DisplayName("State transition: zone acquire -> confirm -> release — capacity unchanged after release following confirm")
     void givenZoneReservation_whenConfirmThenRelease_thenCapacityPreserved() {
-        // Production bug: Same as the seat variant — release after confirm must
-        // not restore remainingCapacity. The capacity was already consumed
-        // atomically by confirm's commit.
-        // Business invariant: remainingCapacity tracks confirmed consumption,
-        // not lock state. release() after confirm() is a no-op on capacity.
-
         Event event = createPublishedZoneEvent();
         Section section = createSection(event, 100);
-        String reservationId = "zone-confirm-then-release";
 
-        lockService.acquireZoneLock(event.getId(), new LockZoneRequest(reservationId, section.getId(), 1));
+        LockZoneResponse lockRes = lockService.acquireZoneLock(event.getId(), new LockZoneRequest(section.getId(), 1));
+        String reservationId = lockRes.reservationId().toString();
         lockService.confirm(reservationId);
 
         assertThat(sectionRepository.findById(section.getId()).orElseThrow().getRemainingCapacity())
@@ -217,21 +191,13 @@ class LockServiceIdempotencyIntegrationTest extends LockServiceIntegrationTestBa
     @Test
     @DisplayName("State transition: seat acquire -> release -> confirm — confirm after release does not book seat")
     void givenSeatReservation_whenReleaseThenConfirm_thenSeatStaysAvailable() {
-        // Production bug: A concurrent flow might call confirm() on a reservation
-        // that another flow already released (or that timed out and was released
-        // by cleanup). If confirm() books the seat despite the locks being gone,
-        // a phantom booking would appear.
-        // Business invariant: release() fully dismantles the reservation.
-        // confirm() on a released reservation is idempotent — locks must exist
-        // for a booking to occur.
-
         Event event = createPublishedSeatEvent();
         Section section = createSection(event, 10);
         UUID seatId = UUID.randomUUID();
         createSeat(section, seatId, SeatStatus.AVAILABLE);
-        String reservationId = "seat-release-then-confirm";
 
-        lockService.acquireSeatLocks(event.getId(), new LockSeatsRequest(reservationId, List.of(seatId)));
+        LockSeatsResponse lockRes = lockService.acquireSeatLocks(event.getId(), new LockSeatsRequest(List.of(seatId)));
+        String reservationId = lockRes.reservationId().toString();
         lockService.release(reservationId);
 
         assertThat(seatRepository.findById(seatId).orElseThrow().getStatus())
@@ -249,18 +215,11 @@ class LockServiceIdempotencyIntegrationTest extends LockServiceIntegrationTestBa
     @Test
     @DisplayName("State transition: zone acquire -> release -> confirm — confirm after release does not consume capacity")
     void givenZoneReservation_whenReleaseThenConfirm_thenCapacityPreserved() {
-        // Production bug: Same as the seat variant — confirm after release must
-        // not re-consume capacity. Locks are the prerequisite for confirmation;
-        // without locks, confirm must be a no-op.
-        // Business invariant: release() fully returns capacity to the pool.
-        // confirm() on a released reservation is idempotent and does not
-        // re-decrement remainingCapacity.
-
         Event event = createPublishedZoneEvent();
         Section section = createSection(event, 100);
-        String reservationId = "zone-release-then-confirm";
 
-        lockService.acquireZoneLock(event.getId(), new LockZoneRequest(reservationId, section.getId(), 1));
+        LockZoneResponse lockRes = lockService.acquireZoneLock(event.getId(), new LockZoneRequest(section.getId(), 1));
+        String reservationId = lockRes.reservationId().toString();
         lockService.release(reservationId);
 
         assertThat(sectionRepository.findById(section.getId()).orElseThrow().getRemainingCapacity())

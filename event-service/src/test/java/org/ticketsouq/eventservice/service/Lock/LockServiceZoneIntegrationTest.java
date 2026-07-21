@@ -5,6 +5,7 @@ import org.junit.jupiter.api.Test;
 import org.ticketsouq.eventservice.model.*;
 import org.springframework.transaction.support.TransactionTemplate;
 import org.ticketsouq.sharedmodule.EventService.dto.LockZoneRequest;
+import org.ticketsouq.sharedmodule.EventService.dto.LockZoneResponse;
 import org.ticketsouq.sharedmodule.EventService.exception.LockExpiredException;
 import org.ticketsouq.sharedmodule.EventService.exception.ZoneCapacityExceededException;
 
@@ -21,9 +22,9 @@ class LockServiceZoneIntegrationTest extends LockServiceIntegrationTestBase {
     void givenZoneReservation_whenQuantityGtOne_thenCapacityReservedAndConsumed() {
         Event event = createPublishedZoneEvent();
         Section section = createSection(event, 100);
-        String resId = "zone-qty-3";
 
-        lockService.acquireZoneLock(event.getId(), new LockZoneRequest(resId, section.getId(), 3));
+        LockZoneResponse lockRes = lockService.acquireZoneLock(event.getId(), new LockZoneRequest(section.getId(), 3));
+        String resId = lockRes.reservationId().toString();
 
         int active = zoneLockRepository.sumActiveQuantityByZoneId(section.getId(), LocalDateTime.now());
         assertThat(active).as("3 quantity reserved by acquire").isEqualTo(3);
@@ -45,7 +46,7 @@ class LockServiceZoneIntegrationTest extends LockServiceIntegrationTestBase {
         Section section = createSection(event, 5);
 
         ZoneCapacityExceededException ex = assertThrows(ZoneCapacityExceededException.class,
-            () -> lockService.acquireZoneLock(event.getId(), new LockZoneRequest("zone-qty-exceed", section.getId(), 10)));
+            () -> lockService.acquireZoneLock(event.getId(), new LockZoneRequest(section.getId(), 10)));
 
         assertThat(ex.getAvailable()).as("Available capacity reported").isEqualTo(5);
         assertThat(zoneLockRepository.count()).as("No lock created").isZero();
@@ -59,16 +60,21 @@ class LockServiceZoneIntegrationTest extends LockServiceIntegrationTestBase {
         Section section = createSection(event, capacity);
         UUID zoneId = section.getId();
 
+        List<String> groupA = new ArrayList<>();
+        List<String> groupB = new ArrayList<>();
+        List<String> groupC = new ArrayList<>();
+
         // Phase 1: Acquire 80 zone locks (quantity 1 each)
         for (int i = 0; i < 80; i++) {
-            lockService.acquireZoneLock(event.getId(), new LockZoneRequest("cs-zone-A-" + i, zoneId, 1));
+            LockZoneResponse r = lockService.acquireZoneLock(event.getId(), new LockZoneRequest(zoneId, 1));
+            groupA.add(r.reservationId().toString());
         }
         assertThat(zoneLockRepository.sumActiveQuantityByZoneId(zoneId, LocalDateTime.now()))
             .as("80 active lock quantity after phase 1").isEqualTo(80);
 
         // Phase 2: Confirm 50
         for (int i = 0; i < 50; i++) {
-            lockService.confirm("cs-zone-A-" + i);
+            lockService.confirm(groupA.get(i));
         }
         assertThat(sectionRepository.findById(zoneId).orElseThrow().getRemainingCapacity())
             .as("remainingCapacity = 50 after phase 2 (100 - 50 confirmed)").isEqualTo(50);
@@ -77,21 +83,22 @@ class LockServiceZoneIntegrationTest extends LockServiceIntegrationTestBase {
 
         // Phase 3: Release 10 of the remaining 30
         for (int i = 50; i < 60; i++) {
-            lockService.release("cs-zone-A-" + i);
+            lockService.release(groupA.get(i));
         }
         assertThat(zoneLockRepository.sumActiveQuantityByZoneId(zoneId, LocalDateTime.now()))
             .as("20 active locks after phase 3 (30 - 10 released)").isEqualTo(20);
 
         // Phase 4: Acquire 15 more (available capacity = 50 - 20 = 30, enough for 15)
         for (int i = 0; i < 15; i++) {
-            lockService.acquireZoneLock(event.getId(), new LockZoneRequest("cs-zone-B-" + i, zoneId, 1));
+            LockZoneResponse r = lockService.acquireZoneLock(event.getId(), new LockZoneRequest(zoneId, 1));
+            groupB.add(r.reservationId().toString());
         }
         assertThat(zoneLockRepository.sumActiveQuantityByZoneId(zoneId, LocalDateTime.now()))
             .as("35 active locks after phase 4 (20 + 15)").isEqualTo(35);
 
         // Phase 5: Confirm 10 of the new ones
         for (int i = 0; i < 10; i++) {
-            lockService.confirm("cs-zone-B-" + i);
+            lockService.confirm(groupB.get(i));
         }
         assertThat(sectionRepository.findById(zoneId).orElseThrow().getRemainingCapacity())
             .as("remainingCapacity = 40 after phase 5 (50 - 10 confirmed)").isEqualTo(40);
@@ -100,7 +107,8 @@ class LockServiceZoneIntegrationTest extends LockServiceIntegrationTestBase {
 
         // Phase 6: Acquire 10 more (available = 40 - 25 = 15, enough for 10)
         for (int i = 0; i < 10; i++) {
-            lockService.acquireZoneLock(event.getId(), new LockZoneRequest("cs-zone-C-" + i, zoneId, 1));
+            LockZoneResponse r = lockService.acquireZoneLock(event.getId(), new LockZoneRequest(zoneId, 1));
+            groupC.add(r.reservationId().toString());
         }
         assertThat(zoneLockRepository.sumActiveQuantityByZoneId(zoneId, LocalDateTime.now()))
             .as("35 active locks after phase 6 (25 + 10)").isEqualTo(35);
@@ -146,9 +154,9 @@ class LockServiceZoneIntegrationTest extends LockServiceIntegrationTestBase {
     void givenExpiredZoneLock_whenConfirmThrowsLockExpired_thenDeleteRolledBack() {
         Event event = createPublishedZoneEvent();
         Section section = createSection(event, 100);
-        String reservationId = "rollback-expired-zone";
 
-        lockService.acquireZoneLock(event.getId(), new LockZoneRequest(reservationId, section.getId(), 1));
+        LockZoneResponse lockRes = lockService.acquireZoneLock(event.getId(), new LockZoneRequest(section.getId(), 1));
+        String reservationId = lockRes.reservationId().toString();
         ZoneLock lock = zoneLockRepository.findByReservationId(reservationId).orElseThrow();
         lock.setExpiresAt(LocalDateTime.now().minusMinutes(5));
         zoneLockRepository.save(lock);
@@ -167,18 +175,18 @@ class LockServiceZoneIntegrationTest extends LockServiceIntegrationTestBase {
     void givenZoneAcquisition_whenOuterTxRollsBack_thenLockNotPersisted() {
         Event event = createPublishedZoneEvent();
         Section section = createSection(event, 100);
-        String reservationId = "rollback-acquire-zone";
+        String outerResId = lockService.acquireZoneLock(event.getId(), new LockZoneRequest(section.getId(), 1)).reservationId().toString();
 
         TransactionTemplate tt = new TransactionTemplate(transactionManager);
         assertThrows(RuntimeException.class, () -> tt.execute(status -> {
-            lockService.acquireZoneLock(event.getId(), new LockZoneRequest(reservationId, section.getId(), 1));
-            ZoneLock saved = zoneLockRepository.findByReservationId(reservationId).orElseThrow();
-            assertThat(saved).as("Lock visible within the transaction before rollback").isNotNull();
+            lockService.acquireZoneLock(event.getId(), new LockZoneRequest(section.getId(), 1));
+            assertThat(zoneLockRepository.count()).as("Two locks visible within transaction").isEqualTo(2);
             throw new RuntimeException("simulated failure after acquire");
         }));
 
-        assertThat(zoneLockRepository.findByReservationId(reservationId))
-            .as("No zone lock persisted after transaction rollback").isEmpty();
+        assertThat(zoneLockRepository.count()).as("Only outer lock persisted after rollback").isEqualTo(1);
+        assertThat(zoneLockRepository.findByReservationId(outerResId))
+            .as("Outer lock still exists after rollback").isPresent();
         assertThat(sectionRepository.findById(section.getId()).orElseThrow().getRemainingCapacity())
             .as("Capacity unchanged after rollback").isEqualTo(100);
     }
@@ -188,9 +196,9 @@ class LockServiceZoneIntegrationTest extends LockServiceIntegrationTestBase {
     void givenZoneConfirm_whenOuterTxRollsBack_thenCapacityAndDeleteReversed() {
         Event event = createPublishedZoneEvent();
         Section section = createSection(event, 100);
-        String reservationId = "rollback-confirm-zone";
 
-        lockService.acquireZoneLock(event.getId(), new LockZoneRequest(reservationId, section.getId(), 1));
+        LockZoneResponse lockRes = lockService.acquireZoneLock(event.getId(), new LockZoneRequest(section.getId(), 1));
+        String reservationId = lockRes.reservationId().toString();
 
         TransactionTemplate tt = new TransactionTemplate(transactionManager);
         assertThrows(RuntimeException.class, () -> tt.execute(status -> {
@@ -214,9 +222,9 @@ class LockServiceZoneIntegrationTest extends LockServiceIntegrationTestBase {
     void givenZoneRelease_whenOuterTxRollsBack_thenDeleteReversed() {
         Event event = createPublishedZoneEvent();
         Section section = createSection(event, 100);
-        String reservationId = "rollback-release-zone";
 
-        lockService.acquireZoneLock(event.getId(), new LockZoneRequest(reservationId, section.getId(), 1));
+        LockZoneResponse lockRes = lockService.acquireZoneLock(event.getId(), new LockZoneRequest(section.getId(), 1));
+        String reservationId = lockRes.reservationId().toString();
 
         TransactionTemplate tt = new TransactionTemplate(transactionManager);
         assertThrows(RuntimeException.class, () -> tt.execute(status -> {

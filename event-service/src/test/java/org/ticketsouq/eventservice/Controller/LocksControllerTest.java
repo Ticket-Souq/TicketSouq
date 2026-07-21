@@ -25,8 +25,8 @@ import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
-@WebMvcTest(LockPrivateController.class)
-class LockPrivateControllerTest {
+@WebMvcTest(LocksController.class)
+class LocksControllerTest {
 
     @Autowired private MockMvc mockMvc;
     @Autowired private ObjectMapper objectMapper;
@@ -37,11 +37,12 @@ class LockPrivateControllerTest {
     @DisplayName("Should return 200 with LOCKED status when locking seats")
     void givenSeatLockRequest_whenLockSeats_thenReturn200() throws Exception {
         UUID eventId = UUID.randomUUID();
-        LockSeatsRequest request = new LockSeatsRequest("res-1", List.of(UUID.randomUUID()));
-        LockSeatsResponse response = new LockSeatsResponse("LOCKED", LocalDateTime.now().plusMinutes(10), request.seatIds());
+        UUID seatId = UUID.randomUUID();
+        LockSeatsRequest request = new LockSeatsRequest(List.of(seatId));
+        LockSeatsResponse response = new LockSeatsResponse(UUID.randomUUID(), "LOCKED", LocalDateTime.now().plusMinutes(10), request.seatIds());
         when(lockService.acquireSeatLocks(eq(eventId), any(LockSeatsRequest.class))).thenReturn(response);
 
-        mockMvc.perform(post("/api/v1/private/events/{eventId}/locks/seats", eventId)
+        mockMvc.perform(post("/api/v1/events/locks/{eventId}/seats", eventId)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(request)))
             .andExpect(status().isOk())
@@ -52,11 +53,12 @@ class LockPrivateControllerTest {
     @DisplayName("Should return 200 with LOCKED status when locking a zone")
     void givenZoneLockRequest_whenLockZone_thenReturn200() throws Exception {
         UUID eventId = UUID.randomUUID();
-        LockZoneRequest request = new LockZoneRequest("res-1", UUID.randomUUID(), 5);
-        LockZoneResponse response = new LockZoneResponse("LOCKED", LocalDateTime.now().plusMinutes(10), request.zoneId(), 5);
+        UUID zoneId = UUID.randomUUID();
+        LockZoneRequest request = new LockZoneRequest(zoneId, 5);
+        LockZoneResponse response = new LockZoneResponse(UUID.randomUUID(), "LOCKED", LocalDateTime.now().plusMinutes(10), request.zoneId(), request.quantity());
         when(lockService.acquireZoneLock(eq(eventId), any(LockZoneRequest.class))).thenReturn(response);
 
-        mockMvc.perform(post("/api/v1/private/events/{eventId}/locks/zones", eventId)
+        mockMvc.perform(post("/api/v1/events/locks/{eventId}/zones", eventId)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(request)))
             .andExpect(status().isOk())
@@ -70,7 +72,7 @@ class LockPrivateControllerTest {
         ConfirmRequest request = new ConfirmRequest("res-1");
         when(lockService.confirm("res-1")).thenReturn(ConfirmResponse.CONFIRMED);
 
-        mockMvc.perform(post("/api/v1/private/events/confirm")
+        mockMvc.perform(post("/api/v1/events/locks/confirm")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(request)))
             .andExpect(status().isOk())
@@ -83,7 +85,7 @@ class LockPrivateControllerTest {
         ReleaseRequest request = new ReleaseRequest("res-1");
         when(lockService.release("res-1")).thenReturn(ReleaseResponse.RELEASED);
 
-        mockMvc.perform(post("/api/v1/private/events/release")
+        mockMvc.perform(post("/api/v1/events/locks/release")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(request)))
             .andExpect(status().isOk())

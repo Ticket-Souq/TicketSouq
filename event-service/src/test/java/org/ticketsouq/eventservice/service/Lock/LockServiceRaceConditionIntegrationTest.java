@@ -33,9 +33,8 @@ class LockServiceRaceConditionIntegrationTest extends LockServiceIntegrationTest
         for (int i = 0; i < pairCount; i++) {
             UUID seatId = UUID.randomUUID();
             createSeat(section, seatId, SeatStatus.AVAILABLE);
-            String reservationId = "confirm-release-race-" + i;
-
-            lockService.acquireSeatLocks(event.getId(), new LockSeatsRequest(reservationId, List.of(seatId)));
+            var lockResp = lockService.acquireSeatLocks(event.getId(), new LockSeatsRequest(List.of(seatId)));
+            String reservationId = lockResp.reservationId().toString();
 
             executor.submit(() -> {
                 try {
@@ -100,8 +99,8 @@ class LockServiceRaceConditionIntegrationTest extends LockServiceIntegrationTest
         ExecutorService executor = Executors.newFixedThreadPool(20);
 
         for (int i = 0; i < pairCount; i++) {
-            String reservationId = "zone-confirm-release-race-" + i;
-            lockService.acquireZoneLock(event.getId(), new LockZoneRequest(reservationId, zoneId, 1));
+            var lockResp = lockService.acquireZoneLock(event.getId(), new LockZoneRequest(zoneId, 1));
+            String reservationId = lockResp.reservationId().toString();
 
             executor.submit(() -> {
                 try {
@@ -167,9 +166,8 @@ class LockServiceRaceConditionIntegrationTest extends LockServiceIntegrationTest
         for (int i = 0; i < count; i++) {
             UUID seatId = UUID.randomUUID();
             createSeat(section, seatId, SeatStatus.AVAILABLE);
-            String reservationId = "ttl-race-seat-" + i;
-
-            lockService.acquireSeatLocks(event.getId(), new LockSeatsRequest(reservationId, List.of(seatId)));
+            var lockResp = lockService.acquireSeatLocks(event.getId(), new LockSeatsRequest(List.of(seatId)));
+            String reservationId = lockResp.reservationId().toString();
 
             SeatLock lock = seatLockRepository.findByReservationId(reservationId).get(0);
             lock.setExpiresAt(LocalDateTime.now().minusMinutes(5));
@@ -241,8 +239,8 @@ class LockServiceRaceConditionIntegrationTest extends LockServiceIntegrationTest
         ExecutorService executor = Executors.newFixedThreadPool(20);
 
         for (int i = 0; i < count; i++) {
-            String reservationId = "ttl-race-zone-" + i;
-            lockService.acquireZoneLock(event.getId(), new LockZoneRequest(reservationId, zoneId, 1));
+            var lockResp = lockService.acquireZoneLock(event.getId(), new LockZoneRequest(zoneId, 1));
+            String reservationId = lockResp.reservationId().toString();
 
             ZoneLock lock = zoneLockRepository.findByReservationId(reservationId).orElseThrow();
             lock.setExpiresAt(LocalDateTime.now().minusMinutes(5));
@@ -316,9 +314,8 @@ class LockServiceRaceConditionIntegrationTest extends LockServiceIntegrationTest
         for (int i = 0; i < count; i++) {
             UUID seatId = UUID.randomUUID();
             createSeat(section, seatId, SeatStatus.AVAILABLE);
-            String reservationId = "release-expiry-race-seat-" + i;
-
-            lockService.acquireSeatLocks(event.getId(), new LockSeatsRequest(reservationId, List.of(seatId)));
+            var lockResp = lockService.acquireSeatLocks(event.getId(), new LockSeatsRequest(List.of(seatId)));
+            String reservationId = lockResp.reservationId().toString();
             SeatLock lock = seatLockRepository.findByReservationId(reservationId).get(0);
             lock.setExpiresAt(LocalDateTime.now().minusMinutes(5));
             seatLockRepository.save(lock);
@@ -387,8 +384,8 @@ class LockServiceRaceConditionIntegrationTest extends LockServiceIntegrationTest
         ExecutorService executor = Executors.newFixedThreadPool(20);
 
         for (int i = 0; i < count; i++) {
-            String reservationId = "release-expiry-race-zone-" + i;
-            lockService.acquireZoneLock(event.getId(), new LockZoneRequest(reservationId, zoneId, 1));
+            var lockResp = lockService.acquireZoneLock(event.getId(), new LockZoneRequest(zoneId, 1));
+            String reservationId = lockResp.reservationId().toString();
 
             ZoneLock lock = zoneLockRepository.findByReservationId(reservationId).orElseThrow();
             lock.setExpiresAt(LocalDateTime.now().minusMinutes(5));
@@ -459,15 +456,14 @@ class LockServiceRaceConditionIntegrationTest extends LockServiceIntegrationTest
         for (int i = 0; i < pairCount; i++) {
             UUID seatId = UUID.randomUUID();
             createSeat(section, seatId, SeatStatus.AVAILABLE);
-            String existingReservationId = "acquire-release-existing-" + i;
+            var existingResp = lockService.acquireSeatLocks(event.getId(), new LockSeatsRequest(List.of(seatId)));
+            String existingReservationId = existingResp.reservationId().toString();
             String newReservationId = "acquire-release-new-" + i;
-
-            lockService.acquireSeatLocks(event.getId(), new LockSeatsRequest(existingReservationId, List.of(seatId)));
 
             executor.submit(() -> {
                 try {
                     startLatch.await();
-                    lockService.acquireSeatLocks(event.getId(), new LockSeatsRequest(newReservationId, List.of(seatId)));
+                    lockService.acquireSeatLocks(event.getId(), new LockSeatsRequest(List.of(seatId)));
                 } catch (InterruptedException e) {
                     Thread.currentThread().interrupt();
                     unexpectedErrors.add(e);
@@ -510,7 +506,7 @@ class LockServiceRaceConditionIntegrationTest extends LockServiceIntegrationTest
         long distinctSeats = allLocks.stream().map(SeatLock::getSeatId).distinct().count();
         assertThat(distinctSeats).as("Each seat locked at most once").isEqualTo(allLocks.size());
         assertThat(allLocks).as("All locks belong to either the new or existing reservation")
-            .allMatch(l -> l.getReservationId().startsWith("acquire-release-"));
+            .allMatch(l -> l.getReservationId() != null);
         assertThat(seatRepository.findAll()).as("All seats AVAILABLE (no confirm called)")
             .allMatch(s -> s.getStatus() == SeatStatus.AVAILABLE);
     }
@@ -529,14 +525,14 @@ class LockServiceRaceConditionIntegrationTest extends LockServiceIntegrationTest
         ExecutorService executor = Executors.newFixedThreadPool(20);
 
         for (int i = 0; i < pairCount; i++) {
-            String existingReservationId = "zone-acquire-release-existing-" + i;
+            var existingResp = lockService.acquireZoneLock(event.getId(), new LockZoneRequest(zoneId, 1));
+            String existingReservationId = existingResp.reservationId().toString();
             String newReservationId = "zone-acquire-release-new-" + i;
-            lockService.acquireZoneLock(event.getId(), new LockZoneRequest(existingReservationId, zoneId, 1));
 
             executor.submit(() -> {
                 try {
                     startLatch.await();
-                    lockService.acquireZoneLock(event.getId(), new LockZoneRequest(newReservationId, zoneId, 1));
+                    lockService.acquireZoneLock(event.getId(), new LockZoneRequest(zoneId, 1));
                 } catch (InterruptedException e) {
                     Thread.currentThread().interrupt();
                     unexpectedErrors.add(e);
@@ -597,15 +593,14 @@ class LockServiceRaceConditionIntegrationTest extends LockServiceIntegrationTest
         for (int i = 0; i < pairCount; i++) {
             UUID seatId = UUID.randomUUID();
             createSeat(section, seatId, SeatStatus.AVAILABLE);
-            String existingReservationId = "acquire-confirm-existing-" + i;
+            var existingResp = lockService.acquireSeatLocks(event.getId(), new LockSeatsRequest(List.of(seatId)));
+            String existingReservationId = existingResp.reservationId().toString();
             String newReservationId = "acquire-confirm-new-" + i;
-
-            lockService.acquireSeatLocks(event.getId(), new LockSeatsRequest(existingReservationId, List.of(seatId)));
 
             executor.submit(() -> {
                 try {
                     startLatch.await();
-                    lockService.acquireSeatLocks(event.getId(), new LockSeatsRequest(newReservationId, List.of(seatId)));
+                    lockService.acquireSeatLocks(event.getId(), new LockSeatsRequest(List.of(seatId)));
                 } catch (InterruptedException e) {
                     Thread.currentThread().interrupt();
                     unexpectedErrors.add(e);
@@ -666,14 +661,14 @@ class LockServiceRaceConditionIntegrationTest extends LockServiceIntegrationTest
         ExecutorService executor = Executors.newFixedThreadPool(20);
 
         for (int i = 0; i < pairCount; i++) {
-            String existingReservationId = "zone-acquire-confirm-existing-" + i;
+            var existingResp = lockService.acquireZoneLock(event.getId(), new LockZoneRequest(zoneId, 1));
+            String existingReservationId = existingResp.reservationId().toString();
             String newReservationId = "zone-acquire-confirm-new-" + i;
-            lockService.acquireZoneLock(event.getId(), new LockZoneRequest(existingReservationId, zoneId, 1));
 
             executor.submit(() -> {
                 try {
                     startLatch.await();
-                    lockService.acquireZoneLock(event.getId(), new LockZoneRequest(newReservationId, zoneId, 1));
+                    lockService.acquireZoneLock(event.getId(), new LockZoneRequest(zoneId, 1));
                 } catch (InterruptedException e) {
                     Thread.currentThread().interrupt();
                     unexpectedErrors.add(e);
@@ -730,9 +725,8 @@ class LockServiceRaceConditionIntegrationTest extends LockServiceIntegrationTest
         Section section = createSection(event, threadCount);
         UUID seatId = UUID.randomUUID();
         createSeat(section, seatId, SeatStatus.AVAILABLE);
-        String reservationId = "concurrent-confirm-res";
-
-        lockService.acquireSeatLocks(event.getId(), new LockSeatsRequest(reservationId, List.of(seatId)));
+        var lockResp = lockService.acquireSeatLocks(event.getId(), new LockSeatsRequest(List.of(seatId)));
+        String reservationId = lockResp.reservationId().toString();
 
         CountDownLatch startLatch = new CountDownLatch(1);
         CountDownLatch finishLatch = new CountDownLatch(threadCount);
@@ -789,8 +783,8 @@ class LockServiceRaceConditionIntegrationTest extends LockServiceIntegrationTest
         ExecutorService executor = Executors.newFixedThreadPool(20);
 
         for (int i = 0; i < pairCount; i++) {
-            String reservationId = "two-confirms-zone-" + i;
-            lockService.acquireZoneLock(event.getId(), new LockZoneRequest(reservationId, zoneId, 1));
+            var lockResp = lockService.acquireZoneLock(event.getId(), new LockZoneRequest(zoneId, 1));
+            String reservationId = lockResp.reservationId().toString();
 
             executor.submit(() -> {
                 try {
@@ -856,8 +850,8 @@ class LockServiceRaceConditionIntegrationTest extends LockServiceIntegrationTest
         for (int i = 0; i < pairCount; i++) {
             UUID seatId = UUID.randomUUID();
             createSeat(section, seatId, SeatStatus.AVAILABLE);
-            String reservationId = "two-releases-seat-" + i;
-            lockService.acquireSeatLocks(event.getId(), new LockSeatsRequest(reservationId, List.of(seatId)));
+            var lockResp = lockService.acquireSeatLocks(event.getId(), new LockSeatsRequest(List.of(seatId)));
+            String reservationId = lockResp.reservationId().toString();
 
             executor.submit(() -> {
                 try {
@@ -921,8 +915,8 @@ class LockServiceRaceConditionIntegrationTest extends LockServiceIntegrationTest
         ExecutorService executor = Executors.newFixedThreadPool(20);
 
         for (int i = 0; i < pairCount; i++) {
-            String reservationId = "two-releases-zone-" + i;
-            lockService.acquireZoneLock(event.getId(), new LockZoneRequest(reservationId, zoneId, 1));
+            var lockResp = lockService.acquireZoneLock(event.getId(), new LockZoneRequest(zoneId, 1));
+            String reservationId = lockResp.reservationId().toString();
 
             executor.submit(() -> {
                 try {

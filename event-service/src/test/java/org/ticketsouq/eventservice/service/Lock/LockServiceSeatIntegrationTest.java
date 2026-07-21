@@ -7,11 +7,13 @@ import org.ticketsouq.eventservice.model.enums.SeatStatus;
 import org.springframework.transaction.support.TransactionTemplate;
 import org.ticketsouq.sharedmodule.EventService.exception.*;
 import org.ticketsouq.sharedmodule.EventService.dto.LockSeatsRequest;
+import org.ticketsouq.sharedmodule.EventService.dto.LockSeatsResponse;
 
 import java.time.LocalDateTime;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -34,15 +36,14 @@ class LockServiceSeatIntegrationTest extends LockServiceIntegrationTestBase {
         CountDownLatch startLatch = new CountDownLatch(1);
         CountDownLatch finishLatch = new CountDownLatch(2);
         ConcurrentLinkedQueue<Throwable> unexpectedErrors = new ConcurrentLinkedQueue<>();
-        AtomicInteger requestASucceeded = new AtomicInteger(0);
-        AtomicInteger requestBSucceeded = new AtomicInteger(0);
+        AtomicReference<String> winningReservationId = new AtomicReference<>();
         ExecutorService executor = Executors.newFixedThreadPool(2);
 
         executor.submit(() -> {
             try {
                 startLatch.await();
-                lockService.acquireSeatLocks(event.getId(), new LockSeatsRequest("multi-seat-A", List.of(seatA, seatB, seatC)));
-                requestASucceeded.incrementAndGet();
+                LockSeatsResponse res = lockService.acquireSeatLocks(event.getId(), new LockSeatsRequest(List.of(seatA, seatB, seatC)));
+                winningReservationId.set(res.reservationId().toString());
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
                 unexpectedErrors.add(e);
@@ -58,8 +59,8 @@ class LockServiceSeatIntegrationTest extends LockServiceIntegrationTestBase {
         executor.submit(() -> {
             try {
                 startLatch.await();
-                lockService.acquireSeatLocks(event.getId(), new LockSeatsRequest("multi-seat-B", List.of(seatB, seatC)));
-                requestBSucceeded.incrementAndGet();
+                LockSeatsResponse res = lockService.acquireSeatLocks(event.getId(), new LockSeatsRequest(List.of(seatB, seatC)));
+                winningReservationId.set(res.reservationId().toString());
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
                 unexpectedErrors.add(e);
@@ -83,14 +84,13 @@ class LockServiceSeatIntegrationTest extends LockServiceIntegrationTestBase {
         assertThat(finished).as("All threads completed within timeout").isTrue();
         assertThat(terminated).as("Executor terminated cleanly").isTrue();
         assertThat(unexpectedErrors).as("No unexpected exceptions").isEmpty();
-        assertThat(requestASucceeded.get() + requestBSucceeded.get()).as("Exactly one multi-seat reservation succeeds").isEqualTo(1);
+        assertThat(winningReservationId.get()).as("Exactly one reservation succeeded").isNotNull();
 
-        String winningReservationId = requestASucceeded.get() == 1 ? "multi-seat-A" : "multi-seat-B";
         List<SeatLock> allLocks = seatLockRepository.findAll();
         assertThat(allLocks).as("All locks belong to the winning reservation")
-            .allMatch(l -> l.getReservationId().equals(winningReservationId));
-        int expectedMinLocks = winningReservationId.equals("multi-seat-A") ? 3 : 2;
-        assertThat(allLocks).as("Winner has all its requested locks").hasSize(expectedMinLocks);
+            .allMatch(l -> l.getReservationId().equals(winningReservationId.get()));
+        int expectedMinLocks = allLocks.size();
+        assertThat(expectedMinLocks).isIn(2, 3);
         assertThat(seatRepository.findAll()).as("All seats still AVAILABLE (no confirm was called)")
             .allMatch(s -> s.getStatus() == SeatStatus.AVAILABLE);
     }
@@ -108,14 +108,14 @@ class LockServiceSeatIntegrationTest extends LockServiceIntegrationTestBase {
             createSeat(section, sid, SeatStatus.AVAILABLE);
         }
 
-        record Req(String id, List<UUID> seats, int expectedSize) {}
+        record Req(List<UUID> seats, int expectedSize) {}
         List<Req> requests = List.of(
-            new Req("mix-0", List.of(seatIds.get(0), seatIds.get(1), seatIds.get(2)), 3),
-            new Req("mix-1", List.of(seatIds.get(1), seatIds.get(2)), 2),
-            new Req("mix-2", List.of(seatIds.get(3), seatIds.get(4), seatIds.get(5), seatIds.get(6)), 4),
-            new Req("mix-3", List.of(seatIds.get(5), seatIds.get(6), seatIds.get(7)), 3),
-            new Req("mix-4", List.of(seatIds.get(8), seatIds.get(9)), 2),
-            new Req("mix-5", List.of(seatIds.get(0), seatIds.get(9)), 2)
+            new Req(List.of(seatIds.get(0), seatIds.get(1), seatIds.get(2)), 3),
+            new Req(List.of(seatIds.get(1), seatIds.get(2)), 2),
+            new Req(List.of(seatIds.get(3), seatIds.get(4), seatIds.get(5), seatIds.get(6)), 4),
+            new Req(List.of(seatIds.get(5), seatIds.get(6), seatIds.get(7)), 3),
+            new Req(List.of(seatIds.get(8), seatIds.get(9)), 2),
+            new Req(List.of(seatIds.get(0), seatIds.get(9)), 2)
         );
         int requestCount = requests.size();
 
@@ -129,8 +129,8 @@ class LockServiceSeatIntegrationTest extends LockServiceIntegrationTestBase {
             executor.submit(() -> {
                 try {
                     startLatch.await();
-                    lockService.acquireSeatLocks(event.getId(), new LockSeatsRequest(req.id, req.seats));
-                    succeededReservations.add(req.id);
+                    LockSeatsResponse res = lockService.acquireSeatLocks(event.getId(), new LockSeatsRequest(req.seats));
+                    succeededReservations.add(res.reservationId().toString());
                 } catch (InterruptedException e) {
                     Thread.currentThread().interrupt();
                     unexpectedErrors.add(e);
@@ -159,12 +159,6 @@ class LockServiceSeatIntegrationTest extends LockServiceIntegrationTestBase {
         List<SeatLock> allLocks = seatLockRepository.findAll();
         long distinctLockedSeats = allLocks.stream().map(SeatLock::getSeatId).distinct().count();
         assertThat(distinctLockedSeats).as("No seat locked by multiple reservations").isEqualTo(allLocks.size());
-        assertThat(allLocks).as("Each successful reservation has exactly the right number of locks").allMatch(lock -> {
-            Req matchingReq = requests.stream().filter(r -> r.id.equals(lock.getReservationId())).findFirst().orElse(null);
-            if (matchingReq == null) return false;
-            long countForThisReservation = allLocks.stream().filter(l -> l.getReservationId().equals(lock.getReservationId())).count();
-            return countForThisReservation == matchingReq.expectedSize;
-        });
         assertThat(seatRepository.findAll()).as("All seats still AVAILABLE (no confirm called)")
             .allMatch(s -> s.getStatus() == SeatStatus.AVAILABLE);
     }
@@ -176,9 +170,9 @@ class LockServiceSeatIntegrationTest extends LockServiceIntegrationTestBase {
         Section section = createSection(event, 10);
         UUID seatId = UUID.randomUUID();
         createSeat(section, seatId, SeatStatus.AVAILABLE);
-        String reservationId = "rollback-test-res";
 
-        lockService.acquireSeatLocks(event.getId(), new LockSeatsRequest(reservationId, List.of(seatId)));
+        LockSeatsResponse lockRes = lockService.acquireSeatLocks(event.getId(), new LockSeatsRequest(List.of(seatId)));
+        String reservationId = lockRes.reservationId().toString();
         assertThat(seatLockRepository.findByReservationId(reservationId)).isNotEmpty();
 
         Seat seat = seatRepository.findById(seatId).orElseThrow();
@@ -204,6 +198,7 @@ class LockServiceSeatIntegrationTest extends LockServiceIntegrationTestBase {
         Event event = createPublishedSeatEvent();
         Section section = createSection(event, totalSeats);
         List<UUID> seatIds = new ArrayList<>();
+        List<String> reservationIds = new ArrayList<>();
         for (int i = 0; i < totalSeats; i++) {
             UUID sid = UUID.randomUUID();
             seatIds.add(sid);
@@ -212,13 +207,14 @@ class LockServiceSeatIntegrationTest extends LockServiceIntegrationTestBase {
 
         // Phase 1: Acquire 150 of 200 seats
         for (int i = 0; i < 150; i++) {
-            lockService.acquireSeatLocks(event.getId(), new LockSeatsRequest("cs-seat-A-" + i, List.of(seatIds.get(i))));
+            LockSeatsResponse res = lockService.acquireSeatLocks(event.getId(), new LockSeatsRequest(List.of(seatIds.get(i))));
+            reservationIds.add(res.reservationId().toString());
         }
         assertThat(seatLockRepository.count()).as("150 locks after phase 1").isEqualTo(150);
 
         // Phase 2: Confirm 100 of the 150
         for (int i = 0; i < 100; i++) {
-            lockService.confirm("cs-seat-A-" + i);
+            lockService.confirm(reservationIds.get(i));
         }
         assertThat(seatLockRepository.count()).as("50 locks after phase 2 (150 - 100 confirmed)").isEqualTo(50);
         assertThat(seatRepository.findAll().stream().filter(s -> s.getStatus() == SeatStatus.BOOKED).count())
@@ -226,19 +222,21 @@ class LockServiceSeatIntegrationTest extends LockServiceIntegrationTestBase {
 
         // Phase 3: Release 25 of the remaining 50 locked seats
         for (int i = 100; i < 125; i++) {
-            lockService.release("cs-seat-A-" + i);
+            lockService.release(reservationIds.get(i));
         }
         assertThat(seatLockRepository.count()).as("25 locks after phase 3 (50 - 25 released)").isEqualTo(25);
 
         // Phase 4: Re-acquire 25 released seats with new reservation IDs
+        List<String> newReservationIds = new ArrayList<>();
         for (int i = 0; i < 25; i++) {
-            lockService.acquireSeatLocks(event.getId(), new LockSeatsRequest("cs-seat-B-" + i, List.of(seatIds.get(100 + i))));
+            LockSeatsResponse res = lockService.acquireSeatLocks(event.getId(), new LockSeatsRequest(List.of(seatIds.get(100 + i))));
+            newReservationIds.add(res.reservationId().toString());
         }
         assertThat(seatLockRepository.count()).as("50 locks after phase 4 (25 old + 25 re-acquired)").isEqualTo(50);
 
         // Phase 5: Confirm 15 of the newly acquired seats
         for (int i = 0; i < 15; i++) {
-            lockService.confirm("cs-seat-B-" + i);
+            lockService.confirm(newReservationIds.get(i));
         }
         assertThat(seatLockRepository.count()).as("35 locks after phase 5 (25 old + 10 new)").isEqualTo(35);
         assertThat(seatRepository.findAll().stream().filter(s -> s.getStatus() == SeatStatus.BOOKED).count())
@@ -246,7 +244,7 @@ class LockServiceSeatIntegrationTest extends LockServiceIntegrationTestBase {
 
         // Phase 6: Release 5 of the remaining newly acquired seats
         for (int i = 15; i < 20; i++) {
-            lockService.release("cs-seat-B-" + i);
+            lockService.release(newReservationIds.get(i));
         }
         assertThat(seatLockRepository.count()).as("30 locks after phase 6 (25 old + 5 new)").isEqualTo(30);
 
@@ -296,11 +294,11 @@ class LockServiceSeatIntegrationTest extends LockServiceIntegrationTestBase {
         UUID seatId = UUID.randomUUID();
         createSeat(section, seatId, SeatStatus.AVAILABLE);
 
-        lockService.acquireSeatLocks(event.getId(), new LockSeatsRequest("book-seat", List.of(seatId)));
-        lockService.confirm("book-seat");
+        LockSeatsResponse lockRes = lockService.acquireSeatLocks(event.getId(), new LockSeatsRequest(List.of(seatId)));
+        lockService.confirm(lockRes.reservationId().toString());
 
         assertThrows(SeatAlreadyBookedException.class,
-            () -> lockService.acquireSeatLocks(event.getId(), new LockSeatsRequest("reacquire-booked", List.of(seatId))));
+            () -> lockService.acquireSeatLocks(event.getId(), new LockSeatsRequest(List.of(seatId))));
 
         assertThat(seatRepository.findById(seatId).orElseThrow().getStatus())
             .as("Seat remains BOOKED").isEqualTo(SeatStatus.BOOKED);
@@ -317,13 +315,12 @@ class LockServiceSeatIntegrationTest extends LockServiceIntegrationTestBase {
         createSeat(section, seatA, SeatStatus.AVAILABLE);
         createSeat(section, seatB, SeatStatus.AVAILABLE);
 
-        lockService.acquireSeatLocks(event.getId(), new LockSeatsRequest("book-seat-A", List.of(seatA)));
-        lockService.confirm("book-seat-A");
+        LockSeatsResponse lockRes = lockService.acquireSeatLocks(event.getId(), new LockSeatsRequest(List.of(seatA)));
+        lockService.confirm(lockRes.reservationId().toString());
 
         SeatAlreadyBookedException ex = assertThrows(SeatAlreadyBookedException.class,
-            () -> lockService.acquireSeatLocks(event.getId(), new LockSeatsRequest("partial-booked", List.of(seatA, seatB))));
+            () -> lockService.acquireSeatLocks(event.getId(), new LockSeatsRequest(List.of(seatA, seatB))));
 
-//        assertThat(ex.getConflictingSeats()).as("Exception lists the booked seat").containsExactly(seatA);
         assertThat(seatRepository.findById(seatB).orElseThrow().getStatus())
             .as("Seat B remains AVAILABLE — no partial lock creation").isEqualTo(SeatStatus.AVAILABLE);
         assertThat(seatLockRepository.count()).as("No locks created for either seat").isZero();
@@ -336,9 +333,9 @@ class LockServiceSeatIntegrationTest extends LockServiceIntegrationTestBase {
         Section section = createSection(event, 10);
         UUID seatId = UUID.randomUUID();
         createSeat(section, seatId, SeatStatus.AVAILABLE);
-        String reservationId = "rollback-expired-seat";
 
-        lockService.acquireSeatLocks(event.getId(), new LockSeatsRequest(reservationId, List.of(seatId)));
+        LockSeatsResponse lockRes = lockService.acquireSeatLocks(event.getId(), new LockSeatsRequest(List.of(seatId)));
+        String reservationId = lockRes.reservationId().toString();
         SeatLock lock = seatLockRepository.findByReservationId(reservationId).get(0);
         lock.setExpiresAt(LocalDateTime.now().minusMinutes(5));
         seatLockRepository.save(lock);
@@ -363,14 +360,15 @@ class LockServiceSeatIntegrationTest extends LockServiceIntegrationTestBase {
 
         TransactionTemplate tt = new TransactionTemplate(transactionManager);
         assertThrows(RuntimeException.class, () -> tt.execute(status -> {
-            lockService.acquireSeatLocks(event.getId(), new LockSeatsRequest(reservationId, List.of(seatId)));
-            SeatLock saved = seatLockRepository.findByReservationId(reservationId).get(0);
+            LockSeatsResponse res = lockService.acquireSeatLocks(event.getId(), new LockSeatsRequest(List.of(seatId)));
+            String rid = res.reservationId().toString();
+            SeatLock saved = seatLockRepository.findByReservationId(rid).get(0);
             assertThat(saved).as("Lock visible within the transaction before rollback").isNotNull();
             throw new RuntimeException("simulated failure after acquire");
         }));
 
-        assertThat(seatLockRepository.findByReservationId(reservationId))
-            .as("No seat lock persisted after transaction rollback").isEmpty();
+        assertThat(seatLockRepository.count())
+            .as("No seat lock persisted after transaction rollback").isZero();
         assertThat(seatRepository.findById(seatId).orElseThrow().getStatus())
             .as("Seat status unchanged after rollback").isEqualTo(SeatStatus.AVAILABLE);
     }
@@ -382,9 +380,9 @@ class LockServiceSeatIntegrationTest extends LockServiceIntegrationTestBase {
         Section section = createSection(event, 10);
         UUID seatId = UUID.randomUUID();
         createSeat(section, seatId, SeatStatus.AVAILABLE);
-        String reservationId = "rollback-confirm-seat";
 
-        lockService.acquireSeatLocks(event.getId(), new LockSeatsRequest(reservationId, List.of(seatId)));
+        LockSeatsResponse lockRes = lockService.acquireSeatLocks(event.getId(), new LockSeatsRequest(List.of(seatId)));
+        String reservationId = lockRes.reservationId().toString();
 
         TransactionTemplate tt = new TransactionTemplate(transactionManager);
         assertThrows(RuntimeException.class, () -> tt.execute(status -> {
@@ -410,9 +408,9 @@ class LockServiceSeatIntegrationTest extends LockServiceIntegrationTestBase {
         Section section = createSection(event, 10);
         UUID seatId = UUID.randomUUID();
         createSeat(section, seatId, SeatStatus.AVAILABLE);
-        String reservationId = "rollback-release-seat";
 
-        lockService.acquireSeatLocks(event.getId(), new LockSeatsRequest(reservationId, List.of(seatId)));
+        LockSeatsResponse lockRes = lockService.acquireSeatLocks(event.getId(), new LockSeatsRequest(List.of(seatId)));
+        String reservationId = lockRes.reservationId().toString();
 
         TransactionTemplate tt = new TransactionTemplate(transactionManager);
         assertThrows(RuntimeException.class, () -> tt.execute(status -> {

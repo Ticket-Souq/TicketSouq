@@ -6,6 +6,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.test.util.ReflectionTestUtils;
 import org.ticketsouq.eventservice.dto.*;
 import org.ticketsouq.eventservice.model.*;
@@ -42,13 +43,15 @@ class LockServiceTest {
     @Mock private SectionRepository sectionRepository;
     @Mock private SeatLockRepository seatLockRepository;
     @Mock private ZoneLockRepository zoneLockRepository;
+    @Mock private ApplicationEventPublisher eventPublisher;
+
 
     private LockService lockService;
 
     @BeforeEach
     void setUp() {
         lockService = new LockService(eventRepository, seatRepository, sectionRepository,
-            seatLockRepository, zoneLockRepository);
+            seatLockRepository, zoneLockRepository,eventPublisher);
         ReflectionTestUtils.setField(lockService, "lockTtlMinutes", 10);
     }
 
@@ -57,7 +60,7 @@ class LockServiceTest {
     void givenAvailableSeats_whenAcquireSeatLocks_thenSucceed() {
         UUID eventId = UUID.randomUUID();
         UUID seatId = UUID.randomUUID();
-        LockSeatsRequest request = new LockSeatsRequest("res-1", List.of(seatId));
+        LockSeatsRequest request = new LockSeatsRequest(List.of(seatId));
         Event event = Event.builder().id(eventId).status(EventStatus.PUBLISHED).bookingModel(BookingModel.SEAT).build();
         Seat seat = Seat.builder().id(seatId).status(SeatStatus.AVAILABLE).build();
 
@@ -78,7 +81,7 @@ class LockServiceTest {
         UUID eventId = UUID.randomUUID();
         when(eventRepository.findById(eventId)).thenReturn(Optional.empty());
 
-        assertThatThrownBy(() -> lockService.acquireSeatLocks(eventId, new LockSeatsRequest("r", List.of(UUID.randomUUID()))))
+        assertThatThrownBy(() -> lockService.acquireSeatLocks(eventId, new LockSeatsRequest(List.of(UUID.randomUUID()))))
             .isInstanceOf(ResourceNotFoundException.class);
     }
 
@@ -89,7 +92,7 @@ class LockServiceTest {
         Event event = Event.builder().id(eventId).status(EventStatus.ACTIVE).bookingModel(BookingModel.SEAT).build();
         when(eventRepository.findById(eventId)).thenReturn(Optional.of(event));
 
-        assertThatThrownBy(() -> lockService.acquireSeatLocks(eventId, new LockSeatsRequest("r", List.of(UUID.randomUUID()))))
+        assertThatThrownBy(() -> lockService.acquireSeatLocks(eventId, new LockSeatsRequest(List.of(UUID.randomUUID()))))
             .isInstanceOf(ConflictException.class);
     }
 
@@ -100,7 +103,7 @@ class LockServiceTest {
         Event event = Event.builder().id(eventId).status(EventStatus.PUBLISHED).bookingModel(BookingModel.ZONE).build();
         when(eventRepository.findById(eventId)).thenReturn(Optional.of(event));
 
-        assertThatThrownBy(() -> lockService.acquireSeatLocks(eventId, new LockSeatsRequest("r", List.of(UUID.randomUUID()))))
+        assertThatThrownBy(() -> lockService.acquireSeatLocks(eventId, new LockSeatsRequest(List.of(UUID.randomUUID()))))
             .isInstanceOf(InvalidEventTypeException.class);
     }
 
@@ -113,7 +116,7 @@ class LockServiceTest {
         when(eventRepository.findById(eventId)).thenReturn(Optional.of(event));
         when(seatRepository.findByIdInAndEventIdWithLock(List.of(seatId), eventId)).thenReturn(List.of());
 
-        assertThatThrownBy(() -> lockService.acquireSeatLocks(eventId, new LockSeatsRequest("r", List.of(seatId))))
+        assertThatThrownBy(() -> lockService.acquireSeatLocks(eventId, new LockSeatsRequest(List.of(seatId))))
             .isInstanceOf(SeatNotInEventException.class);
     }
 
@@ -127,7 +130,7 @@ class LockServiceTest {
         when(eventRepository.findById(eventId)).thenReturn(Optional.of(event));
         when(seatRepository.findByIdInAndEventIdWithLock(List.of(seatId), eventId)).thenReturn(List.of(seat));
 
-        assertThatThrownBy(() -> lockService.acquireSeatLocks(eventId, new LockSeatsRequest("r", List.of(seatId))))
+        assertThatThrownBy(() -> lockService.acquireSeatLocks(eventId, new LockSeatsRequest(List.of(seatId))))
             .isInstanceOf(SeatAlreadyBookedException.class);
     }
 
@@ -143,7 +146,7 @@ class LockServiceTest {
         when(seatLockRepository.findBySeatIdInAndExpiresAtAfter(anyList(), any()))
             .thenReturn(List.of(SeatLock.builder().seatId(seatId).build()));
 
-        assertThatThrownBy(() -> lockService.acquireSeatLocks(eventId, new LockSeatsRequest("r", List.of(seatId))))
+        assertThatThrownBy(() -> lockService.acquireSeatLocks(eventId, new LockSeatsRequest(List.of(seatId))))
             .isInstanceOf(SeatAlreadyLockedException.class);
     }
 
@@ -152,7 +155,7 @@ class LockServiceTest {
     void givenAvailableCapacity_whenAcquireZoneLock_thenSucceed() {
         UUID eventId = UUID.randomUUID();
         UUID zoneId = UUID.randomUUID();
-        LockZoneRequest request = new LockZoneRequest("res-1", zoneId, 3);
+        LockZoneRequest request = new LockZoneRequest(zoneId, 3);
         Event event = Event.builder().id(eventId).status(EventStatus.PUBLISHED).bookingModel(BookingModel.ZONE).build();
         Section section = Section.builder().id(zoneId).remainingCapacity(10).build();
 
@@ -173,7 +176,7 @@ class LockServiceTest {
         UUID eventId = UUID.randomUUID();
         when(eventRepository.findById(eventId)).thenReturn(Optional.empty());
 
-        assertThatThrownBy(() -> lockService.acquireZoneLock(eventId, new LockZoneRequest("r", UUID.randomUUID(), 1)))
+        assertThatThrownBy(() -> lockService.acquireZoneLock(eventId, new LockZoneRequest(UUID.randomUUID(), 1)))
             .isInstanceOf(ResourceNotFoundException.class);
     }
 
@@ -184,7 +187,7 @@ class LockServiceTest {
         Event event = Event.builder().id(eventId).status(EventStatus.ACTIVE).bookingModel(BookingModel.ZONE).build();
         when(eventRepository.findById(eventId)).thenReturn(Optional.of(event));
 
-        assertThatThrownBy(() -> lockService.acquireZoneLock(eventId, new LockZoneRequest("r", UUID.randomUUID(), 1)))
+        assertThatThrownBy(() -> lockService.acquireZoneLock(eventId, new LockZoneRequest(UUID.randomUUID(), 1)))
             .isInstanceOf(ConflictException.class);
     }
 
@@ -195,7 +198,7 @@ class LockServiceTest {
         Event event = Event.builder().id(eventId).status(EventStatus.PUBLISHED).bookingModel(BookingModel.SEAT).build();
         when(eventRepository.findById(eventId)).thenReturn(Optional.of(event));
 
-        assertThatThrownBy(() -> lockService.acquireZoneLock(eventId, new LockZoneRequest("r", UUID.randomUUID(), 1)))
+        assertThatThrownBy(() -> lockService.acquireZoneLock(eventId, new LockZoneRequest(UUID.randomUUID(), 1)))
             .isInstanceOf(InvalidEventTypeException.class);
     }
 
@@ -208,7 +211,7 @@ class LockServiceTest {
         when(eventRepository.findById(eventId)).thenReturn(Optional.of(event));
         when(sectionRepository.findByIdAndEventIdWithLock(zoneId, eventId)).thenReturn(Optional.empty());
 
-        assertThatThrownBy(() -> lockService.acquireZoneLock(eventId, new LockZoneRequest("r", zoneId, 1)))
+        assertThatThrownBy(() -> lockService.acquireZoneLock(eventId, new LockZoneRequest(zoneId, 1)))
             .isInstanceOf(ResourceNotFoundException.class);
     }
 
@@ -223,7 +226,7 @@ class LockServiceTest {
         when(sectionRepository.findByIdAndEventIdWithLock(zoneId, eventId)).thenReturn(Optional.of(section));
         when(zoneLockRepository.sumActiveQuantityByZoneId(eq(zoneId), any())).thenReturn(4);
 
-        assertThatThrownBy(() -> lockService.acquireZoneLock(eventId, new LockZoneRequest("r", zoneId, 3)))
+        assertThatThrownBy(() -> lockService.acquireZoneLock(eventId, new LockZoneRequest(zoneId, 3)))
             .isInstanceOf(ZoneCapacityExceededException.class);
     }
 
@@ -252,7 +255,7 @@ class LockServiceTest {
         Seat seat = Seat.builder().id(seatId).status(SeatStatus.AVAILABLE).build();
 
         when(seatLockRepository.findByReservationIdWithLock(reservationId)).thenReturn(List.of(seatLock));
-        when(seatRepository.findByIdInWithLock(List.of(seatId))).thenReturn(List.of(seat));
+        when(seatRepository.findByIdsWithSection(List.of(seatId))).thenReturn(List.of(seat));
 
         ConfirmResponse response = lockService.confirm(reservationId);
 
@@ -292,7 +295,7 @@ class LockServiceTest {
         Seat seat = Seat.builder().id(seatId).status(SeatStatus.BOOKED).build();
 
         when(seatLockRepository.findByReservationIdWithLock(reservationId)).thenReturn(List.of(seatLock));
-        when(seatRepository.findByIdInWithLock(List.of(seatId))).thenReturn(List.of(seat));
+        when(seatRepository.findByIdsWithSection(List.of(seatId))).thenReturn(List.of(seat));
 
         assertThatThrownBy(() -> lockService.confirm(reservationId))
             .isInstanceOf(SeatAlreadyBookedException.class);
