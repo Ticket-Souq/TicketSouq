@@ -1,11 +1,12 @@
 package org.ticketsouq.sharedmodule.EventService.dto;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.UUID;
 
 public record LockSeatsResponse(
     String status,
     LocalDateTime expiresAt,
-    List<UUID> lockedSeats
+    List<LockItem> items,
+    BigDecimal totalPrice
 ) {}
