@@ -21,9 +21,26 @@ spring:
       hibernate:
         format_sql: true
 
+  kafka:
+    bootstrap-servers: localhost:29092
+    consumer:
+      group-id: analytics-service
+      auto-offset-reset: latest
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
+      properties:
+        spring.json.trusted.packages: "*"
+        spring.json.use.type.headers: true
+
 eureka:
   client:
     enabled: false
 
 server:
   port: 4234
+
+# ────────────────────────────────────────────────────────────
+#  MOCK PRODUCER (delete mock/ package when real producers exist)
+# ────────────────────────────────────────────────────────────
+# Uncomment to auto-publish the full mock dataset on startup:
+# app.mock.publish-on-startup: true
