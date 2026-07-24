@@ -21,19 +21,10 @@ public class TicketPrivateController {
 
     private final TicketService ticketService;
 
-    @PostMapping
-    public ResponseEntity<List<TicketResponse>> createTickets(@Valid @RequestBody CreateTicketsRequest request) {
-        return ResponseEntity.status(HttpStatus.CREATED).body(ticketService.createTickets(request));
-    }
+//    @PostMapping
+//    public ResponseEntity<List<TicketResponse>> createTickets(@Valid @RequestBody CreateTicketsRequest request) {
+//        return ResponseEntity.status(HttpStatus.CREATED).body(ticketService.createTickets(request));
+//    }
 
-    @PatchMapping("/{id}/status")
-    public ResponseEntity<TicketResponse> updateStatus(@PathVariable UUID id,
-                                                        @Valid @RequestBody UpdateTicketStatusRequest request) {
-        return ResponseEntity.ok(ticketService.updateTicketStatus(id, request));
-    }
 
-    @PostMapping("/{id}/consume")
-    public ResponseEntity<TicketResponse> consume(@PathVariable UUID id) {
-        return ResponseEntity.ok(ticketService.consumeTicket(id));
-    }
 }

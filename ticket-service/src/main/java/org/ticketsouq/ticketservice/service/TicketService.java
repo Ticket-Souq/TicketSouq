@@ -4,6 +4,7 @@ import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.ticketsouq.sharedmodule.TicketService.dto.CreateTicketRequest;
 import org.ticketsouq.ticketservice.dto.CreateTicketsRequest;
 import org.ticketsouq.ticketservice.dto.UpdateTicketStatusRequest;
 import org.ticketsouq.ticketservice.dto.TicketResponse;
@@ -28,20 +29,20 @@ public class TicketService {
     private final TicketRepository ticketRepository;
     private final EventSnapshotService eventSnapshotService;
 
-    @Transactional
-    public List<TicketResponse> createTickets(CreateTicketsRequest request) {
-        EventSnapshot eventSnapshot = eventSnapshotService.resolve(request.eventId());
-        return persistTickets(
-            request.reservationId(),
-            request.userId(),
-            request.eventId(),
-            request.tickets().stream().map(this::fromPublicTicketItem).toList(),
-            eventSnapshot
-        );
-    }
+//    @Transactional
+//    public List<TicketResponse> createTickets(CreateTicketsRequest request) {
+//        EventSnapshot eventSnapshot = eventSnapshotService.resolve(request.eventId());
+//        return persistTickets(
+//            request.reservationId(),
+//            request.userId(),
+//            request.eventId(),
+//            request.tickets().stream().map(this::fromPublicTicketItem).toList(),
+//            eventSnapshot
+//        );
+//    }
 
     @Transactional
-    public List<TicketResponse> createTickets(org.ticketsouq.sharedmodule.TicketService.dto.CreateTicketRequest request) {
+    public List<TicketResponse> createTickets(CreateTicketRequest request) {
         EventSnapshot eventSnapshot = eventSnapshotService.resolve(request.eventId());
         return persistTickets(
             request.reservationId(),

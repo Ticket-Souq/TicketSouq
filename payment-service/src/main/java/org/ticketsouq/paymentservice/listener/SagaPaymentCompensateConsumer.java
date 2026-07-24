@@ -22,10 +22,10 @@ public class SagaPaymentCompensateConsumer {
     private final PaymentRepository paymentRepository;
     private final PaymentProvider paymentProvider;
 
-    @KafkaListener(topics = TOPIC_NAMES.SAGA_PAYMENT_COMPENSATE, groupId = "payment-service")
+    @KafkaListener(topics = TOPIC_NAMES.SAGA_PAYMENT_COMPENSATE)
     @Transactional
     public void handleSagaPaymentCompensate(SagaPaymentCompensateCommand command) {
-        log.info("Received SagaPaymentCompensateCommand for paymentId={}, reservationId={}", 
+        log.info("Received SagaPaymentCompensateCommand for paymentId={}, reservationId={}",
             command.paymentId(), command.reservationId());
 
         PaymentModel payment = paymentRepository.findById(command.paymentId()).orElse(null);
@@ -45,7 +45,7 @@ public class SagaPaymentCompensateConsumer {
             paymentRepository.save(payment);
             log.info("Refund processed for paymentId={}", command.paymentId());
         } else {
-            log.info("Payment {} not in SUCCESS status ({}), skipping refund", 
+            log.info("Payment {} not in SUCCESS status ({}), skipping refund",
                 command.paymentId(), payment.getPaymentStatus());
         }
     }

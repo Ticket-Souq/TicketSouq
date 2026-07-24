@@ -1,4 +1,4 @@
-package org.ticketsouq.paymentservice.exception;
+package org.ticketsouq.sharedmodule.PaymentService.exception;
 
 import org.springframework.http.HttpStatus;
 import org.ticketsouq.sharedmodule.GeneralExceptions.BusinessException;

@@ -6,6 +6,7 @@ import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Component;
 import org.ticketsouq.sharedmodule.Constants.TOPIC_NAMES;
+import org.ticketsouq.sharedmodule.EventService.dto.TicketReservationDto;
 import org.ticketsouq.sharedmodule.ReservationService.events.SagaTicketCommand;
 import org.ticketsouq.sharedmodule.ReservationService.events.SagaTicketReplyEvent;
 import org.ticketsouq.sharedmodule.TicketService.dto.CreateTicketRequest;
@@ -27,7 +28,7 @@ public class SagaTicketCommandConsumer {
         log.info("Received SagaTicketCommand for reservationId={}", command.reservationId());
 
         try {
-            List<org.ticketsouq.sharedmodule.EventService.dto.TicketReservationDto> tickets = command.tickets();
+            List<TicketReservationDto> tickets = command.tickets();
             if (tickets == null) {
                 tickets = List.of();
             }

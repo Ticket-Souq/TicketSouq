@@ -7,6 +7,8 @@ import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
+import org.ticketsouq.paymentservice.dto.PaymentRequest;
+import org.ticketsouq.paymentservice.enums.PaymentStatus;
 import org.ticketsouq.paymentservice.model.PaymentModel;
 import org.ticketsouq.paymentservice.paymentProviders.PaymentProvider;
 import org.ticketsouq.paymentservice.repository.PaymentRepository;
@@ -28,7 +30,7 @@ public class SagaPaymentCommandConsumer {
     private final PaymentProvider paymentProvider;
     private final KafkaTemplate<String, Object> kafkaTemplate;
 
-    @KafkaListener(topics = SAGA_PAYMENT_COMMAND, groupId = "payment-service")
+    @KafkaListener(topics = SAGA_PAYMENT_COMMAND)
     @Transactional
     public void handleSagaPaymentCommand(SagaPaymentCommand command) {
         log.info("Received SagaPaymentCommand for reservationId={}", command.reservationId());
@@ -39,30 +41,25 @@ public class SagaPaymentCommandConsumer {
         if (existing != null) {
             log.info("Payment already exists for reservationId={}, paymentId={}, status={}",
                 command.reservationId(), existing.getId(), existing.getPaymentStatus());
-            if (existing.getPaymentStatus() == org.ticketsouq.paymentservice.enums.PaymentStatus.PENDING) {
+            if (existing.getPaymentStatus() == PaymentStatus.PENDING) {
                 log.info("Payment is still pending for reservationId={}, waiting for webhook completion", command.reservationId());
                 return;
             }
             sendReply(
                 command.reservationId(),
                 existing.getId(),
-                existing.getPaymentStatus() == org.ticketsouq.paymentservice.enums.PaymentStatus.SUCCESS,
-                existing.getPaymentStatus() == org.ticketsouq.paymentservice.enums.PaymentStatus.SUCCESS ? null : "Payment failed"
+                existing.getPaymentStatus() == PaymentStatus.SUCCESS,
+                existing.getPaymentStatus() == PaymentStatus.SUCCESS ? null : "Payment failed"
             );
             return;
         }
 
-        var request = new org.ticketsouq.paymentservice.dto.PaymentRequest(
-            command.reservationId(),
-            command.userId(),
-            command.eventId(),
-            command.amount()
-        );
+        var request = new PaymentRequest(command.reservationId(), command.userId(), command.eventId(), command.amount());
 
         try {
             var response = paymentProvider.pay(request);
 
-            if (response.paymentStatus() == org.ticketsouq.paymentservice.enums.PaymentStatus.PENDING) {
+            if (response.paymentStatus() == PaymentStatus.PENDING) {
                 log.info("Payment initiated for reservationId={}, paymentId={} and waiting for async completion",
                     command.reservationId(), response.paymentID());
                 return;
@@ -71,29 +68,28 @@ public class SagaPaymentCommandConsumer {
             sendReply(
                 command.reservationId(),
                 response.paymentID(),
-                response.paymentStatus() == org.ticketsouq.paymentservice.enums.PaymentStatus.SUCCESS,
-                response.paymentStatus() == org.ticketsouq.paymentservice.enums.PaymentStatus.SUCCESS ? null : response.msg()
+                response.paymentStatus() == PaymentStatus.SUCCESS,
+                response.paymentStatus() == PaymentStatus.SUCCESS ? null : response.msg()
             );
             log.info("Published SagaPaymentReplyEvent for reservationId={}, success={}", command.reservationId(),
-                response.paymentStatus() == org.ticketsouq.paymentservice.enums.PaymentStatus.SUCCESS);
+                response.paymentStatus() == PaymentStatus.SUCCESS);
         } catch (DataIntegrityViolationException e) {
             log.warn("Race condition detected for reservationId={}, fetching existing payment", command.reservationId());
             PaymentModel existingPayment = paymentRepository.findByReservationID(command.reservationId())
                 .orElseThrow(() -> new IllegalStateException("Payment was created but not found"));
-            if (existingPayment.getPaymentStatus() == org.ticketsouq.paymentservice.enums.PaymentStatus.PENDING) {
+            if (existingPayment.getPaymentStatus() == PaymentStatus.PENDING) {
                 log.info("Existing payment is pending for reservationId={}, waiting for webhook completion", command.reservationId());
                 return;
             }
             sendReply(
                 command.reservationId(),
                 existingPayment.getId(),
-                existingPayment.getPaymentStatus() == org.ticketsouq.paymentservice.enums.PaymentStatus.SUCCESS,
-                existingPayment.getPaymentStatus() == org.ticketsouq.paymentservice.enums.PaymentStatus.SUCCESS ? null : "Payment failed"
+                existingPayment.getPaymentStatus() == PaymentStatus.SUCCESS,
+                existingPayment.getPaymentStatus() == PaymentStatus.SUCCESS ? null : "Payment failed"
             );
         } catch (RuntimeException e) {
             log.error("Failed to process SagaPaymentCommand for reservationId={}: {}", command.reservationId(), e.getMessage(), e);
             sendReply(command.reservationId(), null, false, e.getMessage());
-            return;
         }
     }
 

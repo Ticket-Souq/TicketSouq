@@ -24,25 +24,25 @@ public class EventSnapshotConsumer {
 
     private final EventSnapshotService eventSnapshotService;
 
-    @KafkaListener(topics = EVENT_CREATED, groupId = "ticket-service")
+    @KafkaListener(topics = EVENT_CREATED)
     public void handleEventCreated(EventCreatedEvent event) {
         LogUtils.logEventConsumed(EVENT_SERVICE, EVENT_CREATED);
         eventSnapshotService.applyCreatedEvent(event);
     }
 
-    @KafkaListener(topics = EVENT_ACTIVATED, groupId = "ticket-service")
+    @KafkaListener(topics = EVENT_ACTIVATED)
     public void handleEventActivated(EventActivatedEvent event) {
         LogUtils.logEventConsumed(EVENT_SERVICE, EVENT_ACTIVATED);
         eventSnapshotService.applyActivatedEvent(event);
     }
 
-    @KafkaListener(topics = EVENT_COMPLETED, groupId = "ticket-service")
+    @KafkaListener(topics = EVENT_COMPLETED)
     public void handleEventCompleted(EventCompletedEvent event) {
         LogUtils.logEventConsumed(EVENT_SERVICE, EVENT_COMPLETED);
         eventSnapshotService.applyCompletedEvent(event);
     }
 
-    @KafkaListener(topics = EVENT_CANCELLED, groupId = "ticket-service")
+    @KafkaListener(topics = EVENT_CANCELLED)
     public void handleEventCancelled(EventCancelledEvent event) {
         LogUtils.logEventConsumed(EVENT_SERVICE, EVENT_CANCELLED);
         eventSnapshotService.applyCancelledEvent(event);
