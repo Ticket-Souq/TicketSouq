@@ -18,17 +18,17 @@ public class PaymentController {
     private final PaymentService paymentService;
 
     @PostMapping
-    ResponseEntity<PaymentResponse> pay(@Valid @RequestBody PaymentRequest request) {
+    public ResponseEntity<PaymentResponse> pay(@Valid @RequestBody PaymentRequest request) {
         return paymentService.pay(request);
     }
 
     @GetMapping("/{paymentId}")
-    ResponseEntity<PaymentResponse> getPaymentDetails(@PathVariable UUID paymentId) {
+    public ResponseEntity<PaymentResponse> getPaymentDetails(@PathVariable UUID paymentId) {
         return paymentService.getPayment(paymentId);
     }
 
     @PostMapping("/{paymentId}/refund")
-    ResponseEntity<Void> refund(@PathVariable UUID paymentId) {
+    public ResponseEntity<Void> refund(@PathVariable UUID paymentId) {
         paymentService.refund(paymentId);
         return ResponseEntity.noContent().build();
     }

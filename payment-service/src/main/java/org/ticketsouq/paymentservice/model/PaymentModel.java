@@ -26,6 +26,7 @@ public class PaymentModel {
     @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
 
+    @Column(unique = true)
     private UUID reservationID;
     private UUID customerID;
     private BigDecimal amount;

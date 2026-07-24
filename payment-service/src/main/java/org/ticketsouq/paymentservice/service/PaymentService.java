@@ -9,6 +9,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.TransactionDefinition;
 import org.springframework.transaction.support.TransactionTemplate;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.ticketsouq.paymentservice.dto.PaymentRequest;
 import org.ticketsouq.paymentservice.dto.PaymentResponse;
 import org.ticketsouq.paymentservice.enums.PaymentStatus;
@@ -21,6 +22,7 @@ import org.ticketsouq.sharedmodule.PaymentService.events.PaymentFailedEvent;
 import org.ticketsouq.sharedmodule.PaymentService.events.PaymentSuccessEvent;
 import org.ticketsouq.sharedmodule.PaymentService.events.RefundCompletedEvent;
 
+import java.util.Optional;
 import java.util.UUID;
 
 @Slf4j
@@ -35,8 +37,30 @@ public class PaymentService {
 
 
     public ResponseEntity<PaymentResponse> pay(PaymentRequest request) {
-        PaymentResponse paymentResponse = paymentProvider.pay(request);
-        return ResponseEntity.ok(paymentResponse);
+        Optional<PaymentModel> existing = paymentRepository.findByReservationID(request.reservationID());
+        if (existing.isPresent()) {
+            PaymentModel pm = existing.get();
+            return ResponseEntity.ok(new PaymentResponse(
+                null,
+                pm.getId(),
+                pm.getPaymentStatus(),
+                "Payment already exists for this reservation"
+            ));
+        }
+
+        try {
+            PaymentResponse paymentResponse = paymentProvider.pay(request);
+            return ResponseEntity.ok(paymentResponse);
+        } catch (DataIntegrityViolationException e) {
+            PaymentModel pm = paymentRepository.findByReservationID(request.reservationID())
+                .orElseThrow(() -> new PaymentException("Concurrent payment creation failed", e));
+            return ResponseEntity.ok(new PaymentResponse(
+                null,
+                pm.getId(),
+                pm.getPaymentStatus(),
+                "Payment already exists for this reservation"
+            ));
+        }
     }
 
     public ResponseEntity<PaymentResponse> getPayment(UUID paymentId) {

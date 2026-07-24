@@ -36,6 +36,7 @@ public class StripePaymentProvider implements PaymentProvider {
                         PaymentIntentCreateParams.AutomaticPaymentMethods.builder()
                                 .setEnabled(true)
                                 .build())
+                .setIdempotencyKey(request.reservationID().toString())
                 .build();
 
         try {
