@@ -13,6 +13,7 @@ import org.ticketsouq.sharedmodule.EventService.events.EventCancelledEvent;
 import org.ticketsouq.sharedmodule.EventService.events.EventCompletedEvent;
 import org.ticketsouq.sharedmodule.EventService.events.EventCreatedEvent;
 import org.ticketsouq.sharedmodule.EventService.events.EventPayoutReleaseEvent;
+import org.ticketsouq.sharedmodule.ReservationService.events.SagaLockConfirmReplyEvent;
 import org.ticketsouq.sharedmodule.utils.LogUtils;
 
 import static org.ticketsouq.sharedmodule.Constants.SERVICE_NAMES.EVENT_SERVICE;
@@ -65,6 +66,12 @@ public class EventEventPublisher {
     public void sendAuditEvent(AuditEvent event) {
         LogUtils.logEventPublished(EVENT_SERVICE ,AUDIT_EVENT);
         kafkaTemplate.send(AUDIT_EVENT, event.madeById().toString(), event);
+    }
+
+    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
+    public void SendSagaLockConfirmReplyEvent(SagaLockConfirmReplyEvent event) {
+        LogUtils.logEventPublished(EVENT_SERVICE ,SAGA_LOCK_CONFIRM_REPLY);
+        kafkaTemplate.send(SAGA_LOCK_CONFIRM_REPLY, event.reservationId().toString(), event);
     }
 
 }
