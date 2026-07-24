@@ -44,15 +44,27 @@ public final class TOPIC_NAMES {
     public static final String RESERVATION_CONFIRMED = "reservation.confirmed";
     public static final String RESERVATION_EXPIRED = "reservation.expired";
     public static final String RESERVATION_CANCELLED = "reservation.cancelled";
-    public static final String RESERVATION_COMPLETED = "reservation.completed";
 
     // ─── Ticket Service ───────────────────────────────────────
     public static final String TICKET_ISSUED = "ticket.issued";
-    // ─── Payment Service ──────────────────────────────────────
-//    public static final String PAYMENT_INITIATED = "payment.initiated";
+// ─── Payment Service ──────────────────────────────────────
     public static final String PAYMENT_SUCCESS = "payment.success";
     public static final String PAYMENT_FAILED = "payment.failed";
     public static final String PAYMENT_REFUNDED = "payment.refunded";
+    public static final String PAYMENT_REFUND_REQUEST = "payment.refund.request";
+
+    // ─── Saga (Reservation Service) ───────────────────────────
+    public static final String SAGA_PAYMENT_COMMAND = "saga.payment.command";
+    public static final String SAGA_PAYMENT_REPLY = "saga.payment.reply";
+    public static final String SAGA_PAYMENT_COMPENSATE = "saga.payment.compensate";
+
+    public static final String SAGA_TICKET_COMMAND = "saga.ticket.command";
+    public static final String SAGA_TICKET_REPLY = "saga.ticket.reply";
+    public static final String SAGA_TICKET_COMPENSATE = "saga.ticket.compensate";
+
+    public static final String SAGA_LOCK_CONFIRM_COMMAND = "saga.lock.confirm.command";
+    public static final String SAGA_LOCK_CONFIRM_COMPENSATE = "saga.lock.confirm.compensate";
+    public static final String SAGA_LOCK_CONFIRM_REPLY = "saga.lock.confirm.reply";
 
 //
     // ─── Notification Service ─────────────────────────────────
