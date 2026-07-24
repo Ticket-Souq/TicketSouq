@@ -4,15 +4,12 @@ import com.stripe.model.*;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.ApplicationEventPublisher;
-import org.springframework.http.ResponseEntity;
+import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.TransactionDefinition;
 import org.springframework.transaction.support.TransactionTemplate;
-import org.ticketsouq.paymentservice.dto.PaymentRequest;
-import org.ticketsouq.paymentservice.dto.PaymentResponse;
 import org.ticketsouq.paymentservice.enums.PaymentStatus;
-import org.ticketsouq.paymentservice.exception.PaymentException;
 import org.ticketsouq.paymentservice.model.PaymentModel;
 import org.ticketsouq.paymentservice.paymentProviders.PaymentProvider;
 import org.ticketsouq.paymentservice.repository.PaymentRepository;
@@ -20,33 +17,22 @@ import org.ticketsouq.sharedmodule.GeneralExceptions.ResourceNotFoundException;
 import org.ticketsouq.sharedmodule.PaymentService.events.PaymentFailedEvent;
 import org.ticketsouq.sharedmodule.PaymentService.events.PaymentSuccessEvent;
 import org.ticketsouq.sharedmodule.PaymentService.events.RefundCompletedEvent;
+import org.ticketsouq.sharedmodule.ReservationService.events.SagaPaymentReplyEvent;
 
 import java.util.UUID;
+
+import static org.ticketsouq.sharedmodule.Constants.TOPIC_NAMES.SAGA_PAYMENT_REPLY;
 
 @Slf4j
 @Service
 @RequiredArgsConstructor
 public class PaymentService {
 
-    private final PaymentProvider paymentProvider;
     private final PaymentRepository paymentRepository;
     private final ApplicationEventPublisher applicationEventPublisher;
     private final PlatformTransactionManager transactionManager;
-
-
-    public ResponseEntity<PaymentResponse> pay(PaymentRequest request) {
-        PaymentResponse paymentResponse = paymentProvider.pay(request);
-        return ResponseEntity.ok(paymentResponse);
-    }
-
-    public ResponseEntity<PaymentResponse> getPayment(UUID paymentId) {
-        PaymentResponse paymentResponse = paymentProvider.getPayment(paymentId);
-        return ResponseEntity.ok(paymentResponse);
-    }
-
-    public void refund(UUID paymentId) {
-        paymentProvider.refund(paymentId);
-    }
+    private final PaymentProvider paymentProvider;
+    private final KafkaTemplate<String, Object> kafkaTemplate;
 
     public void handleWebhookEvent(Event event) {
         EventDataObjectDeserializer dataObjectDeserializer = event.getDataObjectDeserializer();
@@ -83,46 +69,51 @@ public class PaymentService {
     public void handlePaymentSucceeded(String stripePaymentIntentId) {
         TransactionTemplate tx = new TransactionTemplate(transactionManager);
         tx.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
-        tx.execute(status -> {
-            PaymentModel payment = findPaymentByStripeId(stripePaymentIntentId);
-            if (payment.getPaymentStatus() == PaymentStatus.SUCCESS) {
+        PaymentModel updatedPayment = tx.execute(status -> {
+            PaymentModel currentPayment = findPaymentByStripeId(stripePaymentIntentId);
+            if (currentPayment.getPaymentStatus() == PaymentStatus.SUCCESS) {
                 log.info("Payment already in SUCCESS status, skipping duplicate event for Stripe ID: {}", stripePaymentIntentId);
-                return null;
+                return currentPayment;
             }
-            payment.setPaymentStatus(PaymentStatus.SUCCESS);
-            paymentRepository.save(payment);
+            currentPayment.setPaymentStatus(PaymentStatus.SUCCESS);
+            paymentRepository.save(currentPayment);
             PaymentSuccessEvent event = new PaymentSuccessEvent(
                 UUID.randomUUID(),
-                payment.getCustomerID(),
-                payment.getReservationID(),
-                payment.getAmount()
+                currentPayment.getCustomerID(),
+                currentPayment.getReservationID(),
+                currentPayment.getAmount()
             );
             applicationEventPublisher.publishEvent(event);
-            return null;
+            return currentPayment;
         });
+        if (updatedPayment != null) {
+            publishSagaReply(updatedPayment, true, null);
+        }
     }
 
     public void handlePaymentFailed(String stripePaymentIntentId) {
         TransactionTemplate tx = new TransactionTemplate(transactionManager);
         tx.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
-        tx.execute(status -> {
-            PaymentModel payment = findPaymentByStripeId(stripePaymentIntentId);
-            if (payment.getPaymentStatus() == PaymentStatus.FAILED) {
+        PaymentModel updatedPayment = tx.execute(status -> {
+            PaymentModel currentPayment = findPaymentByStripeId(stripePaymentIntentId);
+            if (currentPayment.getPaymentStatus() == PaymentStatus.FAILED) {
                 log.info("Payment already in FAILED status, skipping duplicate event for Stripe ID: {}", stripePaymentIntentId);
-                return null;
+                return currentPayment;
             }
-            payment.setPaymentStatus(PaymentStatus.FAILED);
-            paymentRepository.save(payment);
+            currentPayment.setPaymentStatus(PaymentStatus.FAILED);
+            paymentRepository.save(currentPayment);
             PaymentFailedEvent event = new PaymentFailedEvent(
                 UUID.randomUUID(),
-                payment.getCustomerID(),
-                payment.getReservationID(),
-                payment.getAmount()
+                currentPayment.getCustomerID(),
+                currentPayment.getReservationID(),
+                currentPayment.getAmount()
             );
             applicationEventPublisher.publishEvent(event);
-            return null;
+            return currentPayment;
         });
-        throw new PaymentException("Payment failed for reservation");
+        if (updatedPayment != null) {
+            publishSagaReply(updatedPayment, false, "Payment failed");
+        }
     }
 
     public void handleRefundCompleted(String stripePaymentIntentId) {
@@ -147,8 +138,30 @@ public class PaymentService {
         });
     }
 
+    public void processRefundRequest(UUID paymentId) {
+        paymentProvider.refund(paymentId);
+        log.info("Processed refund request for paymentId={}", paymentId);
+    }
+
     private PaymentModel findPaymentByStripeId(String stripePaymentIntentId) {
         return paymentRepository.findByStripePaymentIntentId(stripePaymentIntentId)
             .orElseThrow(() -> new ResourceNotFoundException("Payment with Stripe ID", stripePaymentIntentId));
+    }
+
+    private void publishSagaReply(PaymentModel payment, boolean success, String failReason) {
+        if (payment.getReservationID() == null) {
+            log.warn("Skipping saga reply for paymentId={} because reservationId is null", payment.getId());
+            return;
+        }
+
+        SagaPaymentReplyEvent reply = new SagaPaymentReplyEvent(
+            payment.getReservationID(),
+            payment.getId(),
+            success,
+            failReason
+        );
+        kafkaTemplate.send(SAGA_PAYMENT_REPLY, payment.getReservationID().toString(), reply);
+        log.info("Sent SagaPaymentReplyEvent for reservationId={}, paymentId={}, success={}",
+            payment.getReservationID(), payment.getId(), success);
     }
 }

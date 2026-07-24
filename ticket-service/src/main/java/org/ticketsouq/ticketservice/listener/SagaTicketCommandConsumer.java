@@ -12,6 +12,7 @@ import org.ticketsouq.sharedmodule.TicketService.dto.CreateTicketRequest;
 import org.ticketsouq.ticketservice.service.TicketService;
 
 import java.util.List;
+import java.util.UUID;
 
 @Slf4j
 @Component

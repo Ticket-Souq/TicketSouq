@@ -16,7 +16,7 @@ import java.util.UUID;
 @RestController
 @RequestMapping("/api/v1/private/tickets")
 @RequiredArgsConstructor
-@CrossOrigin(allowCredentials = "*")
+@CrossOrigin
 public class TicketPrivateController {
 
     private final TicketService ticketService;

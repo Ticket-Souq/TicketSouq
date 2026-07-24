@@ -19,7 +19,7 @@ public class PaymentConfig {
 
     @Bean
     @ConditionalOnProperty(name = "payment.provider", havingValue = "mock", matchIfMissing = true)
-    public PaymentProvider mockPaymentProvider() {
-        return new MockPaymentProvider();
+    public PaymentProvider mockPaymentProvider(PaymentRepository paymentRepository) {
+        return new MockPaymentProvider(paymentRepository);
     }
 }

@@ -4,7 +4,9 @@ spring:
   application:
     name:  payment-service
   config:
-    import: optional:file:./profile.properties
+    import:
+      - "optional:file:./profile.properties"
+      - "optional:configserver:"
 
   datasource:
     url: jdbc:postgresql://localhost:5436/payment_db
@@ -13,7 +15,7 @@ spring:
     driver-class-name: org.postgresql.Driver
   jpa:
     hibernate:
-      ddl-auto: update
+      ddl-auto: create-drop
     show-sql: true
     properties:
       hibernate:

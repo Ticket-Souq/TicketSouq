@@ -27,11 +27,11 @@ public class StripePaymentProvider implements PaymentProvider {
     @Override
     @Transactional
     public PaymentResponse pay(PaymentRequest request) {
-        long amountInSmallestUnit = convertToSmallestCurrencyUnit(request.amount(), request.currency());
+        long amountInSmallestUnit = convertToSmallestCurrencyUnit(request.amount(), "EGP");
 
         PaymentIntentCreateParams params = PaymentIntentCreateParams.builder()
                 .setAmount(amountInSmallestUnit)
-                .setCurrency(request.currency().toLowerCase())
+                .setCurrency("egp")
                 .setAutomaticPaymentMethods(
                         PaymentIntentCreateParams.AutomaticPaymentMethods.builder()
                                 .setEnabled(true)
@@ -45,7 +45,6 @@ public class StripePaymentProvider implements PaymentProvider {
                     .reservationID(request.reservationID())
                     .customerID(request.customerID())
                     .amount(request.amount())
-                    .currency(request.currency())
                     .paymentStatus(PaymentStatus.PENDING)
                     .stripePaymentIntentId(intent.getId())
                     .transactionRef(intent.getId())

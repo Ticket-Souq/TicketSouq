@@ -10,4 +10,5 @@ public interface PaymentRepository extends JpaRepository<PaymentModel, UUID> {
     Optional<PaymentModel> findByStripePaymentIntentId(
         String stripePaymentIntentId);
 
+    Optional<PaymentModel> findByReservationID(UUID reservationID);
 }

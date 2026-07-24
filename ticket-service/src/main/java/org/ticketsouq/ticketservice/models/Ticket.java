@@ -7,7 +7,6 @@ import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 import java.math.BigDecimal;
-import java.time.Instant;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
@@ -42,21 +41,6 @@ public abstract class Ticket {
 
     @Column(name = "reservation_status")
     private String reservationStatus;
-
-    @Column(name = "event_title")
-    private String eventTitle;
-
-    @Column(name = "event_start_date")
-    private Instant eventStartDate;
-
-    @Column(name = "event_finish_date")
-    private Instant eventFinishDate;
-
-    @Column(name = "event_poster_url")
-    private String eventPosterUrl;
-
-    @Column(name = "event_status")
-    private String eventStatus;
 
     @CreatedDate
     private LocalDateTime createdAt;

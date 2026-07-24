@@ -29,7 +29,6 @@ public class PaymentModel {
     private UUID reservationID;
     private UUID customerID;
     private BigDecimal amount;
-    private String currency;
 
     @Enumerated(EnumType.STRING)
     private PaymentStatus paymentStatus;

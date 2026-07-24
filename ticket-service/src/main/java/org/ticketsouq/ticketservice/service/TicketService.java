@@ -1,18 +1,24 @@
 package org.ticketsouq.ticketservice.service;
 
+import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.ticketsouq.ticketservice.dto.CreateTicketsRequest;
-import org.ticketsouq.ticketservice.dto.TicketResponse;
 import org.ticketsouq.ticketservice.dto.UpdateTicketStatusRequest;
+import org.ticketsouq.ticketservice.dto.TicketResponse;
+import org.ticketsouq.ticketservice.model.EventSnapshot;
 import org.ticketsouq.ticketservice.models.SeatTicket;
 import org.ticketsouq.ticketservice.models.Ticket;
 import org.ticketsouq.ticketservice.models.ZoneTicket;
 import org.ticketsouq.ticketservice.repository.TicketRepository;
+import org.ticketsouq.sharedmodule.TicketService.dto.CancelTicketRequest;
+import org.ticketsouq.sharedmodule.EventService.dto.TicketReservationDto;
 
-import jakarta.persistence.EntityNotFoundException;
+import java.math.BigDecimal;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 @Service
@@ -20,46 +26,35 @@ import java.util.UUID;
 public class TicketService {
 
     private final TicketRepository ticketRepository;
+    private final EventSnapshotService eventSnapshotService;
 
     @Transactional
     public List<TicketResponse> createTickets(CreateTicketsRequest request) {
-        return request.tickets().stream().map(item -> {
-            Ticket ticket;
-            if ("SEAT".equals(item.type())) {
-                SeatTicket st = new SeatTicket();
-                st.setSeatId(item.seatId());
-                st.setRow(item.row());
-                st.setSeatNumber(item.seatNumber());
-                st.setCategory(item.category());
-                ticket = st;
-            } else {
-                ZoneTicket zt = new ZoneTicket();
-                zt.setSectionId(item.sectionId());
-                zt.setCategory(item.category());
-                ticket = zt;
-            }
+        EventSnapshot eventSnapshot = eventSnapshotService.resolve(request.eventId());
+        return persistTickets(
+            request.reservationId(),
+            request.userId(),
+            request.eventId(),
+            request.tickets().stream().map(this::fromPublicTicketItem).toList(),
+            eventSnapshot
+        );
+    }
 
-            ticket.setReservationId(request.reservationId());
-            ticket.setUserId(request.userId());
-            ticket.setEventId(request.eventId());
-            ticket.setEventTitle(request.eventTitle());
-            ticket.setEventStartDate(request.eventStartDate());
-            ticket.setEventFinishDate(request.eventFinishDate());
-            ticket.setEventPosterUrl(request.eventPosterUrl());
-            ticket.setEventStatus(request.eventStatus());
-            ticket.setPrice(item.price());
-            ticket.setReservationStatus("ACTIVE");
-            ticket.setConsumed(false);
-
-            ticketRepository.save(ticket);
-            return toResponse(ticket);
-        }).toList();
+    @Transactional
+    public List<TicketResponse> createTickets(org.ticketsouq.sharedmodule.TicketService.dto.CreateTicketRequest request) {
+        EventSnapshot eventSnapshot = eventSnapshotService.resolve(request.eventId());
+        return persistTickets(
+            request.reservationId(),
+            request.userId(),
+            request.eventId(),
+            request.tickets().stream().map(this::fromSagaTicketItem).toList(),
+            eventSnapshot
+        );
     }
 
     @Transactional(readOnly = true)
     public List<TicketResponse> getUserTickets(UUID userId) {
-        return ticketRepository.findByUserIdOrderByCreatedAtDesc(userId)
-            .stream().map(this::toResponse).toList();
+        return toResponses(ticketRepository.findByUserIdOrderByCreatedAtDesc(userId));
     }
 
     @Transactional(readOnly = true)
@@ -74,8 +69,7 @@ public class TicketService {
 
     @Transactional(readOnly = true)
     public List<TicketResponse> getTicketsByReservation(UUID reservationId) {
-        return ticketRepository.findByReservationId(reservationId)
-            .stream().map(this::toResponse).toList();
+        return toResponses(ticketRepository.findByReservationId(reservationId));
     }
 
     @Transactional
@@ -99,28 +93,146 @@ public class TicketService {
         return toResponse(ticket);
     }
 
+    @Transactional
+    public void cancelByReservation(CancelTicketRequest request) {
+        List<Ticket> tickets = ticketRepository.findByReservationId(request.reservationId());
+        if (tickets.isEmpty()) {
+            return;
+        }
+
+        tickets.forEach(ticket -> ticket.setReservationStatus("CANCELLED"));
+        ticketRepository.saveAll(tickets);
+    }
+
+    private List<TicketResponse> persistTickets(
+        UUID reservationId,
+        UUID userId,
+        UUID eventId,
+        List<TicketDraft> drafts,
+        EventSnapshot eventSnapshot
+    ) {
+        return drafts.stream().map(draft -> {
+            Ticket ticket = createEntity(draft);
+            ticket.setReservationId(reservationId);
+            ticket.setUserId(userId);
+            ticket.setEventId(eventId);
+            ticket.setPrice(draft.price());
+            ticket.setReservationStatus("ACTIVE");
+            ticket.setConsumed(false);
+
+            ticketRepository.save(ticket);
+            return toResponse(ticket, eventSnapshot);
+        }).toList();
+    }
+
+    private TicketDraft fromPublicTicketItem(CreateTicketsRequest.TicketItem item) {
+        return new TicketDraft(
+            item.type(),
+            item.seatId(),
+            item.row(),
+            item.seatNumber(),
+            item.sectionId(),
+            item.category(),
+            item.category(),
+            item.category(),
+            item.price()
+        );
+    }
+
+    private TicketDraft fromSagaTicketItem(TicketReservationDto item) {
+        return new TicketDraft(
+            item.row() != null ? "SEAT" : "ZONE",
+            null,
+            item.row(),
+            parseSeatNumber(item.label()),
+            null,
+            item.sectionName(),
+            item.label(),
+            item.sectionName(),
+            item.price()
+        );
+    }
+
+    private Ticket createEntity(TicketDraft draft) {
+        if ("SEAT".equalsIgnoreCase(draft.type()) || draft.row() != null) {
+            SeatTicket seatTicket = new SeatTicket();
+            seatTicket.setSeatId(draft.seatId());
+            seatTicket.setRow(draft.row());
+            seatTicket.setSeatNumber(draft.seatNumber());
+            seatTicket.setCategory(defaultString(draft.category(), draft.sectionName()));
+            return seatTicket;
+        }
+
+        ZoneTicket zoneTicket = new ZoneTicket();
+        zoneTicket.setSectionId(draft.sectionId());
+        zoneTicket.setCategory(defaultString(draft.category(), draft.sectionName()));
+        return zoneTicket;
+    }
+
     private TicketResponse toResponse(Ticket ticket) {
+        return toResponse(ticket, eventSnapshotService.resolve(ticket.getEventId()));
+    }
+
+    private TicketResponse toResponse(Ticket ticket, EventSnapshot eventSnapshot) {
         TicketResponse.TicketResponseBuilder builder = TicketResponse.builder()
             .id(ticket.getId())
             .ticketType(ticket instanceof SeatTicket ? "SEAT" : "ZONE")
-            .eventTitle(ticket.getEventTitle())
-            .eventStartDate(ticket.getEventStartDate())
-            .eventFinishDate(ticket.getEventFinishDate())
-            .eventPosterUrl(ticket.getEventPosterUrl())
-            .eventStatus(ticket.getEventStatus())
+            .eventTitle(eventSnapshot.getTitle())
+            .eventStartDate(eventSnapshot.getStartDate())
+            .eventFinishDate(eventSnapshot.getFinishDate())
+            .eventPosterUrl(eventSnapshot.getPosterUrl())
+            .eventStatus(eventSnapshot.getStatus())
             .price(ticket.getPrice())
             .reservationStatus(ticket.getReservationStatus())
             .consumed(ticket.isConsumed())
             .createdAt(ticket.getCreatedAt());
 
-        if (ticket instanceof SeatTicket st) {
-            builder.row(st.getRow())
-                .seatNumber(st.getSeatNumber())
-                .seatCategory(st.getCategory());
-        } else if (ticket instanceof ZoneTicket zt) {
-            builder.zoneCategory(zt.getCategory());
+        if (ticket instanceof SeatTicket seatTicket) {
+            builder.row(seatTicket.getRow())
+                .seatNumber(seatTicket.getSeatNumber())
+                .seatCategory(seatTicket.getCategory());
+        } else if (ticket instanceof ZoneTicket zoneTicket) {
+            builder.zoneCategory(zoneTicket.getCategory());
         }
 
         return builder.build();
     }
+
+    private List<TicketResponse> toResponses(List<Ticket> tickets) {
+        Map<UUID, EventSnapshot> snapshots = new HashMap<>();
+        return tickets.stream()
+            .map(ticket -> toResponse(ticket, snapshots.computeIfAbsent(ticket.getEventId(), eventSnapshotService::resolve)))
+            .toList();
+    }
+
+    private Integer parseSeatNumber(String label) {
+        if (label == null) {
+            return null;
+        }
+        String digits = label.replaceAll("\\D+", "");
+        if (digits.isBlank()) {
+            return null;
+        }
+        try {
+            return Integer.valueOf(digits);
+        } catch (NumberFormatException ex) {
+            return null;
+        }
+    }
+
+    private String defaultString(String value, String fallback) {
+        return value != null ? value : fallback;
+    }
+
+    private record TicketDraft(
+        String type,
+        UUID seatId,
+        Integer row,
+        Integer seatNumber,
+        UUID sectionId,
+        String category,
+        String label,
+        String sectionName,
+        BigDecimal price
+    ) {}
 }
