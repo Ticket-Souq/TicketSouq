@@ -7,6 +7,7 @@ import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.context.jdbc.Sql;
 import org.testcontainers.containers.PostgreSQLContainer;
 import org.testcontainers.junit.jupiter.Container;
+import org.testcontainers.junit.jupiter.Testcontainers;
 
 @DataJpaTest
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
@@ -14,6 +15,7 @@ import org.testcontainers.junit.jupiter.Container;
 @Sql(statements = """
     TRUNCATE TABLE zone_locks, seat_locks, seats, sections, events, event_categories CASCADE
     """, executionPhase = Sql.ExecutionPhase.BEFORE_TEST_CLASS)
+@Testcontainers(disabledWithoutDocker = true)
 public abstract class RepositoryTestBase {
 
     @Container

@@ -17,10 +17,10 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.testcontainers.containers.PostgreSQLContainer;
 import org.testcontainers.elasticsearch.ElasticsearchContainer;
 import org.testcontainers.junit.jupiter.Container;
+import org.testcontainers.junit.jupiter.Testcontainers;
 import org.testcontainers.utility.DockerImageName;
 import org.ticketsouq.eventservice.Client.UserServiceClient;
 import org.ticketsouq.eventservice.EventServiceApplication;
-import org.ticketsouq.eventservice.repository.RepositoryTestBase;
 import org.ticketsouq.eventservice.dto.EventSearchRequest;
 import org.ticketsouq.eventservice.dto.FrontendMap.EventCardResponse;
 import org.ticketsouq.eventservice.model.Event;
@@ -32,11 +32,11 @@ import org.ticketsouq.eventservice.repository.EventRepository;
 
 import java.io.IOException;
 import java.time.Instant;
-import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
 @SpringBootTest(classes = EventServiceApplication.class, webEnvironment = SpringBootTest.WebEnvironment.NONE)
+@Testcontainers(disabledWithoutDocker = true)
 class SearchServiceESIntegrationTest {
 
     @Container
@@ -60,6 +60,20 @@ class SearchServiceESIntegrationTest {
         postgres.start();
     }
 
+    @Resource(name = "ESSearchService")
+    private ESSearchService esSearchService;
+    @Autowired
+    private EventRepository eventRepository;
+    @Autowired
+    private EventCategoryRepository eventCategoryRepository;
+    @Autowired
+    private ElasticsearchClient elasticsearchClient;
+    @MockitoBean
+    private UserServiceClient userServiceClient;
+    @MockitoBean
+    private KafkaTemplate<String, Object> kafkaTemplate;
+    private EventCategory musicCategory;
+
     @DynamicPropertySource
     static void configure(DynamicPropertyRegistry registry) {
         registry.add("spring.elasticsearch.uris", elasticsearch::getHttpHostAddress);
@@ -71,17 +85,6 @@ class SearchServiceESIntegrationTest {
         registry.add("spring.elasticsearch.connection-timeout", () -> "10s");
         registry.add("spring.elasticsearch.socket-timeout", () -> "30s");
     }
-
-    @Resource(name = "ESSearchService")
-    private ESSearchService esSearchService;
-    @Autowired private EventRepository eventRepository;
-    @Autowired private EventCategoryRepository eventCategoryRepository;
-    @Autowired private ElasticsearchClient elasticsearchClient;
-
-    @MockitoBean private UserServiceClient userServiceClient;
-    @MockitoBean private KafkaTemplate<String, Object> kafkaTemplate;
-
-    private EventCategory musicCategory;
 
     @BeforeEach
     void setUp() throws IOException {

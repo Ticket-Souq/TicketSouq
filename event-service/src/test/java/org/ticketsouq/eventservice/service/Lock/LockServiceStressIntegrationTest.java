@@ -2,8 +2,10 @@ package org.ticketsouq.eventservice.service.Lock;
 
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import org.testcontainers.junit.jupiter.Testcontainers;
-import org.ticketsouq.eventservice.dto.*;
+import org.ticketsouq.sharedmodule.EventService.dto.LockZoneRequest;
+import org.ticketsouq.sharedmodule.EventService.dto.LockZoneResponse;
+import org.ticketsouq.sharedmodule.EventService.dto.LockSeatsRequest;
+import org.ticketsouq.sharedmodule.EventService.dto.LockSeatsResponse;
 import org.ticketsouq.sharedmodule.EventService.exception.*;
 import org.ticketsouq.eventservice.model.*;
 import org.ticketsouq.eventservice.model.enums.SeatStatus;
@@ -46,11 +48,10 @@ class LockServiceStressIntegrationTest extends LockServiceIntegrationTestBase {
         ExecutorService executor = Executors.newFixedThreadPool(threads(20));
 
         for (int i = 0; i < requestCount; i++) {
-            String reservationId = "zone-load-res-" + i;
             executor.submit(() -> {
                 try {
                     startLatch.await();
-                    lockService.acquireZoneLock(event.getId(), new LockZoneRequest(reservationId, zoneId, quantityPerRequest));
+                    lockService.acquireZoneLock(event.getId(), new LockZoneRequest(zoneId, quantityPerRequest));
                     succeeded.incrementAndGet();
                 } catch (InterruptedException e) {
                     Thread.currentThread().interrupt();
@@ -100,11 +101,10 @@ class LockServiceStressIntegrationTest extends LockServiceIntegrationTestBase {
         ExecutorService executor = Executors.newFixedThreadPool(threads(20));
 
         for (int i = 0; i < requestCount; i++) {
-            String reservationId = "seat-load-res-" + i;
             executor.submit(() -> {
                 try {
                     startLatch.await();
-                    lockService.acquireSeatLocks(event.getId(), new LockSeatsRequest(reservationId, List.of(seatId)));
+                    lockService.acquireSeatLocks(event.getId(), new LockSeatsRequest(List.of(seatId)));
                     succeeded.incrementAndGet();
                 } catch (InterruptedException e) {
                     Thread.currentThread().interrupt();
@@ -153,12 +153,11 @@ class LockServiceStressIntegrationTest extends LockServiceIntegrationTestBase {
         ExecutorService executor = Executors.newFixedThreadPool(threads(20));
 
         for (int i = 0; i < requestCount; i++) {
-            String reservationId = "zone-lifecycle-res-" + i;
             executor.submit(() -> {
                 try {
                     startLatch.await();
-                    lockService.acquireZoneLock(event.getId(), new LockZoneRequest(reservationId, zoneId, quantityPerRequest));
-                    lockService.confirm(reservationId);
+                    LockZoneResponse res = lockService.acquireZoneLock(event.getId(), new LockZoneRequest(zoneId, quantityPerRequest));
+                    lockService.confirm(res.reservationId().toString());
                 } catch (InterruptedException e) {
                     Thread.currentThread().interrupt();
                     unexpectedErrors.add(e);
@@ -211,12 +210,11 @@ class LockServiceStressIntegrationTest extends LockServiceIntegrationTestBase {
         ExecutorService executor = Executors.newFixedThreadPool(threads(20));
 
         for (int i = 0; i < requestCount; i++) {
-            String reservationId = "seat-lifecycle-res-" + i;
             executor.submit(() -> {
                 try {
                     startLatch.await();
-                    lockService.acquireSeatLocks(event.getId(), new LockSeatsRequest(reservationId, List.of(seatId)));
-                    lockService.confirm(reservationId);
+                    LockSeatsResponse res = lockService.acquireSeatLocks(event.getId(), new LockSeatsRequest(List.of(seatId)));
+                    lockService.confirm(res.reservationId().toString());
                     succeeded.incrementAndGet();
                 } catch (InterruptedException e) {
                     Thread.currentThread().interrupt();
@@ -277,11 +275,10 @@ class LockServiceStressIntegrationTest extends LockServiceIntegrationTestBase {
 
         for (int i = 0; i < requestCount; i++) {
             UUID targetSeat = seatIds.get(i % seatCount);
-            String reservationId = "distinct-seat-res-" + i;
             executor.submit(() -> {
                 try {
                     startLatch.await();
-                    lockService.acquireSeatLocks(event.getId(), new LockSeatsRequest(reservationId, List.of(targetSeat)));
+                    lockService.acquireSeatLocks(event.getId(), new LockSeatsRequest(List.of(targetSeat)));
                     succeeded.incrementAndGet();
                 } catch (InterruptedException e) {
                     Thread.currentThread().interrupt();
@@ -332,11 +329,10 @@ class LockServiceStressIntegrationTest extends LockServiceIntegrationTestBase {
         ExecutorService executor = Executors.newFixedThreadPool(threads(20));
 
         for (int i = 0; i < requestCount; i++) {
-            String reservationId = "exact-cap-res-" + i;
             executor.submit(() -> {
                 try {
                     startLatch.await();
-                    lockService.acquireZoneLock(event.getId(), new LockZoneRequest(reservationId, zoneId, quantityPerRequest));
+                    lockService.acquireZoneLock(event.getId(), new LockZoneRequest(zoneId, quantityPerRequest));
                     succeeded.incrementAndGet();
                 } catch (InterruptedException e) {
                     Thread.currentThread().interrupt();
@@ -388,12 +384,11 @@ class LockServiceStressIntegrationTest extends LockServiceIntegrationTestBase {
 
         for (int i = 0; i < count; i++) {
             UUID seatId = allSeatIds.get(i);
-            String reservationId = "stress-seat-" + i;
             executor.submit(() -> {
                 try {
                     startLatch.await();
-                    lockService.acquireSeatLocks(event.getId(), new LockSeatsRequest(reservationId, List.of(seatId)));
-                    lockService.confirm(reservationId);
+                    LockSeatsResponse res = lockService.acquireSeatLocks(event.getId(), new LockSeatsRequest(List.of(seatId)));
+                    lockService.confirm(res.reservationId().toString());
                 } catch (InterruptedException e) {
                     Thread.currentThread().interrupt();
                     unexpectedErrors.add(e);
@@ -439,12 +434,11 @@ class LockServiceStressIntegrationTest extends LockServiceIntegrationTestBase {
         ExecutorService executor = Executors.newFixedThreadPool(threads(20));
 
         for (int i = 0; i < count; i++) {
-            String reservationId = "stress-zone-" + i;
             executor.submit(() -> {
                 try {
                     startLatch.await();
-                    lockService.acquireZoneLock(event.getId(), new LockZoneRequest(reservationId, zoneId, 1));
-                    lockService.confirm(reservationId);
+                    LockZoneResponse res = lockService.acquireZoneLock(event.getId(), new LockZoneRequest(zoneId, 1));
+                    lockService.confirm(res.reservationId().toString());
                 } catch (InterruptedException e) {
                     Thread.currentThread().interrupt();
                     unexpectedErrors.add(e);
@@ -491,31 +485,30 @@ class LockServiceStressIntegrationTest extends LockServiceIntegrationTestBase {
 
         int poolSize = threads(20);
         for (int cycle = 0; cycle < cycles; cycle++) {
+            Map<Integer, String> reservationIds = new ConcurrentHashMap<>();
+
             CountDownLatch acquireStartLatch = new CountDownLatch(1);
             CountDownLatch acquireFinishLatch = new CountDownLatch(seatCount);
             ConcurrentLinkedQueue<Throwable> acquireErrors = new ConcurrentLinkedQueue<>();
             ExecutorService acquireExecutor = Executors.newFixedThreadPool(poolSize);
-            CountDownLatch aSL = acquireStartLatch;
-            CountDownLatch aFL = acquireFinishLatch;
-            ConcurrentLinkedQueue<Throwable> aErrs = acquireErrors;
-            ExecutorService aExec = acquireExecutor;
 
-            for (int i = 0; i < seatCount; i++) {
-                String resId = "cycle-" + cycle + "-seat-" + i;
-                UUID sid = seatIds.get(i);
-                aExec.submit(() -> {
+            for (int idx = 0; idx < seatCount; idx++) {
+                int finalIdx = idx;
+                UUID sid = seatIds.get(idx);
+                acquireExecutor.submit(() -> {
                     try {
-                        aSL.await();
-                        lockService.acquireSeatLocks(event.getId(), new LockSeatsRequest(resId, List.of(sid)));
+                        acquireStartLatch.await();
+                        LockSeatsResponse res = lockService.acquireSeatLocks(event.getId(), new LockSeatsRequest(List.of(sid)));
+                        reservationIds.put(finalIdx, res.reservationId().toString());
                     } catch (InterruptedException e) {
                         Thread.currentThread().interrupt();
-                        aErrs.add(e);
+                        acquireErrors.add(e);
                     } catch (SeatAlreadyLockedException e) {
-                        aErrs.add(e);
+                        acquireErrors.add(e);
                     } catch (Exception e) {
-                        aErrs.add(e);
+                        acquireErrors.add(e);
                     } finally {
-                        aFL.countDown();
+                        acquireFinishLatch.countDown();
                     }
                 });
             }
@@ -534,24 +527,20 @@ class LockServiceStressIntegrationTest extends LockServiceIntegrationTestBase {
             CountDownLatch releaseFinishLatch = new CountDownLatch(seatCount);
             ConcurrentLinkedQueue<Throwable> releaseErrors = new ConcurrentLinkedQueue<>();
             ExecutorService releaseExecutor = Executors.newFixedThreadPool(poolSize);
-            CountDownLatch rSL = releaseStartLatch;
-            CountDownLatch rFL = releaseFinishLatch;
-            ConcurrentLinkedQueue<Throwable> rErrs = releaseErrors;
-            ExecutorService rExec = releaseExecutor;
 
-            for (int i = 0; i < seatCount; i++) {
-                String resId = "cycle-" + cycle + "-seat-" + i;
-                rExec.submit(() -> {
+            for (int idx = 0; idx < seatCount; idx++) {
+                int finalIdx = idx;
+                releaseExecutor.submit(() -> {
                     try {
-                        rSL.await();
-                        lockService.release(resId);
+                        releaseStartLatch.await();
+                        lockService.release(reservationIds.get(finalIdx));
                     } catch (InterruptedException e) {
                         Thread.currentThread().interrupt();
-                        rErrs.add(e);
+                        releaseErrors.add(e);
                     } catch (Exception e) {
-                        rErrs.add(e);
+                        releaseErrors.add(e);
                     } finally {
-                        rFL.countDown();
+                        releaseFinishLatch.countDown();
                     }
                 });
             }
@@ -593,12 +582,11 @@ class LockServiceStressIntegrationTest extends LockServiceIntegrationTestBase {
             ExecutorService executor = Executors.newFixedThreadPool(poolSize);
 
             for (int i = 0; i < perCycle; i++) {
-                String resId = "zone-cycle-" + cycle + "-" + i;
                 executor.submit(() -> {
                     try {
                         startLatch.await();
-                        lockService.acquireZoneLock(event.getId(), new LockZoneRequest(resId, zoneId, 1));
-                        lockService.confirm(resId);
+                        LockZoneResponse res = lockService.acquireZoneLock(event.getId(), new LockZoneRequest(zoneId, 1));
+                        lockService.confirm(res.reservationId().toString());
                     } catch (InterruptedException e) {
                         Thread.currentThread().interrupt();
                         errors.add(e);
@@ -644,20 +632,17 @@ class LockServiceStressIntegrationTest extends LockServiceIntegrationTestBase {
         Section section = createSection(event, capacity);
         UUID zoneId = section.getId();
 
-        record QtyReq(String id, int qty) {}
+        record QtyReq(int qty) {}
         List<QtyReq> baseRequests = List.of(
-            new QtyReq("mq-0", 3), new QtyReq("mq-1", 3),
-            new QtyReq("mq-2", 3), new QtyReq("mq-3", 3),
-            new QtyReq("mq-4", 2), new QtyReq("mq-5", 2),
-            new QtyReq("mq-6", 2), new QtyReq("mq-7", 2)
+            new QtyReq(3), new QtyReq(3),
+            new QtyReq(3), new QtyReq(3),
+            new QtyReq(2), new QtyReq(2),
+            new QtyReq(2), new QtyReq(2)
         );
         int repeats = Math.max(1, SF);
         List<QtyReq> requests = new ArrayList<>();
         for (int r = 0; r < repeats; r++) {
-            int base = r * baseRequests.size();
-            for (int j = 0; j < baseRequests.size(); j++) {
-                requests.add(new QtyReq("mq-" + (base + j), baseRequests.get(j).qty));
-            }
+            requests.addAll(baseRequests);
         }
         int requestCount = requests.size();
 
@@ -672,7 +657,7 @@ class LockServiceStressIntegrationTest extends LockServiceIntegrationTestBase {
             executor.submit(() -> {
                 try {
                     startLatch.await();
-                    lockService.acquireZoneLock(event.getId(), new LockZoneRequest(req.id, zoneId, req.qty));
+                    lockService.acquireZoneLock(event.getId(), new LockZoneRequest(zoneId, req.qty));
                     succeeded.incrementAndGet();
                 } catch (InterruptedException e) {
                     Thread.currentThread().interrupt();
