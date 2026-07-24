@@ -25,39 +25,18 @@ public class Reservation {
     private UUID id;
 
     @Column(nullable = false)
-    private UUID customerId;
+    private UUID userId;
 
     @Column(nullable = false)
     private UUID eventId;
-
-    private UUID paymentId;
-
-    @Column(nullable = false)
-    private BigDecimal totalAmount;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private ReservationStatus status;
 
-    private UUID zoneId;
-
-    private Integer quantity;
-
-    @ElementCollection
-    @CollectionTable(name = "reservation_seats", joinColumns = @JoinColumn(name = "reservation_id"))
-    @Column(name = "seat_id")
-    private List<UUID> seatIds;
-
-    private UUID ticketId;
-
-    private String failureReason;
-
     @CreatedDate
-    @Column(nullable = false)
     private Instant createdAt;
 
     private Instant completedAt;
 
-    @Version
-    private Long version;
 }
