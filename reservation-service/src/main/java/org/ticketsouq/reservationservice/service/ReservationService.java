@@ -14,8 +14,6 @@ import org.ticketsouq.sharedmodule.EventService.events.BeginReservationEvent;
 import java.util.List;
 import java.util.UUID;
 
-import static org.ticketsouq.sharedmodule.Constants.TOPIC_NAMES.RESERVATION_CREATED;
-
 @Slf4j
 @Service
 @RequiredArgsConstructor
@@ -25,22 +23,24 @@ public class ReservationService {
     private final ReservationMapper reservationMapper;
 
     @Transactional
-    public void createReservation(BeginReservationEvent event) {
+    public Reservation createReservation(BeginReservationEvent event) {
+        if (reservationRepository.existsById(event.reservationId())) {
+            return null;
+        }
+
         Reservation reservation = reservationMapper.createReservation(event);
-        reservation = reservationRepository.save(reservation);
-        ReservationContext context = reservationMapper.createReservationContext(reservation);
-        sagaOrchestrator.startSaga(context, reservation.getId().toString());
-        sagaEventPublisher.publishAfterCommit(RESERVATION_CREATED, reservation.getId().toString(), reservationMapper.toReservationCreatedEvent(reservation));
-        reservationMapper.toResponse(reservation);
+        return reservationRepository.save(reservation);
+    }
+
+    public ReservationContext createReservationContext(Reservation reservation, BeginReservationEvent event) {
+        return reservationMapper.createReservationContext(reservation, event);
     }
 
     @Transactional(readOnly = true)
-    public List<ReservationResponse> getReservationsByCustomer(UUID customerId) {
-        return reservationRepository.findByCustomerId(customerId)
+    public List<ReservationResponse> getReservationsByUser(UUID userId) {
+        return reservationRepository.findByUserId(userId)
             .stream()
             .map(reservationMapper::toResponse)
             .toList();
     }
-
-
 }

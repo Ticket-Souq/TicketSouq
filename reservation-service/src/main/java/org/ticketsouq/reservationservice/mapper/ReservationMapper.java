@@ -5,60 +5,49 @@ import org.ticketsouq.reservationservice.dto.ReservationContext;
 import org.ticketsouq.reservationservice.dto.ReservationResponse;
 import org.ticketsouq.reservationservice.model.Reservation;
 import org.ticketsouq.sharedmodule.EventService.events.BeginReservationEvent;
+import org.ticketsouq.sharedmodule.EventService.dto.TicketReservationDto;
 import org.ticketsouq.sharedmodule.ReservationService.enums.ReservationStatus;
-import org.ticketsouq.sharedmodule.ReservationService.events.ReservationCreatedEvent;
 
-import java.util.UUID;
+import java.math.BigDecimal;
+import java.time.Instant;
+import java.util.List;
 
 @Component
 public class ReservationMapper {
 
-    public ReservationCreatedEvent toReservationCreatedEvent(Reservation reservation) {
-        return new ReservationCreatedEvent(
-            UUID.randomUUID(),
-            reservation.getId(),
-            reservation.getCustomerId(),
-            reservation.getEventId(),
-            reservation.getSeatIds(),
-            reservation.getZoneId(),
-            reservation.getQuantity(),
-            reservation.getTotalAmount()
-        );
-    }
-
-    public ReservationContext createReservationContext(Reservation reservation) {
-        return ReservationContext.builder()
-            .reservationId(reservation.getId())
-            .customerId(reservation.getCustomerId())
-            .eventId(reservation.getEventId())
-            .seatIds(reservation.getSeatIds())
-            .zoneId(reservation.getZoneId())
-            .quantity(reservation.getQuantity())
-            .totalAmount(reservation.getTotalAmount())
+    public Reservation createReservation(BeginReservationEvent event) {
+        return Reservation.builder()
+            .id(event.reservationId())
+            .userId(event.userId())
+            .eventId(event.eventId())
+            .status(ReservationStatus.PENDING)
+            .createdAt(Instant.now())
             .build();
     }
 
-    public Reservation createReservation(BeginReservationEvent request) {
-        return Reservation.builder()
-            .customerId(request.userId())
-            .eventId(request.eventId())
-            .status(ReservationStatus.PENDING)
+    public ReservationContext createReservationContext(Reservation reservation, BeginReservationEvent event) {
+        List<TicketReservationDto> tickets = event.tickets();
+        BigDecimal total = tickets.stream()
+            .map(TicketReservationDto::price)
+            .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+        return ReservationContext.builder()
+            .reservationId(reservation.getId())
+            .userId(reservation.getUserId())
+            .eventId(reservation.getEventId())
+            .tickets(tickets)
+            .totalAmount(total)
             .build();
     }
 
     public ReservationResponse toResponse(Reservation reservation) {
         return new ReservationResponse(
             reservation.getId(),
-            reservation.getCustomerId(),
+            reservation.getUserId(),
             reservation.getEventId(),
-            reservation.getSeatIds(),
-            reservation.getZoneId(),
-            reservation.getQuantity(),
-            reservation.getTotalAmount(),
             reservation.getStatus(),
-            reservation.getPaymentId(),
-            reservation.getTicketId(),
-            reservation.getCreatedAt()
+            reservation.getCreatedAt(),
+            reservation.getCompletedAt()
         );
     }
 }

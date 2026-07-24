@@ -20,8 +20,8 @@ public class ReservationController {
     private final ReservationService reservationService;
 
     @GetMapping
-    public ResponseEntity<List<ReservationResponse>> getMyReservations(@RequestHeader("X-User-Id") UUID customerId) {
-        List<ReservationResponse> responses = reservationService.getReservationsByCustomer(customerId);
+    public ResponseEntity<List<ReservationResponse>> getMyReservations(@RequestHeader("X-User-Id") UUID userId) {
+        List<ReservationResponse> responses = reservationService.getReservationsByUser(userId);
         return ResponseEntity.ok(responses);
     }
 }
