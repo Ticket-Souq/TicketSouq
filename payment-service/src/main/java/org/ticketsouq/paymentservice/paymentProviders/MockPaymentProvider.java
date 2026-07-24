@@ -8,6 +8,7 @@ import org.ticketsouq.paymentservice.enums.PaymentStatus;
 import org.ticketsouq.paymentservice.model.PaymentModel;
 import org.ticketsouq.paymentservice.repository.PaymentRepository;
 import org.ticketsouq.sharedmodule.GeneralExceptions.ResourceNotFoundException;
+import org.ticketsouq.sharedmodule.PaymentService.exception.PaymentException;
 
 import java.math.BigDecimal;
 import java.util.UUID;
@@ -60,7 +61,7 @@ public class MockPaymentProvider implements PaymentProvider {
                 .orElseThrow(() -> new ResourceNotFoundException("Payment", paymentId));
 
         if (payment.getPaymentStatus() != PaymentStatus.SUCCESS) {
-            throw new org.ticketsouq.paymentservice.exception.PaymentException(
+            throw new PaymentException(
                 "Cannot refund a payment that is not in SUCCESS status. Current status: " + payment.getPaymentStatus());
         }
 

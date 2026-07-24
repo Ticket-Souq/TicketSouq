@@ -10,10 +10,10 @@ import org.springframework.transaction.annotation.Transactional;
 import org.ticketsouq.paymentservice.dto.PaymentRequest;
 import org.ticketsouq.paymentservice.dto.PaymentResponse;
 import org.ticketsouq.paymentservice.enums.PaymentStatus;
-import org.ticketsouq.paymentservice.exception.PaymentException;
 import org.ticketsouq.paymentservice.model.PaymentModel;
 import org.ticketsouq.paymentservice.repository.PaymentRepository;
 import org.ticketsouq.sharedmodule.GeneralExceptions.ResourceNotFoundException;
+import org.ticketsouq.sharedmodule.PaymentService.exception.PaymentException;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;

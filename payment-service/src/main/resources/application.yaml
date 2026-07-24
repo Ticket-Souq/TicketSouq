@@ -41,7 +41,7 @@ spring:
         spring.json.use.type.headers: true
 
 payment:
-  provider: stripe
+  provider: mock
 
 server:
   port: 0
