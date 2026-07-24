@@ -12,6 +12,6 @@ public record PaymentRequest(
         UUID customerID,
         UUID eventID,
         @NotNull @DecimalMin(value = "0.01", message = "Amount must be greater than 0") BigDecimal amount,
-        @NotBlank String currency
+        String currency
 ) {
 }
