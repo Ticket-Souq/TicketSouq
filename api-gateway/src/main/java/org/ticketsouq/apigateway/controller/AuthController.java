@@ -40,11 +40,11 @@ public class AuthController {
         return ResponseEntity.ok(authService.login(req));
     }
 
-//    @PostMapping("/refresh")
-//    public ResponseEntity<AuthResponse> refresh(@RequestHeader("Authorization") String authHeader) {
-//        String token = authHeader.startsWith("Bearer ") ? authHeader.substring(7) : authHeader;
-//        return ResponseEntity.ok(authService.refresh(token));
-//    }
+    @PostMapping("/refresh")
+    public ResponseEntity<AuthResponse> refresh(@RequestHeader("Authorization") String authHeader) {
+        String token = authHeader.startsWith("Bearer ") ? authHeader.substring(7) : authHeader;
+        return ResponseEntity.ok(authService.refresh(token));
+    }
 
     // ── SESSION MANAGEMENT ────────────────────────────────────────────────────
 
