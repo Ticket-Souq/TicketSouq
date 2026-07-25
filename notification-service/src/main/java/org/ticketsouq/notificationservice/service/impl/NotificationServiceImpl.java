@@ -94,10 +94,7 @@ public class NotificationServiceImpl implements NotificationService {
 
         Map<String, Object> variables = new HashMap<>();
 
-        variables.put(
-            "resetUrl",
-            "http://localhost:8080/reset-password?token=" + event.token()
-        );
+        variables.put("resetUrl", event.token());
 
         emailJobService.createEmailJob(
             event.messageId(),

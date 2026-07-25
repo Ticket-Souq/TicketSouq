@@ -2,7 +2,6 @@ package org.ticketsouq.notificationservice.service.impl;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.cache.annotation.Cacheable;
-import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Service;
 import org.ticketsouq.notificationservice.client.EventClient;
 import org.ticketsouq.notificationservice.dto.EventDetailsResponse;
@@ -19,7 +18,6 @@ public class EventDetailsServiceImpl implements EventDetailsService {
     @Override
     @Cacheable(value = "events", key = "#eventId")
     public EventDetailsResponse getEvent(UUID eventId) {
-        System.out.println("recived");
 
         EventDetailsResponse response = eventClient.getEventById(eventId);
 
