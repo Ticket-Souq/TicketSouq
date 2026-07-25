@@ -70,8 +70,12 @@
         <!-- Rate limiting -->
         <dependency>
             <groupId>com.bucket4j</groupId>
-            <artifactId>bucket4j-redis</artifactId>
+            <artifactId>bucket4j-caffeine</artifactId>
             <version>${bucket4j.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.github.ben-manes.caffeine</groupId>
+            <artifactId>caffeine</artifactId>
         </dependency>
 
 

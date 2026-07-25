@@ -1,11 +1,10 @@
 package org.ticketsouq.apigateway.config.Filters.RateLimit;
 
+import com.github.benmanes.caffeine.cache.Cache;
+import com.github.benmanes.caffeine.cache.Caffeine;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.github.bucket4j.Bandwidth;
 import io.github.bucket4j.Bucket;
-import io.github.bucket4j.BucketConfiguration;
-import io.github.bucket4j.distributed.BucketProxy;
-import io.github.bucket4j.distributed.proxy.ProxyManager;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -21,6 +20,7 @@ import org.springframework.web.filter.OncePerRequestFilter;
 import org.ticketsouq.sharedmodule.GeneralExceptions.ErrorResponse;
 
 import java.io.IOException;
+import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
 
@@ -33,8 +33,12 @@ public class RateLimitFilter extends OncePerRequestFilter {
     private final ObjectMapper objectMapper;
     private final RateLimitProperties rateLimitProperties;
     private final PathMatcher pathMatcher = new AntPathMatcher();
-    private final ProxyManager<String> proxyManager;
 
+    // Per-IP token buckets, evicted after 2min of inactivity, max 100k entries
+    private final Cache<String, Bucket> buckets = Caffeine.newBuilder()
+            .expireAfterAccess(Duration.ofMinutes(2))
+            .maximumSize(100_000)
+            .build();
 
     // Grab the real client IP from proxy headers, fall back to direct remote addr
     private String resolveClientIp(HttpServletRequest req) {
@@ -67,20 +71,18 @@ public class RateLimitFilter extends OncePerRequestFilter {
                 if (allowedOrigins.contains(refererOrigin)) {
                     return true;
                 }
-            } catch (Exception ignored) {
-            }
+            } catch (Exception ignored) {}
         }
         return false;
     }
 
     // Get or create a token bucket for this key (tokens refill in full every period, no bursting)
-    private BucketProxy bucket(String key) {
-        return proxyManager.builder()
-            .build(key, () -> BucketConfiguration.builder()
+    private Bucket bucket(String key) {
+        return buckets.get(key, k -> Bucket.builder()
                 .addLimit(Bandwidth.builder()
-                    .capacity(rateLimitProperties.getCapacity())
-                    .refillIntervally(rateLimitProperties.getRefill(), rateLimitProperties.getRefillPeriod())
-                    .build())
+                        .capacity(rateLimitProperties.getCapacity())
+                        .refillIntervally(rateLimitProperties.getRefill(), rateLimitProperties.getRefillPeriod())
+                        .build())
                 .build());
     }
 
@@ -90,12 +92,12 @@ public class RateLimitFilter extends OncePerRequestFilter {
         res.setHeader("X-RateLimit-Limit", String.valueOf(rateLimitProperties.getCapacity()));
         res.setHeader("X-RateLimit-Remaining", String.valueOf(Math.max(0, available - 1)));
         res.setHeader("X-RateLimit-Reset", String.valueOf(
-            Instant.now().plus(rateLimitProperties.getRefillPeriod()).getEpochSecond()));
+                Instant.now().plus(rateLimitProperties.getRefillPeriod()).getEpochSecond()));
     }
 
     @Override
     protected void doFilterInternal(HttpServletRequest req, HttpServletResponse res, FilterChain chain)
-        throws ServletException, IOException {
+            throws ServletException, IOException {
 
         // Skip rate limiting for requests from frontend origins
         if (isFromFrontend(req)) {
@@ -106,7 +108,7 @@ public class RateLimitFilter extends OncePerRequestFilter {
         // Only rate-limit paths matching the configured patterns
         String path = req.getRequestURI();
         boolean matches = rateLimitProperties.getPaths().stream()
-            .anyMatch(p -> pathMatcher.match(p, path));
+                .anyMatch(p -> pathMatcher.match(p, path));
 
         if (matches) {
             String ip = resolveClientIp(req);
