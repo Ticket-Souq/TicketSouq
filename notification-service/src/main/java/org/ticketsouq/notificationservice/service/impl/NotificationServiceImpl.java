@@ -45,7 +45,7 @@ public class NotificationServiceImpl implements NotificationService {
 
         Map<String, Object> variables = new HashMap<>();
 
-        variables.put("verificationUrl", "http://localhost:8080/api/v1/auth/verify-email?token=" + event.token());
+        variables.put("verificationToken", event.token());
 
         if (!userEmailProjectionRepository.existsById(event.userId())) {
             userEmailProjectionRepository.save(new UserEmailProjection(event.userId(), event.email()));

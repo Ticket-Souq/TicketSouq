@@ -1,24 +1,112 @@
 <!DOCTYPE html>
-<html xmlns:th="http://www.thymeleaf.org">
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
 <head>
     <meta charset="UTF-8">
     <title>Verify your email</title>
+
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: #f5f5f5;
+            margin: 0;
+            padding: 40px;
+        }
+
+        .container {
+            max-width: 600px;
+            margin: auto;
+            background: #ffffff;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, .1);
+        }
+
+        .header {
+            background: #28a745;
+            color: white;
+            text-align: center;
+            padding: 24px;
+        }
+
+        .content {
+            padding: 32px;
+            color: #333;
+            line-height: 1.6;
+        }
+
+        .footer {
+            text-align: center;
+            color: #888;
+            font-size: 13px;
+            padding: 20px;
+            border-top: 1px solid #eee;
+        }
+
+        .token-box {
+            background: #f8f9fa;
+            border: 2px dashed #28a745;
+            border-radius: 6px;
+            padding: 20px;
+            text-align: center;
+            margin: 20px 0;
+            word-break: break-all;
+            overflow-wrap: anywhere;
+        }
+
+        .token-box span {
+            font-size: 4px;
+            font-weight: bold;
+            color: #28a745;
+            font-family: 'Courier New', monospace;
+            word-break: break-all;
+            overflow-wrap: anywhere;
+            line-height: 1.5;
+        }
+    </style>
 </head>
+
 <body>
 
-<h2>Welcome to Ticketaty 🎉</h2>
+<div class="container">
 
-<p>Thank you for creating an account.</p>
+    <div class="header">
+        <h2>Welcome to Ticketaty 🎉</h2>
+    </div>
 
-<p>Please click the link below to verify your email:</p>
+    <div class="content">
 
-<p>
-    <a th:href="${verificationUrl}">
-        Verify Email
-    </a>
-</p>
+        <p>Hello,</p>
 
-<p>If you did not create this account, please ignore this email.</p>
+        <p>
+            Thank you for creating an account.
+        </p>
+
+        <p>
+            Please use the verification token below to verify your email address:
+        </p>
+
+        <div class="token-box">
+            <span th:text="${verificationToken}">
+                VERIFICATION_TOKEN
+            </span>
+        </div>
+
+        <p>
+            Copy this token and use it in the app to verify your email address.
+        </p>
+
+        <p>
+            If you did not create this account, please ignore this email.
+        </p>
+
+    </div>
+
+    <div class="footer">
+        Thank you for choosing Ticketaty ❤️
+    </div>
+
+</div>
 
 </body>
 </html>
+
