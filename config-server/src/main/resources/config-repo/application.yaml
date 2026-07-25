@@ -78,7 +78,8 @@ management:
   endpoints:
     web:
       exposure:
-        include: "*"
+        include: health,info,metrics,prometheus,refresh
+#        include: "*"
   endpoint:
     health:
       show-details: always

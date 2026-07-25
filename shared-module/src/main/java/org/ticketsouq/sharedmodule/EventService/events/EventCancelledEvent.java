@@ -6,7 +6,6 @@ import java.util.UUID;
 public record EventCancelledEvent(
     UUID messageId,
     UUID eventId,
-    UUID organizationId,
     Instant cancelledAt
 ) {
 }

@@ -29,49 +29,81 @@ public class EventEventPublisher {
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     public void sendEventCreated(EventCreatedEvent event) {
         LogUtils.logEventPublished(EVENT_SERVICE ,EVENT_CREATED);
-        kafkaTemplate.send(EVENT_CREATED, event.eventId().toString(), event);
+        kafkaTemplate.send(EVENT_CREATED, event.eventId().toString(), event).whenComplete((result, ex) -> {
+            if (ex != null) {
+                LogUtils.logEventPublishingFailed(EVENT_SERVICE ,EVENT_CREATED);
+            }
+        });
     }
 
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     public void sendEventCancelled(EventCancelledEvent event) {
         LogUtils.logEventPublished(EVENT_SERVICE ,EVENT_CANCELLED);
-        kafkaTemplate.send(EVENT_CANCELLED, event.eventId().toString(), event);
+        kafkaTemplate.send(EVENT_CANCELLED, event.eventId().toString(), event).whenComplete((result, ex) -> {
+            if (ex != null) {
+                LogUtils.logEventPublishingFailed(EVENT_SERVICE ,EVENT_CANCELLED);
+            }
+        });
     }
 
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     public void sendEventActivated(EventActivatedEvent event) {
         LogUtils.logEventPublished(EVENT_SERVICE, EVENT_ACTIVATED);
-        kafkaTemplate.send(EVENT_ACTIVATED, event.eventId().toString(), event);
+        kafkaTemplate.send(EVENT_ACTIVATED, event.eventId().toString(), event).whenComplete((result, ex) -> {
+            if (ex != null) {
+                LogUtils.logEventPublishingFailed(EVENT_SERVICE, EVENT_ACTIVATED);
+            }
+        });
     }
 
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     public void sendEventCompleted(EventCompletedEvent event) {
         LogUtils.logEventPublished(EVENT_SERVICE, EVENT_COMPLETED);
-        kafkaTemplate.send(EVENT_COMPLETED, event.eventId().toString(), event);
+        kafkaTemplate.send(EVENT_COMPLETED, event.eventId().toString(), event).whenComplete((result, ex) -> {
+            if (ex != null) {
+                LogUtils.logEventPublishingFailed(EVENT_SERVICE, EVENT_COMPLETED);
+            }
+        });
     }
 
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     public void sendEventPayoutRelease(EventPayoutReleaseEvent event) {
         LogUtils.logEventPublished(EVENT_SERVICE, EVENT_PAYOUT_RELEASED);
-        kafkaTemplate.send(EVENT_PAYOUT_RELEASED, event.eventId().toString(), event);
+        kafkaTemplate.send(EVENT_PAYOUT_RELEASED, event.eventId().toString(), event).whenComplete((result, ex) -> {
+            if (ex != null) {
+                LogUtils.logEventPublishingFailed(EVENT_SERVICE, EVENT_PAYOUT_RELEASED);
+            }
+        });
     }
 
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     public void sendBeginReservation(BeginReservationEvent event) {
         LogUtils.logEventPublished(EVENT_SERVICE, RESERVATION_BEGIN);
-        kafkaTemplate.send(RESERVATION_BEGIN, event.reservationId().toString(), event);
+        kafkaTemplate.send(RESERVATION_BEGIN, event.reservationId().toString(), event).whenComplete((result, ex) -> {
+            if (ex != null) {
+                LogUtils.logEventPublishingFailed(EVENT_SERVICE, RESERVATION_BEGIN);
+            }
+        });
     }
 
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     public void sendAuditEvent(AuditEvent event) {
         LogUtils.logEventPublished(EVENT_SERVICE ,AUDIT_EVENT);
-        kafkaTemplate.send(AUDIT_EVENT, event.madeById().toString(), event);
+        kafkaTemplate.send(AUDIT_EVENT, event.madeById().toString(), event).whenComplete((result, ex) -> {
+            if (ex != null) {
+                LogUtils.logEventPublishingFailed(EVENT_SERVICE ,AUDIT_EVENT);
+            }
+        });
     }
 
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     public void SendSagaLockConfirmReplyEvent(SagaLockConfirmReplyEvent event) {
         LogUtils.logEventPublished(EVENT_SERVICE ,SAGA_LOCK_CONFIRM_REPLY);
-        kafkaTemplate.send(SAGA_LOCK_CONFIRM_REPLY, event.reservationId().toString(), event);
+        kafkaTemplate.send(SAGA_LOCK_CONFIRM_REPLY, event.reservationId().toString(), event).whenComplete((result, ex) -> {
+            if (ex != null) {
+                LogUtils.logEventPublishingFailed(EVENT_SERVICE ,SAGA_LOCK_CONFIRM_REPLY);
+            }
+        });
     }
 
 }

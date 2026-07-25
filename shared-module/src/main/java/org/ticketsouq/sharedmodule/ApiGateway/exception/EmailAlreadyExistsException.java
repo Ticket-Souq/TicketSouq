@@ -1,8 +1,9 @@
 package org.ticketsouq.sharedmodule.ApiGateway.exception;
 
-public class EmailAlreadyExistsException extends RuntimeException {
+import org.ticketsouq.sharedmodule.GeneralExceptions.ConflictException;
 
-    public EmailAlreadyExistsException(String Email) {
-        super("The email already exists: " + Email);
+public class EmailAlreadyExistsException extends ConflictException {
+    public EmailAlreadyExistsException(String email) {
+        super("The email already exists: " + email);
     }
 }

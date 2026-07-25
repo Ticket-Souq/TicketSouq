@@ -21,14 +21,15 @@ public class ReservationMapper {
             .userId(event.userId())
             .eventId(event.eventId())
             .status(ReservationStatus.PENDING)
-            .createdAt(Instant.now())
             .build();
     }
 
     public ReservationContext createReservationContext(Reservation reservation, BeginReservationEvent event) {
         List<TicketReservationDto> tickets = event.tickets();
+        if (tickets == null) tickets = List.of();
+
         BigDecimal total = tickets.stream()
-            .map(TicketReservationDto::price)
+            .map(t -> t.price() != null ? t.price() : BigDecimal.ZERO)
             .reduce(BigDecimal.ZERO, BigDecimal::add);
 
         return ReservationContext.builder()

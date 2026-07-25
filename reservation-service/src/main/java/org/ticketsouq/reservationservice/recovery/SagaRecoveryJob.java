@@ -26,7 +26,8 @@ public class SagaRecoveryJob {
     private static final int BATCH_SIZE = 100;
     private final SagaInstanceRepository sagaInstanceRepository;
     private final SagaOrchestrator sagaOrchestrator;
-    private final AtomicBoolean running = new AtomicBoolean();
+    private final AtomicBoolean recoverRunning = new AtomicBoolean();
+    private final AtomicBoolean compensationRunning = new AtomicBoolean();
 
 
     @PostConstruct
@@ -41,27 +42,32 @@ public class SagaRecoveryJob {
 
     @Scheduled(fixedDelay = 60000)
     public void checkSagaTimeouts() {
-        Instant threshold = Instant.now().minus(STEP_TIMEOUT);
-        List<SagaInstance> timedOutSagas = sagaInstanceRepository.findBySagaStatusAndLastStepCompletedAtBefore(
-            SagaStatus.ACTIVE, threshold);
+        if (!compensationRunning.compareAndSet(false, true)) return;
+        try {
+            Instant threshold = Instant.now().minus(STEP_TIMEOUT);
+            List<SagaInstance> timedOutSagas = sagaInstanceRepository.findBySagaStatusAndLastStepCompletedAtBefore(
+                SagaStatus.ACTIVE, threshold);
 
-        if (timedOutSagas.isEmpty()) return;
+            if (timedOutSagas.isEmpty()) return;
 
-        log.warn("Found {} saga(s) timed out (no progress for {} minutes), starting compensation", timedOutSagas.size(), STEP_TIMEOUT.toMinutes());
+            log.warn("Found {} saga(s) timed out (no progress for {} minutes), starting compensation", timedOutSagas.size(), STEP_TIMEOUT.toMinutes());
 
-        for (SagaInstance saga : timedOutSagas) {
-            try {
-                log.warn("Saga {} timed out at step {}, starting compensation", saga.getId(), saga.getCurrentStep());
-                sagaOrchestrator.startCompensation(saga, "Saga timeout: no progress for " + STEP_TIMEOUT.toMinutes() + " minutes at step " + saga.getCurrentStep());
-            } catch (Exception e) {
-                log.error("Failed to start compensation for timed-out saga {}: {}", saga.getId(), e.getMessage(), e);
+            for (SagaInstance saga : timedOutSagas) {
+                try {
+                    log.warn("Saga {} timed out at step {}, starting compensation", saga.getId(), saga.getCurrentStep());
+                    sagaOrchestrator.startCompensation(saga, "Saga timeout: no progress for " + STEP_TIMEOUT.toMinutes() + " minutes at step " + saga.getCurrentStep());
+                } catch (Exception e) {
+                    log.error("Failed to start compensation for timed-out saga {}: {}", saga.getId(), e.getMessage(), e);
+                }
             }
+        } finally {
+            compensationRunning.set(false);
         }
     }
 
     private void recoverStuckSagas(String trigger) {
 
-        if (!running.compareAndSet(false, true)) return;
+        if (!recoverRunning.compareAndSet(false, true)) return;
 
         try {
             while (true) {
@@ -79,7 +85,7 @@ public class SagaRecoveryJob {
                 if (!batch.hasNext()) break;
             }
         } finally {
-            running.set(false);
+            recoverRunning.set(false);
         }
     }
 }

@@ -1,12 +1,10 @@
 package org.ticketsouq.sharedmodule.ApiGateway.exception;
 
-public class RateLimitExceededException extends RuntimeException {
+import org.springframework.http.HttpStatus;
+import org.ticketsouq.sharedmodule.GeneralExceptions.BusinessException;
 
+public class RateLimitExceededException extends BusinessException {
     public RateLimitExceededException() {
-        super("Rate limit exceeded");
-    }
-
-    public RateLimitExceededException(String message) {
-        super(message);
+        super("Rate limit exceeded", HttpStatus.TOO_MANY_REQUESTS);
     }
 }

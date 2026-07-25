@@ -6,7 +6,7 @@ public record CreateUserRequest (
         UUID userId,
         String name,
         String email,
-        String OrganizationName
+        String organizationName
 ){}
 
 ///  organizationName = null is normal user

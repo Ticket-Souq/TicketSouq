@@ -2,10 +2,9 @@ package org.ticketsouq.notificationservice.service.impl;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
-import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.ticketsouq.notificationservice.entity.EmailJob;
 import org.ticketsouq.notificationservice.enums.NotificationTemplate;
 import org.ticketsouq.notificationservice.repository.EmailJobRepository;
@@ -14,6 +13,7 @@ import org.ticketsouq.sharedmodule.NotificationService.exception.EmailJobSeriali
 
 import java.util.Map;
 import java.util.UUID;
+
 @Service
 @RequiredArgsConstructor
 public class EmailJobServiceImpl implements EmailJobService {

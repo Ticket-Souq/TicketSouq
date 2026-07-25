@@ -5,6 +5,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.mockito.internal.verification.Only;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.transaction.annotation.Transactional;
@@ -31,8 +32,10 @@ import java.time.Instant;
 import java.util.*;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.*;
 
-@Disabled
+//@Disabled
 class ReservationServiceIntegrationTest extends AbstractIntegrationTest {
 
     @Autowired
@@ -201,7 +204,7 @@ class ReservationServiceIntegrationTest extends AbstractIntegrationTest {
         assertThat(first).isNotNull();
 
         Reservation second = reservationService.createReservation(beginEvent);
-        assertThat(second).isNull();
+        assertThat(second).isEqualTo(first);
 
         assertThat(reservationRepository.findById(reservationId)).isPresent();
         assertThat(reservationRepository.count()).isEqualTo(1);

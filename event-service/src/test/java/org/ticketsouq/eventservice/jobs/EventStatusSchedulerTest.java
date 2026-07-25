@@ -155,7 +155,7 @@ class EventStatusSchedulerTest {
     @DisplayName("Should cancel scheduled tasks on event cancelled")
     void givenEventCancelledEvent_whenOnEventCancelled_thenCancelScheduledTasks() {
         UUID eventId = UUID.randomUUID();
-        EventCancelledEvent event = new EventCancelledEvent(UUID.randomUUID(), eventId, UUID.randomUUID(), Instant.now());
+        EventCancelledEvent event = new EventCancelledEvent(UUID.randomUUID(), eventId, Instant.now());
         Instant startDate = Instant.now().plusSeconds(3600);
         ScheduledFuture future = mockFuture();
         when(taskScheduler.schedule(any(Runnable.class), eq(startDate))).thenReturn(future);

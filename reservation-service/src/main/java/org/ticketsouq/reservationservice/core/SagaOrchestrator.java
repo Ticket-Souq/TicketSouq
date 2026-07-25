@@ -202,6 +202,9 @@ public class SagaOrchestrator {
             case LOCK_CONFIRMATION -> {
                 log.debug("Saga {} waiting for lock confirmation", saga.getId());
             }
+            case COMPLETED, FAILED -> {
+                log.warn("advanceSaga called on saga {} with unexpected step {}", saga.getId(), saga.getCurrentStep());
+            }
         }
     }
 

@@ -6,6 +6,7 @@ import feign.FeignException;
 import io.jsonwebtoken.ExpiredJwtException;
 import io.jsonwebtoken.MalformedJwtException;
 import io.jsonwebtoken.security.SignatureException;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -18,15 +19,6 @@ import org.ticketsouq.sharedmodule.GeneralExceptions.ErrorResponse;
 @Slf4j
 @RestControllerAdvice
 public class GatewayExceptionHandler {
-
-    @ExceptionHandler(FeignException.class)
-    public ResponseEntity<ErrorResponse> handleRemoteService(FeignException ex) throws JsonProcessingException {
-        String body = ex.contentUTF8();
-        ObjectMapper mapper = new ObjectMapper();
-        mapper.findAndRegisterModules(); // for Instant support
-        ErrorResponse error = mapper.readValue(body, ErrorResponse.class);
-        return ResponseEntity.status(ex.status()).body(error);
-    }
 
     @ExceptionHandler(UserNotFoundException.class)
     public ResponseEntity<ErrorResponse> handleUserNotFound(UserNotFoundException ex) {

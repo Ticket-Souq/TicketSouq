@@ -7,7 +7,7 @@ public record EventCreatedEvent(
         UUID eventId,
         String title,
         String organization,
-        UUID createdby,
+        UUID createdBy,
         String bookingModel,
         Instant startDateTime,
         Instant endDateTime

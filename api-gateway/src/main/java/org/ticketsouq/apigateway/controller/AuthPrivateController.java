@@ -8,7 +8,7 @@ import org.ticketsouq.apigateway.service.AuthService;
 import java.util.UUID;
 
 @RestController
-@RequestMapping("/api/v1/service/auth")
+@RequestMapping("/api/v1/private/auth")
 @RequiredArgsConstructor
 public class AuthPrivateController {
 

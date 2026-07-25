@@ -8,6 +8,8 @@ database:
 kafka:
   group-id: event-service
 
+search:
+  engine: ${SEARCH_ENGINE:PG}
 
 spring:
   sql:

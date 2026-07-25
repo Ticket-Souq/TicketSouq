@@ -21,8 +21,22 @@ public class KafkaTopicConfig {
     }
 
     @Bean
-    public NewTopic reservationCreatedTopic() {
-        return createTopic(PAYMENT_REFUND_REQUEST);
+    public NewTopic sagaPaymentCommandTopic() {
+        return createTopic(SAGA_PAYMENT_COMMAND);
+    }
+    @Bean
+    public NewTopic sagaPaymentCompensateTopic() {
+        return createTopic(SAGA_PAYMENT_COMPENSATE);
+    }
+
+
+    @Bean
+    public NewTopic sagaTicketCommandTopic() {
+        return createTopic(SAGA_TICKET_COMMAND);
+    }
+    @Bean
+    public NewTopic sagaTicketCompensateTopic() {
+        return createTopic(SAGA_TICKET_COMPENSATE);
     }
 
 

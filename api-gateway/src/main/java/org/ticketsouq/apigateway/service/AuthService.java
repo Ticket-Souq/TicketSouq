@@ -30,10 +30,7 @@ import org.ticketsouq.sharedmodule.GeneralExceptions.BusinessException;
 import org.ticketsouq.sharedmodule.utils.UUIDUtils;
 
 import java.security.SecureRandom;
-import java.time.Instant;
-import java.time.LocalDateTime;
-import java.time.ZoneId;
-import java.time.ZoneOffset;
+import java.time.*;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.List;
@@ -289,7 +286,7 @@ public class AuthService {
 
         userServiceClient.generateMembers(new GenerateMembersRequest(orgHeadUserId, members));
         applicationEventPublisher.publishEvent(new AccountsGeneratedEvent(UUID.randomUUID(),orgHeadUserId,
-            accounts.stream().map(a -> new AccountsGeneratedEvent.AccountInfo(UUIDUtils.parse(a.userId()), a.email(), a.password(), a.Role())).toList()));
+            accounts.stream().map(a -> new AccountsGeneratedEvent.AccountInfo(UUIDUtils.parse(a.userId()), a.email(), a.password(), a.role())).toList()));
 
         return accounts;
     }
@@ -328,7 +325,10 @@ public class AuthService {
             throw new BusinessException("Account is not active. Contact support.", HttpStatus.UNAUTHORIZED);
 
         if (c.getLocked()) {
-            if (hasPriorFailures(c)) {
+            boolean  lockedDueToFailedAttempts = c.getLockedUntil() != null && c.getLockedUntil().isAfter(Instant.now())
+                && c.getLockedUntil().isBefore(Instant.now().plus(Duration.ofHours(1)));
+
+            if (lockedDueToFailedAttempts) {
                 String failedLoginMessage = "Account is locked until " +
                     c.getLockedUntil().atZone(ZoneId.systemDefault()).toLocalDateTime() +
                     ". Because of multiple failed login attempt.";
@@ -376,7 +376,7 @@ public class AuthService {
 
     /*
      * Creates the user in user-service via Feign, then builds and returns
-     * a local AuthCredential. If an OrganizationName was provided, the role
+     * a local AuthCredential. If an organizationName was provided, the role
      * is set to ORG_HEAD and the account is locked pending admin approval.
      */
     private AuthCredential buildCredential(RegisterRequest req) {

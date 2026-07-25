@@ -12,6 +12,7 @@ import org.ticketsouq.reservationservice.model.OutboxEvent;
 import org.ticketsouq.reservationservice.model.enums.OutboxStatus;
 import org.ticketsouq.reservationservice.repository.OutboxEventRepository;
 
+import java.time.Duration;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
@@ -41,6 +42,7 @@ public class OutboxRelay {
 
             for (OutboxEvent event : pending) {
                 int claimed = outboxEventRepository.markInProgress(event.getId());
+                outboxEventRepository.flush();
                 if (claimed == 0) continue;
 
                 try {
@@ -63,7 +65,7 @@ public class OutboxRelay {
     @Scheduled(cron = "0 0 0 * * *")
     @Transactional
     public void cleanPublishedEvents() {
-        Instant cutoff = Instant.now().minus(7, ChronoUnit.DAYS);
+        Instant cutoff = Instant.now().minus(Duration.ofDays(7));
         outboxEventRepository.deleteByStatusAndPublishedAtBefore(OutboxStatus.PUBLISHED, cutoff);
         log.info("Cleaned published outbox events older than 7 days");
     }

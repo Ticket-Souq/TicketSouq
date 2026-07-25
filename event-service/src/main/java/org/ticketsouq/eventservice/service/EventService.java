@@ -2,6 +2,7 @@ package org.ticketsouq.eventservice.service;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -43,7 +44,7 @@ import java.util.stream.Collectors;
 public class EventService {
 
     private final EventRepository eventRepository;
-    private final SearchService eventSearchService;
+    private final SearchService SearchProvider;
     private final ApplicationEventPublisher eventPublisher;
     private final EventFrontendMapper eventFrontendMapper;
     private final UserServiceClient userServiceClient;
@@ -55,7 +56,7 @@ public class EventService {
     public void create(UUID userId, CreateEventWithLayoutRequest request) {
         Event event = eventFrontendMapper.buildEvent(userId, request);
         eventRepository.save(event);
-        eventSearchService.indexEvent(event);
+        SearchProvider.indexEvent(event);
         eventPublisher.publishEvent(new AuditEvent("Event Created", userId, "", Instant.now()));
         eventPublisher.publishEvent(toCreateMessage(event));
     }
@@ -137,11 +138,11 @@ public class EventService {
 
         event.setStatus(EventStatus.CANCELLED);
 
-        eventSearchService.deleteFromIndex(event);
+        SearchProvider.deleteFromIndex(event);
         eventRepository.save(event);
 
         eventPublisher.publishEvent(new AuditEvent("Event Canceled", userId, "", Instant.now()));
-        eventPublisher.publishEvent(new EventCancelledEvent(UUID.randomUUID(), event.getId(), userId, Instant.now()));
+        eventPublisher.publishEvent(new EventCancelledEvent(UUID.randomUUID(), event.getId(), Instant.now()));
     }
 
     private void validateEventCanBeCancelled(Event event) {

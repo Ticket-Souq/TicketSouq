@@ -25,7 +25,7 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class EventController {
     private final EventService eventService;
-    private final SearchService eventSearchService;
+    private final SearchService SearchProvider;
     private final SectionService sectionService;
     private final SeatService seatService;
     private final LockService lockService;
@@ -64,8 +64,12 @@ public class EventController {
     }
 
     @GetMapping("/search")
-    public ResponseEntity<Page<EventCardResponse>> searchBy(@ModelAttribute EventSearchRequest request, Pageable pageable) {
-        return ResponseEntity.ok(eventSearchService.searchBy(request, pageable));
+    public ResponseEntity<Page<EventCardResponse>> searchBy(@RequestHeader("X-User-Id") UUID userId, @ModelAttribute EventSearchRequest request, Pageable pageable) {
+        if (request.title() == null && request.organization() == null && request.category() == null) {
+            return ResponseEntity.ok(eventService.getEvents(userId, pageable));
+        }else{
+            return ResponseEntity.ok(SearchProvider.searchBy(request, pageable));
+        }
     }
 
     @PatchMapping("/seats/{seatId}/status") // must be org_head / agent

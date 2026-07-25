@@ -22,7 +22,6 @@ public final class TOPIC_NAMES {
     public static final String PAYMENT_SUCCESS = "payment.success";
     public static final String PAYMENT_FAILED = "payment.failed";
     public static final String PAYMENT_REFUNDED = "payment.refunded";
-    public static final String PAYMENT_REFUND_REQUEST = "payment.refund.request";
 
     // ─── Saga (Reservation Service) ───────────────────────────
     public static final String RESERVATION_BEGIN = "reservation.begin";
