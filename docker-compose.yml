@@ -14,6 +14,12 @@ services:
       - "5432:5432"
     volumes:
       - postgres_auth_data:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U admin -d auth_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
     networks:
       - Ticket-Souq-Microservice
   user-db:
@@ -27,6 +33,12 @@ services:
       - "5438:5432"
     volumes:
       - postgres_user_data:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U admin -d user_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
     networks:
       - Ticket-Souq-Microservice
   notification-db:
@@ -41,9 +53,14 @@ services:
     restart: unless-stopped
     volumes:
       - postgres_notification_data:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U admin -d notification_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
     networks:
       - Ticket-Souq-Microservice
-
   payment-db:
     image: postgres
     container_name: payment-db
@@ -56,9 +73,14 @@ services:
     restart: unless-stopped
     volumes:
       - postgres_payment_data:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U admin -d payment_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
     networks:
       - Ticket-Souq-Microservice
-
   venue-db:
     image: postgres
     container_name: venue-db
@@ -71,9 +93,14 @@ services:
       - "5435:5432"
     volumes:
       - postgres_venue_data:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U admin -d venue_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
     networks:
       - Ticket-Souq-Microservice
-
   event-db:
     image: postgres
     container_name: event-db
@@ -86,6 +113,12 @@ services:
       - "5434:5432"
     volumes:
       - postgres_event_data:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U admin -d event_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
     networks:
       - Ticket-Souq-Microservice
   ticket-db:
@@ -100,6 +133,12 @@ services:
       - "5439:5432"
     volumes:
       - postgres_ticket_data:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U admin -d ticket_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
     networks:
       - Ticket-Souq-Microservice
   audit-db:
@@ -113,9 +152,14 @@ services:
       - "5440:5432"
     volumes:
       - postgres_audit_data:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U admin -d audit_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
     networks:
       - Ticket-Souq-Microservice
-
   reservation-db:
     image: postgres
     container_name: reservation-db
@@ -127,21 +171,33 @@ services:
       - "5437:5432"
     volumes:
       - postgres_reservation_data:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U admin -d reservation_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
     networks:
       - Ticket-Souq-Microservice
-
-#  analytics-db:
-#    <<: *postgres
-#    container_name: analytics-db
-#    environment:
-#      POSTGRES_USER: admin
-#      POSTGRES_PASSWORD: admin
-#      POSTGRES_DB: analytics_db
-#    ports:
-#      - "5441:5432"
-#    volumes:
-#      - postgres_analytics_data:/var/lib/postgresql
-
+  analytics-db:
+    image: postgres
+    container_name: analytics-db
+    environment:
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: admin
+      POSTGRES_DB: analytics_db
+    ports:
+      - "5441:5432"
+    volumes:
+      - postgres_analytics_data:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U admin -d analytics_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    networks:
+      - Ticket-Souq-Microservice
 
   # ─── Messaging ──────────────────────────────────────────────
 
@@ -167,7 +223,6 @@ services:
       - kafka_data:/var/lib/kafka/data
     networks:
       - Ticket-Souq-Microservice
-
   kafka-ui:
     image: provectuslabs/kafka-ui:latest
     container_name: kafka-ui
@@ -196,7 +251,6 @@ services:
       - "9090:9090"
     networks:
       - Ticket-Souq-Microservice
-
   loki:
     image: grafana/loki:main
     container_name: loki
@@ -206,7 +260,6 @@ services:
       - "3100:3100"
     networks:
       - Ticket-Souq-Microservice
-
   tempo:
     image: grafana/tempo:2.2.2
     container_name: tempo
@@ -222,7 +275,6 @@ services:
 #      - "4318:4318"   # OTLP HTTP — services send directly here
     networks:
       - Ticket-Souq-Microservice
-
   grafana:
     image: grafana/grafana:10.1.0
     container_name: grafana
@@ -262,6 +314,7 @@ services:
       - Ticket-Souq-Microservice
 
   # ─── Elastic Search (commented out until needed) ───────
+
   elasticsearch:
     image: elasticsearch:9.2.3
     container_name: elasticsearch
@@ -285,7 +338,6 @@ services:
     restart: unless-stopped
     networks:
       - Ticket-Souq-Microservice
-
   kibana:
     image: kibana:9.2.3
     container_name: kibana
@@ -299,13 +351,295 @@ services:
     networks:
       - Ticket-Souq-Microservice
 
-#   ─── Spring Boot Services (commented out until built) ───────
+  # ─── Infrastructure Services ─────────────────────────────────
 
-#  config-server:
-#  discovery-server:
-#  api-gateway:
-#  user-service:
+  config-server:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        JAR_FILE: config-server/target/*.jar
+    container_name: config-server
+    ports:
+      - "8888:8888"
+    environment:
+      SPRING_PROFILES_ACTIVE: Docker,native
+    networks:
+      - Ticket-Souq-Microservice
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:8888/actuator/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 8
+      start_period: 30s
+  discovery-server:
+    container_name: discovery-server
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        JAR_FILE: discovery-server/target/*.jar
+    ports:
+      - "8761:8761"
+    environment:
+      SPRING_PROFILES_ACTIVE: Docker
+    depends_on:
+      config-server:
+        condition: service_healthy
+    networks:
+      - Ticket-Souq-Microservice
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:8761/actuator/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 8
+      start_period: 30s
 
+  # ─── Gateway ─────────────────────────────────────────────────
+
+  api-gateway:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        JAR_FILE: api-gateway/target/*.jar
+    container_name: api-gateway
+    ports:
+      - "8080:8080"
+    environment:
+      SPRING_PROFILES_ACTIVE: Docker
+      JWT_SECRET: changeme-this-must-be-at-least-32-bytes-long-for-sha256
+      JWT_ATX: 300000  # access token expiration 5 minutes
+      JWT_ETX: 300000  # email token expiration 5 minutes
+      JWT_PTX: 300000  # password token expiration 5 minutes
+      JWT_RTX: 604800000  # refresh token expiration 7 days
+      RATE_LIMIT: 2000
+      FRONTEND_HOST: localhost
+      FRONTEND_POST: 5173
+    depends_on:
+      config-server:
+        condition: service_healthy
+      discovery-server:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - Ticket-Souq-Microservice
+    healthcheck:
+      test: [ "CMD", "wget", "-qO-", "http://localhost:8080/actuator/health" ]
+      interval: 15s
+      timeout: 5s
+      retries: 8
+      start_period: 45s
+
+  # ─── Business Services ───────────────────────────────────────
+
+  user-service:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        JAR_FILE: user-service/target/*.jar
+    container_name: user-service
+    environment:
+      SPRING_PROFILES_ACTIVE: Docker
+    depends_on:
+      config-server:
+        condition: service_healthy
+      discovery-server:
+        condition: service_healthy
+      user-db:
+        condition: service_healthy
+    networks:
+      - Ticket-Souq-Microservice
+#    healthcheck:
+#      test: [ "CMD", "wget", "-qO-", "http://localhost:0/actuator/health" ]
+#      interval: 15s
+#      timeout: 5s
+#      retries: 8
+#      start_period: 45s
+  event-service:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        JAR_FILE: event-service/target/*.jar
+    container_name: event-service
+    environment:
+      SPRING_PROFILES_ACTIVE: Docker
+    depends_on:
+      config-server:
+        condition: service_healthy
+      discovery-server:
+        condition: service_healthy
+      event-db:
+        condition: service_healthy
+      elasticsearch:
+        condition: service_healthy
+    networks:
+      - Ticket-Souq-Microservice
+#    healthcheck:
+#      test: [ "CMD", "wget", "-qO-", "http://localhost:0/actuator/health" ]
+#      interval: 15s
+#      timeout: 5s
+#      retries: 8
+#      start_period: 45s
+  venue-service:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        JAR_FILE: venue-service/target/*.jar
+    container_name: venue-service
+    environment:
+      SPRING_PROFILES_ACTIVE: Docker
+    depends_on:
+      config-server:
+        condition: service_healthy
+      discovery-server:
+        condition: service_healthy
+      venue-db:
+        condition: service_healthy
+    networks:
+      - Ticket-Souq-Microservice
+#    healthcheck:
+#      test: ["CMD", "wget", "-qO-", "http://localhost:0/actuator/health"]
+#      interval: 15s
+#      timeout: 5s
+#      retries: 8
+#      start_period: 45s
+  ticket-service:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        JAR_FILE: ticket-service/target/*.jar
+    container_name: ticket-service
+    environment:
+      SPRING_PROFILES_ACTIVE: Docker
+    depends_on:
+      config-server:
+        condition: service_healthy
+      discovery-server:
+        condition: service_healthy
+      ticket-db:
+        condition: service_healthy
+    networks:
+      - Ticket-Souq-Microservice
+#    healthcheck:
+#      test: ["CMD", "wget", "-qO-", "http://localhost:0/actuator/health"]
+#      interval: 15s
+#      timeout: 5s
+#      retries: 8
+#      start_period: 45s
+  payment-service:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        JAR_FILE: payment-service/target/*.jar
+    container_name: payment-service
+    environment:
+      SPRING_PROFILES_ACTIVE: Docker
+      PROVIDER: mock
+      STRIPE_SECRET: sk_test_xxxxxxxxx
+      STRIPE_PUBLISHABLE: pk_test_xxxxxxxxx
+      STRIPE_WEBHOOK: whsec_xxxxxxxxx
+    depends_on:
+      config-server:
+        condition: service_healthy
+      discovery-server:
+        condition: service_healthy
+      payment-db:
+        condition: service_healthy
+      kafka:
+        condition: service_started
+    networks:
+      - Ticket-Souq-Microservice
+#    healthcheck:
+#      test: ["CMD", "wget", "-qO-", "http://localhost:0/actuator/health"]
+#      interval: 15s
+#      timeout: 5s
+#      retries: 8
+#      start_period: 45s
+  reservation-service:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        JAR_FILE: reservation-service/target/*.jar
+    container_name: reservation-service
+    environment:
+      SPRING_PROFILES_ACTIVE: Docker
+    depends_on:
+      config-server:
+        condition: service_healthy
+      discovery-server:
+        condition: service_healthy
+      reservation-db:
+        condition: service_healthy
+    networks:
+      - Ticket-Souq-Microservice
+#    healthcheck:
+#      test: ["CMD", "wget", "-qO-", "http://localhost:0/actuator/health"]
+#      interval: 15s
+#      timeout: 5s
+#      retries: 8
+#      start_period: 45s
+  notification-service:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        JAR_FILE: notification-service/target/*.jar
+    container_name: notification-service
+    environment:
+      SPRING_PROFILES_ACTIVE: Docker
+      EMAIL:  DOOOOOOO NOOOOOOT LEEEEEEEEEAVE EMPTYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYY
+      EMAIL_PASSWORD: DOOOOOOO NOOOOOOT LEEEEEEEEEAVE EMPTYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYY
+    depends_on:
+      config-server:
+        condition: service_healthy
+      discovery-server:
+        condition: service_healthy
+      notification-db:
+        condition: service_healthy
+      kafka:
+        condition: service_started
+    networks:
+      - Ticket-Souq-Microservice
+#    healthcheck:
+#      test: ["CMD", "wget", "-qO-", "http://localhost:0/actuator/health"]
+#      interval: 15s
+#      timeout: 5s
+#      retries: 8
+#      start_period: 45s
+  audit-service:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        JAR_FILE: audit-service/target/*.jar
+    container_name: audit-service
+    environment:
+      SPRING_PROFILES_ACTIVE: Docker
+    depends_on:
+      config-server:
+        condition: service_healthy
+      discovery-server:
+        condition: service_healthy
+      audit-db:
+        condition: service_healthy
+      kafka:
+        condition: service_started
+    networks:
+      - Ticket-Souq-Microservice
+#    healthcheck:
+#      test: ["CMD", "wget", "-qO-", "http://localhost:0/actuator/health"]
+#      interval: 15s
+#      timeout: 5s
+#      retries: 8
+#      start_period: 45s
 
 volumes:
   postgres_user_data:
