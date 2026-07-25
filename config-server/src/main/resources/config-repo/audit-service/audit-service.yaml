@@ -1,9 +1,11 @@
 database:
   host: ${DATABASE_HOST}
   port: ${DATABASE_PORT}
-  name: user_db
+  name: audit_db
   username: admin
   password: admin
 
 kafka:
-  group-id: user-service
+  group-id: audit-service
+
+

@@ -1,0 +1,13 @@
+${AnsiColor.BRIGHT_BLUE}
+     _   _   _ ____ ___ _____    ____  _____ ______     _____ ____ _____
+    / \ | | | |  _ \_ _|_   _|  / ___|| ____|  _ \ \   / /_ _/ ___| ____|
+   / _ \| | | | | | | |  | |____\___ \|  _| | |_) \ \ / / | | |   |  _|
+  / ___ \ |_| | |_| | |  | |_____|__) | |___|  _ < \ V /  | | |___| |___
+ /_/   \_\___/|____/___| |_|    |____/|_____|_| \_\ \_/  |___\____|_____|
+${AnsiColor.YELLOW}
+${AnsiStyle.ITALIC}
+${spring.application.name} ${spring.application.version}
+Powered by Spring Boot ${spring-boot.formatted-version}
+Java ${java.version}
+${spring.profiles.active}, ${os.name}
+${AnsiStyle.NORMAL}

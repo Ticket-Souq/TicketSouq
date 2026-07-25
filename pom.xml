@@ -28,9 +28,8 @@
         <module>config-server</module>
         <module>discovery-server</module>
         <module>api-gateway</module>
-        <module>analytics-service</module>
+<!--        <module>analytics-service</module>-->
         <module>audit-service</module>
-<!--        <module>availability-locking-service</module>-->
         <module>event-service</module>
         <module>notification-service</module>
         <module>payment-service</module>
@@ -86,10 +85,10 @@
             <artifactId>spring-boot-starter-actuator</artifactId>
         </dependency>
 
-<!--        <dependency>-->
-<!--            <groupId>org.springframework.boot</groupId>-->
-<!--            <artifactId>spring-boot-starter-zipkin</artifactId>-->
-<!--        </dependency>-->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-zipkin</artifactId>
+        </dependency>
 
         <!-- Matrices → prometheus -->
         <dependency>
@@ -110,10 +109,6 @@
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-kafka</artifactId>
         </dependency>
-        <!--        <dependency>-->
-        <!--            <groupId>org.springframework.cloud</groupId>-->
-        <!--            <artifactId>spring-cloud-starter-bus-kafka</artifactId>-->
-        <!--        </dependency>-->
 
         <dependency>
             <groupId>org.springframework.boot</groupId>
@@ -136,6 +131,12 @@
         <!--                <artifactId>spring-retry</artifactId>-->
         <!--            </dependency>-->
 
+        <!-- Test dependencies -->
+        <dependency>
+            <groupId>org.testcontainers</groupId>
+            <artifactId>testcontainers</artifactId>
+            <scope>test</scope>
+        </dependency>
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-test</artifactId>
@@ -146,18 +147,31 @@
             <artifactId>spring-boot-starter-webmvc-test</artifactId>
             <scope>test</scope>
         </dependency>
-        <!--        <dependency>-->
-        <!--            <groupId>org.testcontainers</groupId>-->
-        <!--            <artifactId>postgresql</artifactId>-->
-        <!--            &lt;!&ndash;            <version>1.20.4</version>&ndash;&gt;-->
-        <!--            <scope>test</scope>-->
-        <!--        </dependency>-->
-        <!--        <dependency>-->
-        <!--            <groupId>org.testcontainers</groupId>-->
-        <!--            <artifactId>junit-jupiter</artifactId>-->
-        <!--            &lt;!&ndash;            <version>1.20.4</version>&ndash;&gt;-->
-        <!--            <scope>test</scope>-->
-        <!--        </dependency>-->
+        <dependency>
+            <groupId>org.testcontainers</groupId>
+            <artifactId>postgresql</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.testcontainers</groupId>
+            <artifactId>junit-jupiter</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-data-jpa-test</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-testcontainers</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.testcontainers</groupId>
+            <artifactId>kafka</artifactId>
+            <scope>test</scope>
+        </dependency>
     </dependencies>
 
     <dependencyManagement>

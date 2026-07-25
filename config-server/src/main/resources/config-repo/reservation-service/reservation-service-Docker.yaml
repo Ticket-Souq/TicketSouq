@@ -1,0 +1,2 @@
+DATABASE_HOST : reservation-db
+DATABASE_PORT : 5432

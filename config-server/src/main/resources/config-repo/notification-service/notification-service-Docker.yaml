@@ -1,0 +1,2 @@
+DATABASE_HOST : notification-db
+DATABASE_PORT : 5432

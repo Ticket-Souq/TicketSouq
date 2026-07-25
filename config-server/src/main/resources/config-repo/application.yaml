@@ -1,34 +1,42 @@
-spring:
+server:
+  port: 0
 
+spring:
   # ── Database defaults (services override only what differs) ──────────
-#  datasource:
-#    url: jdbc:postgresql://${database.host}:${database.port}/${database.name}
-#    username: ${database.username}
-#    password: ${database.password}
-#    driver-class-name: org.postgresql.Driver
-#  jpa:
-#    hibernate:
-#      ddl-auto: update
-#    show-sql: true
-#    properties:
-#      hibernate:
-#        dialect: org.hibernate.dialect.PostgreSQLDialect
-#        format_sql: true
+  datasource:
+    url: jdbc:postgresql://${database.host}:${database.port}/${database.name}
+    username: ${database.username}
+    password: ${database.password}
+    driver-class-name: org.postgresql.Driver
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+        format_sql: true
 
   # ── Kafka defaults (services override only what differs) ──────────
-#  kafka:
-#    bootstrap-servers: ${kafka.server}
-#    producer:
-#      key-serializer: org.apache.kafka.common.serialization.StringSerializer
-#      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
-#      properties:
-#        spring.json.add.type.headers: false
-#    consumer:
-#      auto-offset-reset: latest
-#      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
-#      value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
-#      properties:
-#        spring.json.trusted.packages: "*"
+  kafka:
+    bootstrap-servers: ${kafka.host}:${kafka.port}
+    listener:
+      ack-mode: RECORD
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+      properties:
+        spring.json.add.type.headers: true
+    consumer:
+      group-id: ${kafka.group-id}
+      auto-offset-reset: earliest
+      enable-auto-commit: false
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
+      properties:
+        spring.json.trusted.packages: "*"
+        spring.deserializer.value.delegate.class: org.springframework.kafka.support.serializer.JsonDeserializer
+        spring.json.use.type.headers: true
 
 # ── Swagger ──────────
 springdoc:
@@ -51,6 +59,7 @@ logging:
   loki:
     url: http://${loki.host}:${loki.port}/loki/api/v1/push
   level:
+    org.springframework.cache: TRACE
     io.micrometer.tracing: DEBUG
     zipkin2: DEBUG
 

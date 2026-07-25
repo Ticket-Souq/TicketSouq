@@ -1,0 +1,2 @@
+DATABASE_HOST : audit-db
+DATABASE_PORT : 5432

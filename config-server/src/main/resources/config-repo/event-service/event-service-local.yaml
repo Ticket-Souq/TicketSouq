@@ -1,0 +1,6 @@
+DATABASE_HOST : localhost
+DATABASE_PORT : 5434
+
+elasticsearch:
+  host: localhost
+  port: 9200
