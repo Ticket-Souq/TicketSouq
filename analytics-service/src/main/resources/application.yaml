@@ -43,10 +43,6 @@ eureka:
     enabled: false
 
 server:
-  port: 4234
+  port: 42323
 
-# ────────────────────────────────────────────────────────────
-#  MOCK PRODUCER (delete mock/ package when real producers exist)
-# ────────────────────────────────────────────────────────────
-# Uncomment to auto-publish the full mock dataset on startup:
-# app.mock.publish-on-startup: true
+
