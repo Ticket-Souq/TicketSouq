@@ -116,9 +116,10 @@ public class AnalyticsEventProcessingService {
         String eventId = event.eventId().toString();
         eventAnalyticsRepository.findById(eventId).ifPresent(analytics -> {
             analytics.setTotalRevenue(analytics.getTotalRevenue().add(event.amount()));
+            analytics.setTotalTicketsSold(analytics.getTotalTicketsSold() + 1);
             eventAnalyticsRepository.save(analytics);
         });
-        upsertSalesRecord(eventId, event.amount());
+        upsertSalesRecord(eventId, event.amount(), 1);
         log.info("Processed PaymentSuccess for event {}, amount={}", eventId, event.amount());
     }
 
@@ -137,9 +138,10 @@ public class AnalyticsEventProcessingService {
         String eventId = event.eventId().toString();
         eventAnalyticsRepository.findById(eventId).ifPresent(analytics -> {
             analytics.setTotalRevenue(analytics.getTotalRevenue().subtract(event.amount()));
+            analytics.setTotalTicketsSold(Math.max(0, analytics.getTotalTicketsSold() - 1));
             eventAnalyticsRepository.save(analytics);
         });
-        upsertSalesRecord(eventId, event.amount().negate());
+        upsertSalesRecord(eventId, event.amount().negate(), -1);
         log.info("Processed RefundCompleted for event {}, amount={}", eventId, event.amount());
     }
 
@@ -171,7 +173,7 @@ public class AnalyticsEventProcessingService {
         return true;
     }
 
-    private void upsertSalesRecord(String eventId, BigDecimal amountDelta) {
+    private void upsertSalesRecord(String eventId, BigDecimal amountDelta, int ticketsDelta) {
         LocalDate today = LocalDate.now(ZoneId.of("UTC"));
         SalesRecord record = salesRecordRepository.findByEventIdAndSaleDate(eventId, today)
             .orElse(SalesRecord.builder()
@@ -181,6 +183,7 @@ public class AnalyticsEventProcessingService {
                 .revenue(BigDecimal.ZERO)
                 .build());
         record.setRevenue(record.getRevenue().add(amountDelta));
+        record.setTicketsSold(Math.max(0, record.getTicketsSold() + ticketsDelta));
         salesRecordRepository.save(record);
     }
 }
