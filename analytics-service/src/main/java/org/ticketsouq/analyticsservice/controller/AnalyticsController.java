@@ -30,20 +30,6 @@ public class AnalyticsController {
         return ResponseEntity.ok(analyticsService.getSalesPace(range, eventId));
     }
 
-    @GetMapping("/overview/revenue-by-tier")
-    public ResponseEntity<RevenueByTierResponse> getRevenueByTier(
-        @RequestParam(defaultValue = "30d") String range,
-        @RequestParam Optional<String> eventId) {
-        return ResponseEntity.ok(analyticsService.getRevenueByTier(range, eventId));
-    }
-
-    @GetMapping("/overview/sales-by-channel")
-    public ResponseEntity<SalesByChannelResponse> getSalesByChannel(
-        @RequestParam(defaultValue = "30d") String range,
-        @RequestParam Optional<String> eventId) {
-        return ResponseEntity.ok(analyticsService.getSalesByChannel(range, eventId));
-    }
-
     @GetMapping("/overview/events")
     public ResponseEntity<EventComparisonResponse> getEvents(
         @RequestParam(defaultValue = "30d") String range,
@@ -51,12 +37,6 @@ public class AnalyticsController {
         @RequestParam(defaultValue = "1") int page,
         @RequestParam(defaultValue = "20") int pageSize) {
         return ResponseEntity.ok(analyticsService.getEventComparison(range, sort, page, pageSize));
-    }
-
-    @GetMapping("/overview/no-shows-by-tier")
-    public ResponseEntity<NoShowsByTierResponse> getNoShowsByTier(
-        @RequestParam(defaultValue = "30d") String range) {
-        return ResponseEntity.ok(analyticsService.getNoShowsByTier(range));
     }
 
     @GetMapping("/events/{eventId}/summary")
@@ -70,42 +50,5 @@ public class AnalyticsController {
         @PathVariable String eventId,
         @RequestParam(defaultValue = "day") String granularity) {
         return ResponseEntity.ok(analyticsService.getEventSalesTimeline(eventId, granularity));
-    }
-
-    @GetMapping("/events/{eventId}/tiers")
-    public ResponseEntity<EventTiersResponse> getEventTiers(
-        @PathVariable String eventId) {
-        return ResponseEntity.ok(analyticsService.getEventTiers(eventId));
-    }
-
-    @GetMapping("/events/{eventId}/channels")
-    public ResponseEntity<EventChannelsResponse> getEventChannels(
-        @PathVariable String eventId) {
-        return ResponseEntity.ok(analyticsService.getEventChannels(eventId));
-    }
-
-    @GetMapping("/events/{eventId}/check-in-curve")
-    public ResponseEntity<CheckInCurveResponse> getCheckInCurve(
-        @PathVariable String eventId) {
-        return ResponseEntity.ok(analyticsService.getCheckInCurve(eventId));
-    }
-
-    @GetMapping("/events/{eventId}/demographics")
-    public ResponseEntity<DemographicsResponse> getDemographics(
-        @PathVariable String eventId) {
-        return ResponseEntity.ok(analyticsService.getDemographics(eventId));
-    }
-
-    @GetMapping("/events/{eventId}/refunds")
-    public ResponseEntity<RefundsResponse> getRefunds(
-        @PathVariable String eventId,
-        @RequestParam(defaultValue = "day") String granularity) {
-        return ResponseEntity.ok(analyticsService.getRefunds(eventId, granularity));
-    }
-
-    @GetMapping("/events/{eventId}/profit")
-    public ResponseEntity<ProfitResponse> getProfit(
-        @PathVariable String eventId) {
-        return ResponseEntity.ok(analyticsService.getProfit(eventId));
     }
 }

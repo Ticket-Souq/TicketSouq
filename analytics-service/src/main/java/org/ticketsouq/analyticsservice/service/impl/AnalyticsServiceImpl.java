@@ -4,10 +4,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.ticketsouq.analyticsservice.dto.*;
 import org.ticketsouq.analyticsservice.model.EventAnalytics;
-import org.ticketsouq.analyticsservice.model.EventStatus;
 import org.ticketsouq.analyticsservice.model.SalesRecord;
 import org.ticketsouq.analyticsservice.repository.EventAnalyticsRepository;
-import org.ticketsouq.analyticsservice.repository.EventRevenueByTierRepository;
 import org.ticketsouq.analyticsservice.repository.SalesRecordRepository;
 import org.ticketsouq.analyticsservice.service.AnalyticsService;
 
@@ -22,7 +20,6 @@ public class AnalyticsServiceImpl implements AnalyticsService {
 
     private final EventAnalyticsRepository eventAnalyticsRepository;
     private final SalesRecordRepository salesRecordRepository;
-    private final EventRevenueByTierRepository eventRevenueByTierRepository;
 
     @Override
     public OverviewKpiResponse getOverviewKpis(String range) {
@@ -51,16 +48,6 @@ public class AnalyticsServiceImpl implements AnalyticsService {
     }
 
     @Override
-    public RevenueByTierResponse getRevenueByTier(String range, Optional<String> eventId) {
-        return new RevenueByTierResponse(List.of());
-    }
-
-    @Override
-    public SalesByChannelResponse getSalesByChannel(String range, Optional<String> eventId) {
-        return new SalesByChannelResponse(List.of());
-    }
-
-    @Override
     public EventComparisonResponse getEventComparison(String range, String sort, int page, int pageSize) {
         List<EventAnalytics> events = eventAnalyticsRepository.findAllByOrderByTotalRevenueDesc();
 
@@ -77,11 +64,6 @@ public class AnalyticsServiceImpl implements AnalyticsService {
             .toList();
 
         return new EventComparisonResponse(rows, page, (int) Math.ceil((double) rows.size() / pageSize));
-    }
-
-    @Override
-    public NoShowsByTierResponse getNoShowsByTier(String range) {
-        return new NoShowsByTierResponse(List.of());
     }
 
     @Override
@@ -121,36 +103,6 @@ public class AnalyticsServiceImpl implements AnalyticsService {
             .toList();
 
         return new EventSalesTimelineResponse(granularity, series);
-    }
-
-    @Override
-    public EventTiersResponse getEventTiers(String eventId) {
-        return new EventTiersResponse(List.of());
-    }
-
-    @Override
-    public EventChannelsResponse getEventChannels(String eventId) {
-        return new EventChannelsResponse(List.of());
-    }
-
-    @Override
-    public CheckInCurveResponse getCheckInCurve(String eventId) {
-        return new CheckInCurveResponse("", List.of(), "");
-    }
-
-    @Override
-    public DemographicsResponse getDemographics(String eventId) {
-        return new DemographicsResponse(List.of(), List.of());
-    }
-
-    @Override
-    public RefundsResponse getRefunds(String eventId, String granularity) {
-        return new RefundsResponse(granularity, List.of(), 0);
-    }
-
-    @Override
-    public ProfitResponse getProfit(String eventId) {
-        return new ProfitResponse(0, new ProfitResponse.CostBreakdown(0, 0, 0, 0), 0, 0);
     }
 
     // ── helpers ──────────────────────────────────────────────
