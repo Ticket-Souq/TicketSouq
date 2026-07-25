@@ -114,6 +114,7 @@ public class AuthTokenService {
         try {
             Claims claims = parseToken(token);
             if (!TokenType.ACCESS.name().equals(claims.get("type"))) return false;
+//            boolean expired = claims.getExpiration().before(Date.from(Instant.now())); // it must be in redis because if i check only on expiration
             return accessTokenRepository.existsInRedis(claims.getId());
         } catch (Exception e) {
             return false;
@@ -164,7 +165,7 @@ public class AuthTokenService {
 
         UUID oldSessionId = UUID.fromString(claims.get("sid", String.class));
         RefreshToken oldSession = refreshTokenRepository.findRefreshTokenBySessionId(oldSessionId)
-            .orElseThrow(() -> new BusinessException("Invalid refresh token, please logEventPublished in again", HttpStatus.UNAUTHORIZED));
+            .orElseThrow(() -> new BusinessException("Invalid refresh token, please please log in again", HttpStatus.UNAUTHORIZED));
 
         if (oldSession.isRevoked()) {
             UUID userId = oldSession.getUserId();
@@ -174,10 +175,11 @@ public class AuthTokenService {
         }
 
         if (oldSession.getExpiryDate().isBefore(Instant.now())) {
-            throw new BusinessException("Refresh token expired, please logEventPublished in again", HttpStatus.UNAUTHORIZED);
+            throw new BusinessException("Refresh token expired, please please log in again", HttpStatus.UNAUTHORIZED);
         }
 
         oldSession.setRevoked(true);
+        refreshTokenRepository.save(oldSession);
 
         RefreshToken newSession = RefreshToken.builder()
             .sessionId(UUID.randomUUID())

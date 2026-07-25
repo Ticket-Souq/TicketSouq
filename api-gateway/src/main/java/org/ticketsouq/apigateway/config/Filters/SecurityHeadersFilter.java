@@ -31,7 +31,7 @@ public class SecurityHeadersFilter extends OncePerRequestFilter {
         res.setHeader("Content-Security-Policy",
                 "default-src 'self'; " +
                 "img-src 'self' data: https:; " +
-                "script-src 'self' 'unsafe-inline'; " +
+                "script-src 'self'; " +
                 "style-src 'self' 'unsafe-inline'; " +
                 "frame-ancestors 'self'; " +
                 "frame-src https://www.youtube.com;");

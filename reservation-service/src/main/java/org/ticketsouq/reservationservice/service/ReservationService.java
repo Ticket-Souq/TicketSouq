@@ -2,6 +2,7 @@ package org.ticketsouq.reservationservice.service;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.ticketsouq.reservationservice.dto.ReservationContext;
@@ -24,14 +25,15 @@ public class ReservationService {
 
     @Transactional
     public Reservation createReservation(BeginReservationEvent event) {
-        if (reservationRepository.existsById(event.reservationId())) {
-            return null;
-        }
-
         Reservation reservation = reservationMapper.createReservation(event);
-        return reservationRepository.save(reservation);
+        try {
+            return reservationRepository.save(reservation);
+        } catch (DataIntegrityViolationException e) {
+            return reservationRepository.findById(event.reservationId()).orElse(null);
+        }
     }
 
+    @Transactional(readOnly = true)
     public ReservationContext createReservationContext(Reservation reservation, BeginReservationEvent event) {
         return reservationMapper.createReservationContext(reservation, event);
     }

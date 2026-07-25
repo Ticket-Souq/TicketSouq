@@ -20,7 +20,9 @@ public class AuditEventConsumer {
     @KafkaListener(topics = AUDIT_EVENT)
     public void consume(AuditEvent event) {
         LogUtils.logEventConsumed(AUDIT_SERVICE, AUDIT_EVENT);
+
         AuditLog entity = new AuditLog(null ,event.action(), event.madeById(), event.reason(), event.madeAt());
+
         repository.save(entity);
     }
 }

@@ -19,7 +19,7 @@ public interface OutboxEventRepository extends JpaRepository<OutboxEvent, UUID> 
     @QueryHints(@QueryHint(name = "jakarta.persistence.lock.timeout", value = "-2"))
     List<OutboxEvent> findByStatusOrderByCreatedAt(OutboxStatus status);
 
-    @Modifying
+    @Modifying(clearAutomatically = true)
     @Query("UPDATE OutboxEvent e SET e.status = org.ticketsouq.reservationservice.model.enums.OutboxStatus.IN_PROGRESS, e.claimedAt = CURRENT_TIMESTAMP WHERE e.id = :id AND e.status = org.ticketsouq.reservationservice.model.enums.OutboxStatus.PENDING")
     int markInProgress(UUID id);
 

@@ -155,7 +155,7 @@ public class LockService {
             .sorted()
             .toList();
 
-            List<Seat> seats = seatRepository.findByIdsWithSection(seatIds);
+        List<Seat> seats = seatRepository.findByIdsWithSection(seatIds);
 
         List<UUID> bookedSeats = seats.stream()
             .filter(s -> s.getStatus() == SeatStatus.BOOKED)
@@ -167,6 +167,14 @@ public class LockService {
 
         seats.forEach(seat -> seat.setStatus(SeatStatus.BOOKED));
         seatRepository.saveAll(seats);
+
+        Map<Section, Long> seatsPerSection = seats.stream()
+            .collect(Collectors.groupingBy(Seat::getSection, Collectors.counting()));
+        seatsPerSection.forEach((section, count) -> {
+            section.setRemainingCapacity(section.getRemainingCapacity() - count.intValue());
+            sectionRepository.save(section);
+        });
+
         seatLockRepository.deleteByReservationId(reservationId);
     }
 
@@ -219,7 +227,7 @@ public class LockService {
             .toList();
     }
 
-    @Transactional(readOnly = true)
+    @Transactional
     public void reserve(ReservationRequest request,UUID userId) {
         List<SeatLock> seatLocks = seatLockRepository.findByReservationId(request.reservationId());
         Optional<ZoneLock> zoneLockOpt = zoneLockRepository.findByReservationId(request.reservationId());

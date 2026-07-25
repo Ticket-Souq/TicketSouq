@@ -4,11 +4,20 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
 import org.ticketsouq.reservationservice.core.SagaOrchestrator;
+import org.ticketsouq.reservationservice.dto.ReservationContext;
+import org.ticketsouq.reservationservice.model.Reservation;
+import org.ticketsouq.reservationservice.service.ReservationService;
 import org.ticketsouq.sharedmodule.Constants.TOPIC_NAMES;
+import org.ticketsouq.sharedmodule.EventService.events.BeginReservationEvent;
 import org.ticketsouq.sharedmodule.ReservationService.events.SagaLockConfirmReplyEvent;
 import org.ticketsouq.sharedmodule.ReservationService.events.SagaPaymentReplyEvent;
 import org.ticketsouq.sharedmodule.ReservationService.events.SagaTicketReplyEvent;
+import org.ticketsouq.sharedmodule.utils.LogUtils;
+
+import static org.ticketsouq.sharedmodule.Constants.SERVICE_NAMES.EVENT_SERVICE;
+import static org.ticketsouq.sharedmodule.Constants.TOPIC_NAMES.RESERVATION_BEGIN;
 
 @Slf4j
 @Component
@@ -16,7 +25,18 @@ import org.ticketsouq.sharedmodule.ReservationService.events.SagaTicketReplyEven
 public class SagaReplyConsumer {
 
     private final SagaOrchestrator sagaOrchestrator;
+    private final ReservationService reservationService;
 
+
+    @KafkaListener(topics = RESERVATION_BEGIN)
+    @Transactional
+    public void handleBeginReservation(BeginReservationEvent event) {
+        LogUtils.logEventConsumed(EVENT_SERVICE, RESERVATION_BEGIN);
+        Reservation reservation = reservationService.createReservation(event);
+        if (reservation == null) return;
+        ReservationContext context = reservationService.createReservationContext(reservation, event);
+        sagaOrchestrator.startSaga(context);
+    }
 
     @KafkaListener(topics = TOPIC_NAMES.SAGA_PAYMENT_REPLY)
     public void handlePaymentReply(SagaPaymentReplyEvent event) {

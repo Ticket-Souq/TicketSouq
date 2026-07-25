@@ -29,6 +29,7 @@ services:
       POSTGRES_USER: admin
       POSTGRES_PASSWORD: admin
       POSTGRES_DB: user_db
+    restart: unless-stopped
     ports:
       - "5438:5432"
     volumes:
@@ -148,6 +149,7 @@ services:
       POSTGRES_USER: admin
       POSTGRES_PASSWORD: admin
       POSTGRES_DB: audit_db
+    restart: unless-stopped
     ports:
       - "5440:5432"
     volumes:
@@ -186,6 +188,7 @@ services:
       POSTGRES_USER: admin
       POSTGRES_PASSWORD: admin
       POSTGRES_DB: analytics_db
+    restart: unless-stopped
     ports:
       - "5441:5432"
     volumes:
@@ -204,6 +207,7 @@ services:
   kafka:
     image: confluentinc/cp-kafka:7.6.0
     container_name: kafka
+    restart: unless-stopped
     ports:
       - "29092:29092"
     environment:
@@ -219,6 +223,12 @@ services:
       KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
       KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
       CLUSTER_ID: MkU3OEVBNTcwNTJENDM2Qk
+    healthcheck:
+      test: [ "CMD-SHELL", "kafka-broker-api-versions --bootstrap-server localhost:9092 || exit 1" ]
+      interval: 10s
+      timeout: 10s
+      retries: 10
+      start_period: 30s
     volumes:
       - kafka_data:/var/lib/kafka/data
     networks:
@@ -331,7 +341,7 @@ services:
         soft: -1
         hard: -1
     healthcheck:
-      test: [ "CMD-SHELL", "curl -f http://localhost:9200/_cluster/health || exit 1" ]
+      test: ["CMD-SHELL", "curl -f http://localhost:9200/_cluster/health || wget -qO- http://localhost:9200/_cluster/health || exit 1"]
       interval: 20s
       timeout: 10s
       retries: 5
@@ -450,14 +460,10 @@ services:
         condition: service_healthy
       user-db:
         condition: service_healthy
+      kafka:
+        condition: service_healthy
     networks:
       - Ticket-Souq-Microservice
-#    healthcheck:
-#      test: [ "CMD", "wget", "-qO-", "http://localhost:0/actuator/health" ]
-#      interval: 15s
-#      timeout: 5s
-#      retries: 8
-#      start_period: 45s
   event-service:
     build:
       context: .
@@ -467,6 +473,7 @@ services:
     container_name: event-service
     environment:
       SPRING_PROFILES_ACTIVE: Docker
+      SEARCH_ENGINE: ES
     depends_on:
       config-server:
         condition: service_healthy
@@ -476,14 +483,10 @@ services:
         condition: service_healthy
       elasticsearch:
         condition: service_healthy
+      kafka:
+        condition: service_healthy
     networks:
       - Ticket-Souq-Microservice
-#    healthcheck:
-#      test: [ "CMD", "wget", "-qO-", "http://localhost:0/actuator/health" ]
-#      interval: 15s
-#      timeout: 5s
-#      retries: 8
-#      start_period: 45s
   venue-service:
     build:
       context: .
@@ -502,12 +505,6 @@ services:
         condition: service_healthy
     networks:
       - Ticket-Souq-Microservice
-#    healthcheck:
-#      test: ["CMD", "wget", "-qO-", "http://localhost:0/actuator/health"]
-#      interval: 15s
-#      timeout: 5s
-#      retries: 8
-#      start_period: 45s
   ticket-service:
     build:
       context: .
@@ -524,14 +521,10 @@ services:
         condition: service_healthy
       ticket-db:
         condition: service_healthy
+      kafka:
+        condition: service_healthy
     networks:
       - Ticket-Souq-Microservice
-#    healthcheck:
-#      test: ["CMD", "wget", "-qO-", "http://localhost:0/actuator/health"]
-#      interval: 15s
-#      timeout: 5s
-#      retries: 8
-#      start_period: 45s
   payment-service:
     build:
       context: .
@@ -553,15 +546,9 @@ services:
       payment-db:
         condition: service_healthy
       kafka:
-        condition: service_started
+        condition: service_healthy
     networks:
       - Ticket-Souq-Microservice
-#    healthcheck:
-#      test: ["CMD", "wget", "-qO-", "http://localhost:0/actuator/health"]
-#      interval: 15s
-#      timeout: 5s
-#      retries: 8
-#      start_period: 45s
   reservation-service:
     build:
       context: .
@@ -578,14 +565,10 @@ services:
         condition: service_healthy
       reservation-db:
         condition: service_healthy
+      kafka:
+        condition: service_healthy
     networks:
       - Ticket-Souq-Microservice
-#    healthcheck:
-#      test: ["CMD", "wget", "-qO-", "http://localhost:0/actuator/health"]
-#      interval: 15s
-#      timeout: 5s
-#      retries: 8
-#      start_period: 45s
   notification-service:
     build:
       context: .
@@ -605,15 +588,9 @@ services:
       notification-db:
         condition: service_healthy
       kafka:
-        condition: service_started
+        condition: service_healthy
     networks:
       - Ticket-Souq-Microservice
-#    healthcheck:
-#      test: ["CMD", "wget", "-qO-", "http://localhost:0/actuator/health"]
-#      interval: 15s
-#      timeout: 5s
-#      retries: 8
-#      start_period: 45s
   audit-service:
     build:
       context: .
@@ -631,15 +608,9 @@ services:
       audit-db:
         condition: service_healthy
       kafka:
-        condition: service_started
+        condition: service_healthy
     networks:
       - Ticket-Souq-Microservice
-#    healthcheck:
-#      test: ["CMD", "wget", "-qO-", "http://localhost:0/actuator/health"]
-#      interval: 15s
-#      timeout: 5s
-#      retries: 8
-#      start_period: 45s
 
 volumes:
   postgres_user_data:
@@ -652,7 +623,6 @@ volumes:
   postgres_notification_data:
   postgres_audit_data:
   postgres_analytics_data:
-  postgres_availability_locking_data:
   kafka_data:
   es_data:
   redis_data:

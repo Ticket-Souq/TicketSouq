@@ -138,11 +138,6 @@ public class PaymentService {
         });
     }
 
-    public void processRefundRequest(UUID paymentId) {
-        paymentProvider.refund(paymentId);
-        log.info("Processed refund request for paymentId={}", paymentId);
-    }
-
     private PaymentModel findPaymentByStripeId(String stripePaymentIntentId) {
         return paymentRepository.findByStripePaymentIntentId(stripePaymentIntentId)
             .orElseThrow(() -> new ResourceNotFoundException("Payment with Stripe ID", stripePaymentIntentId));

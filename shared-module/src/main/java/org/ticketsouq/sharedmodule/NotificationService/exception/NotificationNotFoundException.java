@@ -1,8 +1,9 @@
 package org.ticketsouq.sharedmodule.NotificationService.exception;
 
-public class NotificationNotFoundException extends RuntimeException {
+import org.ticketsouq.sharedmodule.GeneralExceptions.ResourceNotFoundException;
 
+public class NotificationNotFoundException extends ResourceNotFoundException {
     public NotificationNotFoundException(Long id) {
-        super("Notification with id " + id + " was not found.");
+        super("Notification", id);
     }
 }

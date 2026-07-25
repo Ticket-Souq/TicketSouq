@@ -441,8 +441,8 @@ class AuthServiceTest {
         List<GeneratedAccount> accounts = authService.generateAccountsForOrg(ORG_HEAD_ID, req);
 
         assertThat(accounts).hasSize(5);
-        assertThat(accounts.stream().filter(a -> "ORG_Agent".equals(a.Role())).count()).isEqualTo(2);
-        assertThat(accounts.stream().filter(a -> "ORG_Consumer".equals(a.Role())).count()).isEqualTo(3);
+        assertThat(accounts.stream().filter(a -> "ORG_Agent".equals(a.role())).count()).isEqualTo(2);
+        assertThat(accounts.stream().filter(a -> "ORG_Consumer".equals(a.role())).count()).isEqualTo(3);
         verify(userServiceClient).generateMembers(any(GenerateMembersRequest.class));
         verify(eventPublisher).publishEvent(any(AccountsGeneratedEvent.class));
         verify(credentialRepository, times(5)).save(any());

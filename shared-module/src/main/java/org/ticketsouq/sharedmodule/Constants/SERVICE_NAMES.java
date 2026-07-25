@@ -1,6 +1,6 @@
 package org.ticketsouq.sharedmodule.Constants;
 
-public class SERVICE_NAMES {
+public final class SERVICE_NAMES {
 
     private SERVICE_NAMES() {}
 

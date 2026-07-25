@@ -34,13 +34,13 @@ public class UserService {
     @Transactional
     public void register(CreateUserRequest req) {
         // register as (ORG_HEAD)
-        if (req.OrganizationName() != null && !req.OrganizationName().isBlank()) {
-            if (organizationRepository.existsByName(req.OrganizationName())) {
+        if (req.organizationName() != null && !req.organizationName().isBlank()) {
+            if (organizationRepository.existsByName(req.organizationName())) {
                 throw new BusinessException("Organization name already taken", HttpStatus.CONFLICT);
             }
 
             Organization org = Organization.builder()
-                .name(req.OrganizationName())
+                .name(req.organizationName())
                 .status(OrgStatus.PENDING)
                 .build();
             organizationRepository.save(org);

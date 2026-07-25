@@ -1,6 +1,10 @@
 package org.ticketsouq.sharedmodule.GeneralExceptions;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import feign.FeignException;
 import jakarta.servlet.http.HttpServletRequest;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -16,7 +20,33 @@ import java.util.stream.Collectors;
 
 @Slf4j
 @RestControllerAdvice
+@RequiredArgsConstructor
 public class GlobalExceptionHandler {
+
+    private final ObjectMapper mapper; // inject once
+
+
+    @ExceptionHandler(FeignException.class)
+    public ResponseEntity<ErrorResponse> handleRemoteService(FeignException ex) {
+        String body = ex.contentUTF8();
+        try {
+            if (body != null && !body.isBlank() && body.trim().startsWith("{")) {
+                ErrorResponse error = mapper.readValue(body, ErrorResponse.class);
+                return ResponseEntity.status(ex.status()).body(error);
+            }
+        } catch (JsonProcessingException ignored) {
+            // fall through to default
+        }
+        return ResponseEntity.status(ex.status())
+            .body(ErrorResponse.of(ex.status(), "Remote Service Error",
+                body != null && !body.isBlank() ? body : ex.getMessage()));
+    }
+
+    @ExceptionHandler(ResourceNotFoundException.class)
+    public ResponseEntity<ErrorResponse> handleNotFound(ResourceNotFoundException ex) {
+        return ResponseEntity.status(HttpStatus.NOT_FOUND)
+            .body(ErrorResponse.of(404, "Not Found", ex.getMessage()));
+    }
 
     @ExceptionHandler(NoResourceFoundException.class)
     public ResponseEntity<ErrorResponse> handleNoResourceFound(NoResourceFoundException ex) {

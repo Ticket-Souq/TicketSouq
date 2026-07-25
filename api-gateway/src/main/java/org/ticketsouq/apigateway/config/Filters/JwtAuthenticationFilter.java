@@ -27,8 +27,8 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
-    private static final String ACCESS_TOKEN_HEADER = "Authentication";
-    private static final String REFRESH_TOKEN_HEADER = "Refresh";
+    private static final String ACCESS_TOKEN_HEADER = "Authorization";
+    private static final String REFRESH_TOKEN_HEADER = "X-Refresh-Token";
 
     private final AuthTokenService authTokenService;
     private final AuthService authService;
@@ -100,13 +100,14 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         Claims claims = authTokenService.parseToken(token);
         String userId = claims.getSubject();
 
-        List<String> roles = (List<String>) claims.get("roles");
+        Object rawRoles = claims.get("roles");
+        List<String> roles = (rawRoles instanceof List<?> list)
+            ? list.stream().map(Object::toString).collect(Collectors.toList())
+            : List.of();
 
-        List<SimpleGrantedAuthority> authorities = (roles == null)
-            ? List.of()
-            : roles.stream()
-            .map(r -> new SimpleGrantedAuthority(r.startsWith("ROLE_") ? r : "ROLE_" + r))
-            .collect(Collectors.toList());
+        List<SimpleGrantedAuthority> authorities = roles.stream()
+        .map(r -> new SimpleGrantedAuthority(r.startsWith("ROLE_") ? r : "ROLE_" + r))
+        .collect(Collectors.toList());
 
         UsernamePasswordAuthenticationToken authentication =
             new UsernamePasswordAuthenticationToken(userId, null, authorities);
