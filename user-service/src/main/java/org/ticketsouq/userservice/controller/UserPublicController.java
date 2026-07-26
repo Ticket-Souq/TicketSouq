@@ -23,7 +23,6 @@ public class UserPublicController {
     private final AuthServiceClient authServiceClient;
     private final OrganizationService orgService;
     private final UserService userService;
-    private final UserService userService;
 
     @GetMapping("/profile")
     public ResponseEntity<UserProfileResponse> getUserProfile(@RequestHeader("X-User-Id") UUID userId){
