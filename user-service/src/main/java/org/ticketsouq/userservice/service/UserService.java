@@ -16,6 +16,7 @@ import org.ticketsouq.userservice.model.OrgMember;
 import org.ticketsouq.userservice.model.OrgStatus;
 import org.ticketsouq.userservice.model.Organization;
 import org.ticketsouq.userservice.model.User;
+import org.ticketsouq.userservice.dto.MemberSummaryResponse;
 import org.ticketsouq.userservice.repository.OrgMemberRepository;
 import org.ticketsouq.userservice.repository.OrganizationRepository;
 import org.ticketsouq.userservice.repository.UserRepository;
@@ -117,6 +118,31 @@ public class UserService {
     @Transactional(readOnly = true)
     public String getOrganizationNameByUserId(UUID userId) {
         return orgMemberRepository.findOrganizationNameByUserId(userId).orElse(null);
+    }
+
+    @Transactional(readOnly = true)
+    public String getOrgHeadEmailByOrgName(String organizationName) {
+        OrgMember head = orgMemberRepository
+            .findByOrganization_NameAndMemberRole(organizationName, MemberRole.HEAD)
+            .orElseThrow(() -> new BusinessException(
+                "Organization not found or has no HEAD", HttpStatus.NOT_FOUND));
+        return head.getUser().getEmail();
+    }
+
+    @Transactional(readOnly = true)
+    public String getUserDisplayRoleOrName(UUID userId) {
+        return orgMemberRepository.findByUserId(userId)
+            .map(member -> member.getMemberRole().name())
+            .orElseGet(() -> userRepository.findById(userId)
+                .map(User::getName)
+                .orElseThrow(() -> new BusinessException(
+                    "User not found with ID: " + userId, HttpStatus.NOT_FOUND)));
+    }
+
+    @Transactional(readOnly = true)
+    public List<MemberSummaryResponse> getMembersByIds(List<UUID> ids) {
+        if (ids == null || ids.isEmpty()) return List.of();
+        return userRepository.findMemberSummariesByIds(ids);
     }
 
 

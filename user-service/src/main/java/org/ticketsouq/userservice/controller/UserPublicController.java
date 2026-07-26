@@ -5,11 +5,13 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.ticketsouq.userservice.client.AuthServiceClient;
+import org.ticketsouq.userservice.dto.OrganizationWithHeadResponse;
 import org.ticketsouq.userservice.dto.UserProfileResponse;
 import org.ticketsouq.userservice.model.OrgStatus;
 import org.ticketsouq.userservice.service.OrganizationService;
 import org.ticketsouq.userservice.service.UserService;
 
+import java.util.List;
 import java.util.UUID;
 
 @RestController
@@ -20,6 +22,7 @@ public class UserPublicController {
 
     private final AuthServiceClient authServiceClient;
     private final OrganizationService orgService;
+    private final UserService userService;
     private final UserService userService;
 
     @GetMapping("/profile")
@@ -50,4 +53,13 @@ public class UserPublicController {
         return ResponseEntity.ok().build();
     }
 
+    @GetMapping("/organizations")
+    public ResponseEntity<List<OrganizationWithHeadResponse>> getAllOrganizations() {
+        return ResponseEntity.ok(orgService.getAllOrganizations());
+    }
+
+    @GetMapping("/{id}/display-name")
+    public ResponseEntity<String> getUserDisplayRoleOrName(@PathVariable("id") UUID id) {
+        return ResponseEntity.ok(userService.getUserDisplayRoleOrName(id));
+    }
 }
