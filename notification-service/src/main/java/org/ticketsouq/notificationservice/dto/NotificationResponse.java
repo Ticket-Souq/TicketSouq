@@ -3,9 +3,10 @@ package org.ticketsouq.notificationservice.dto;
 import org.ticketsouq.notificationservice.enums.NotificationType;
 
 import java.time.LocalDateTime;
+import java.util.UUID;
 
 public record NotificationResponse(
-    Long id,
+    UUID id,
     String title,
     String message,
     NotificationType type,

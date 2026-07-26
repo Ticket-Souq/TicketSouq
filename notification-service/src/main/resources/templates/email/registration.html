@@ -49,18 +49,14 @@
             padding: 20px;
             text-align: center;
             margin: 20px 0;
-            word-break: break-all;
-            overflow-wrap: anywhere;
         }
 
         .token-box span {
-            font-size: 4px;
+            font-size: 32px;
             font-weight: bold;
             color: #28a745;
             font-family: 'Courier New', monospace;
-            word-break: break-all;
-            overflow-wrap: anywhere;
-            line-height: 1.5;
+            letter-spacing: 6px;
         }
     </style>
 </head>
@@ -82,17 +78,17 @@
         </p>
 
         <p>
-            Please use the verification token below to verify your email address:
+            Please use the 6-digit OTP below to verify your email address:
         </p>
 
         <div class="token-box">
             <span th:text="${verificationToken}">
-                VERIFICATION_TOKEN
+                OTP
             </span>
         </div>
 
         <p>
-            Copy this token and use it in the app to verify your email address.
+            Enter this OTP in the app to verify your email address.
         </p>
 
         <p>
