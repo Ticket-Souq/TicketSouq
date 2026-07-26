@@ -2,12 +2,14 @@ package org.ticketsouq.userservice.service;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.jspecify.annotations.Nullable;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.ticketsouq.sharedmodule.ApiGateway.dto.CreateUserRequest;
 import org.ticketsouq.sharedmodule.ApiGateway.dto.GenerateMembersRequest;
 import org.ticketsouq.sharedmodule.GeneralExceptions.BusinessException;
+import org.ticketsouq.userservice.dto.UserProfileResponse;
 import org.ticketsouq.userservice.mapper.UserMapper;
 import org.ticketsouq.userservice.model.MemberRole;
 import org.ticketsouq.userservice.model.OrgMember;
@@ -115,5 +117,16 @@ public class UserService {
     @Transactional(readOnly = true)
     public String getOrganizationNameByUserId(UUID userId) {
         return orgMemberRepository.findOrganizationNameByUserId(userId).orElse(null);
+    }
+
+
+    @Transactional(readOnly = true)
+    public UserProfileResponse getUserProfile(UUID userId) {
+        User user = userRepository.findById(userId)
+            .orElseThrow(() -> new BusinessException("User not found", HttpStatus.NOT_FOUND));
+
+        return orgMemberRepository.findById(userId)
+            .map(member -> new UserProfileResponse(user.getName(), user.getEmail(), member.getOrganization().getName()))
+            .orElse(new UserProfileResponse(user.getName(), user.getEmail(), null));
     }
 }

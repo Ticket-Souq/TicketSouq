@@ -12,10 +12,6 @@ import org.ticketsouq.userservice.model.User;
 @Mapper(componentModel = "spring")
 public interface UserMapper {
 
-    @Mapping(target = "organizationName", ignore = true)
-    @Mapping(target = "memberRole", ignore = true)
-    UserProfileResponse toResponse(User user);
-
     OrganizationResponse toResponse(Organization organization);
 
     @Mapping(target = "userId", source = "user.id")
