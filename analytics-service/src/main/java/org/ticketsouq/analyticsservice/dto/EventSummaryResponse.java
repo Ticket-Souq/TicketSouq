@@ -17,6 +17,6 @@ public record EventSummaryResponse(
     ) {}
     public record RevenueKpi(double value, double deltaPctVsProjection) {}
     public record SoldKpi(int value, int capacity) {}
-    public record CheckInKpi(double valuePct, double noShowPct) {}
-    public record RefundKpi(double valuePct, double deltaPtVsLastEvent) {}
+    public record CheckInKpi(Double valuePct, Double noShowPct) {}
+    public record RefundKpi(Double valuePct, Double deltaPtVsLastEvent) {}
 }

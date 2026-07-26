@@ -37,6 +37,10 @@ public class EventAnalytics {
     @Column(name = "capacity")
     private Integer capacity;
 
+    @Column(name = "total_failed_payments")
+    @Builder.Default
+    private Integer totalFailedPayments = 0;
+
     @Column(name = "start_date_time")
     private Instant startDateTime;
 

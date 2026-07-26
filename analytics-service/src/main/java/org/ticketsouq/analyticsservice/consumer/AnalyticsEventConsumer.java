@@ -57,9 +57,9 @@ public class AnalyticsEventConsumer {
         processingService.handlePaymentFailed(event);
     }
 
-    @KafkaListener(topics = PAYMENT_REFUNDED)
-    public void onRefundCompleted(RefundCompletedEvent event) {
-        LogUtils.logEventConsumed(ANALYTICS_SERVICE, PAYMENT_REFUNDED);
-        processingService.handleRefundCompleted(event);
-    }
+//    @KafkaListener(topics = PAYMENT_REFUNDED)
+//    public void onRefundCompleted(RefundCompletedEvent event) {
+//        LogUtils.logEventConsumed(ANALYTICS_SERVICE, PAYMENT_REFUNDED);
+//        processingService.handleRefundCompleted(event);
+//    }
 }

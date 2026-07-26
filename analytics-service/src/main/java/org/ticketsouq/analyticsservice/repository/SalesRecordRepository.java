@@ -14,11 +14,7 @@ public interface SalesRecordRepository extends JpaRepository<SalesRecord, Long> 
 
     List<SalesRecord> findByEventIdOrderBySaleDateAsc(String eventId);
 
-    List<SalesRecord> findByOrganizationIdAndSaleDateBetweenOrderBySaleDateAsc(
-        String organizationId, LocalDate from, LocalDate to);
-
-    @Query("SELECT COALESCE(SUM(s.revenue), 0) FROM SalesRecord s WHERE s.saleDate >= :from")
-    double sumRevenueSince(LocalDate from);
+    List<SalesRecord> findByEventIdAndSaleDateBetweenOrderBySaleDateAsc(String eventId, LocalDate from, LocalDate to);
 
     List<SalesRecord> findBySaleDateBetweenOrderBySaleDateAsc(LocalDate from, LocalDate to);
 }
