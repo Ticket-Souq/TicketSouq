@@ -14,6 +14,6 @@ public record EventComparisonResponse(
         int sold,
         int capacity,
         double revenue,
-        double noShowPct
+        Double noShowPct
     ) {}
 }

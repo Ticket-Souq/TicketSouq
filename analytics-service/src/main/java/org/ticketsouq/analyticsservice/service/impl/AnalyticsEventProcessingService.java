@@ -135,7 +135,6 @@ public class AnalyticsEventProcessingService {
         log.info("Recorded PaymentFailed for event {}, amount={}", eventId, event.amount());
     }
 
-    // refund
 //    @Transactional
 //    public void handleRefundCompleted(RefundCompletedEvent event) {
 //        if (!tryClaimEvent(PAYMENT_REFUNDED, event.messageId().toString())) return;
@@ -145,8 +144,8 @@ public class AnalyticsEventProcessingService {
 //            analytics.setTotalRevenue(analytics.getTotalRevenue().subtract(event.amount()));
 //            analytics.setTotalTicketsSold(Math.max(0, analytics.getTotalTicketsSold() - 1));
 //            eventAnalyticsRepository.save(analytics);
+//            upsertSalesRecord(eventId, analytics.getOrganizationId(), event.amount().negate(), -1);
 //        });
-//        upsertSalesRecord(eventId, event.amount().negate(), -1);
 //        log.info("Processed RefundCompleted for event {}, amount={}", eventId, event.amount());
 //    }
 

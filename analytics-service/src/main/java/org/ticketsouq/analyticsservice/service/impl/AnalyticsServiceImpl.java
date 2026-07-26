@@ -74,7 +74,7 @@ public class AnalyticsServiceImpl implements AnalyticsService {
                 e.getTotalTicketsSold() != null ? e.getTotalTicketsSold() : 0,
                 e.getCapacity() != null ? e.getCapacity() : 0,
                 e.getTotalRevenue() != null ? e.getTotalRevenue().doubleValue() : 0,
-                0
+                null
             ))
             .toList();
 
