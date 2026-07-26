@@ -11,7 +11,7 @@ import java.util.List;
 import java.util.UUID;
 
 @RestController
-@RequestMapping("/api/v1/audit-logs")
+@RequestMapping("/api/v1/audit")
 @RequiredArgsConstructor
 public class AuditController {
 

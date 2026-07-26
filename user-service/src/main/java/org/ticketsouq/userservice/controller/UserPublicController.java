@@ -5,6 +5,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.ticketsouq.userservice.client.AuthServiceClient;
+import org.ticketsouq.userservice.dto.MemberSummaryResponse;
 import org.ticketsouq.userservice.dto.OrganizationWithHeadResponse;
 import org.ticketsouq.userservice.dto.UserProfileResponse;
 import org.ticketsouq.userservice.model.OrgStatus;
@@ -29,7 +30,6 @@ public class UserPublicController {
         return ResponseEntity.ok(userService.getUserProfile(userId));
     }
 
-
     // ── Org approval / banning ────────────────────────────────────────────────
 
     @PostMapping("/org/{orgHeadId}/approve")
@@ -52,6 +52,16 @@ public class UserPublicController {
         return ResponseEntity.ok().build();
     }
 
+    @PostMapping("/org/{orgHeadId}/reject")
+    public ResponseEntity<Void> rejectOrg(
+        @RequestHeader(value = "X-User-Id") UUID adminId,
+        @PathVariable UUID orgHeadId) {
+
+        orgService.changeStatus(orgHeadId, OrgStatus.REJECTED, adminId);
+
+        return ResponseEntity.ok().build();
+    }
+
     @GetMapping("/organizations")
     public ResponseEntity<List<OrganizationWithHeadResponse>> getAllOrganizations() {
         return ResponseEntity.ok(orgService.getAllOrganizations());
@@ -60,5 +70,10 @@ public class UserPublicController {
     @GetMapping("/{id}/display-name")
     public ResponseEntity<String> getUserDisplayRoleOrName(@PathVariable("id") UUID id) {
         return ResponseEntity.ok(userService.getUserDisplayRoleOrName(id));
+    }
+
+    @PostMapping("/members/batch")
+    public ResponseEntity<List<MemberSummaryResponse>> getMembersBatch(@RequestBody List<UUID> ids) {
+        return ResponseEntity.ok(userService.getMembersByIds(ids));
     }
 }

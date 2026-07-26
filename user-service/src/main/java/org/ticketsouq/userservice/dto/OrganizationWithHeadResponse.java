@@ -8,5 +8,6 @@ public record OrganizationWithHeadResponse(
     UUID id,
     String name,
     String headEmail,
-    OrgStatus status
+    OrgStatus status,
+    UUID orgHeadId
 ) {}

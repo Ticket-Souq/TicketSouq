@@ -54,8 +54,4 @@ public class UserPrivateController {
         return ResponseEntity.ok(userService.getOrgHeadEmailByOrgName(organizationName));
     }
 
-    @PostMapping("/members/batch")
-    public ResponseEntity<List<MemberSummaryResponse>> getMembersBatch(@RequestBody List<UUID> ids) {
-        return ResponseEntity.ok(userService.getMembersByIds(ids));
-    }
 }

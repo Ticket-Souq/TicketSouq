@@ -29,7 +29,7 @@ public interface OrgMemberRepository extends JpaRepository<OrgMember, UUID> {
     Optional<OrgMember> findByUserId(UUID userId);
 
     @Query("SELECT new org.ticketsouq.userservice.dto.OrganizationWithHeadResponse(" +
-           "om.organization.id, om.organization.name, om.user.email, om.organization.status) " +
+           "om.organization.id, om.organization.name, om.user.email, om.organization.status, om.user.id) " +
            "FROM OrgMember om " +
            "WHERE om.memberRole = org.ticketsouq.userservice.model.MemberRole.HEAD")
     List<OrganizationWithHeadResponse> findAllOrganizationsWithHeadEmail();

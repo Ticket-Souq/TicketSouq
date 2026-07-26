@@ -17,8 +17,11 @@ public class SecurityRulesConfig {
                 SecurityRule.Access.PERMIT_ALL, null
             ),
             new SecurityRule(List.of("/api/v1/auth/**"), SecurityRule.Access.PERMIT_ALL, null),
-            new SecurityRule(List.of("/api/v1/private/**", "/api/v1/service/**"), SecurityRule.Access.DENY_ALL, null),
-            new SecurityRule(List.of("/api/v1/auth/org/**"), SecurityRule.Access.HAS_ROLE, List.of("ORG_HEAD"))
+//            new SecurityRule(List.of("/api/v1/private/**"), SecurityRule.Access.DENY_ALL, null),
+            new SecurityRule(List.of("/api/v1/auth/org/**"), SecurityRule.Access.HAS_ROLE, List.of("ORG_HEAD")),
+            new SecurityRule(List.of("/api/v1/user/org/**"), SecurityRule.Access.HAS_ROLE, List.of("ADMIN")),
+            new SecurityRule(List.of("/api/v1/user/organizations"), SecurityRule.Access.HAS_ROLE, List.of("ADMIN")),
+            new SecurityRule(List.of("/api/v1/audit"), SecurityRule.Access.HAS_ROLE, List.of("ADMIN"))
         );
     }
 }

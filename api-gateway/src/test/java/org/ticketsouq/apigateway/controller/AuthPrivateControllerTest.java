@@ -30,7 +30,7 @@ class AuthPrivateControllerTest {
         UUID orgHeadId = UUID.randomUUID();
         doNothing().when(authService).unlockOrg(orgHeadId);
 
-        mockMvc.perform(post("/api/v1/service/auth/unlock-org")
+        mockMvc.perform(post("/api/v1/private/auth/unlock-org")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("\"" + orgHeadId + "\""))
                 .andExpect(status().isOk());

@@ -7,7 +7,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 
 import java.util.UUID;
 
-@FeignClient(name = "api-gateway", path = "/api/v1/service/auth")
+@FeignClient(name = "api-gateway", path = "/api/v1/private/auth")
 public interface AuthServiceClient {
 
     @PostMapping("/unlock-org")
