@@ -162,8 +162,8 @@ public class AuthService {
      * 3. Persists the change
      */
     @Transactional
-    public void verifyEmail(String token) {
-        UUID userId = authTokenService.validateEmailToken(token);
+    public void verifyEmail(String otp) {
+        UUID userId = authTokenService.validateEmailOtp(otp);
         AuthCredential credential = getCredentialByUserId(userId);
         credential.setIsVerified(true);
         credentialRepository.save(credential);
@@ -180,8 +180,8 @@ public class AuthService {
     @Transactional(readOnly = true)
     public void triggerPasswordReset(String email) {
         AuthCredential credential = getCredentialByEmail(email);
-        String token = authTokenService.generatePasswordResetToken(credential.getUserId());
-        applicationEventPublisher.publishEvent(new PasswordResetEvent(UUID.randomUUID(),credential.getUserId(), email, token));
+        String otp = authTokenService.generatePasswordResetOtp(credential.getUserId());
+        applicationEventPublisher.publishEvent(new PasswordResetEvent(UUID.randomUUID(),credential.getUserId(), email, otp));
     }
 
     /*
@@ -194,7 +194,7 @@ public class AuthService {
     @Transactional
     public void resetPassword(ResetPasswordRequest req) {
         try {
-            UUID userId = authTokenService.validatePasswordResetToken(req.token());
+            UUID userId = authTokenService.validatePasswordResetOtp(req.otp());
             AuthCredential credential = getCredentialByUserId(userId);
             assertLoginAllowed(credential);
             credential.setPasswordHash(passwordEncoder.encode(req.newPassword()));
@@ -203,7 +203,7 @@ public class AuthService {
         } catch (BusinessException e) {
             throw e;
         } catch (RuntimeException e) {
-            throw new BusinessException("Invalid or expired reset token", HttpStatus.BAD_REQUEST);
+            throw new BusinessException("Invalid or expired reset OTP", HttpStatus.BAD_REQUEST);
         }
     }
 
@@ -402,7 +402,7 @@ public class AuthService {
             UUID.randomUUID(),
             credential.getUserId(),
             credential.getEmail(),
-            authTokenService.generateEmailVerificationToken(credential.getUserId())
+            authTokenService.generateEmailVerificationOtp(credential.getUserId())
         ));
     }
 

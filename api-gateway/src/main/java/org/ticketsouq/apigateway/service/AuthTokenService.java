@@ -1,13 +1,13 @@
 package org.ticketsouq.apigateway.service;
 
 import io.jsonwebtoken.Claims;
-import io.jsonwebtoken.ExpiredJwtException;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
 import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -19,11 +19,13 @@ import org.ticketsouq.sharedmodule.GeneralExceptions.BusinessException;
 
 import javax.crypto.SecretKey;
 import java.nio.charset.StandardCharsets;
+import java.security.SecureRandom;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Date;
 import java.util.List;
 import java.util.UUID;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -33,6 +35,10 @@ public class AuthTokenService {
 
     private final RefreshTokenRepository refreshTokenRepository;
     private final AccessTokenRepository accessTokenRepository;
+    private final StringRedisTemplate redis;
+
+    private static final String OTP_KEY_PREFIX = "auth:otp:";
+    private static final SecureRandom SECURE_RANDOM = new SecureRandom();
 
     @Value("${jwt.secret}")
     private String secret;
@@ -220,44 +226,60 @@ public class AuthTokenService {
         accessTokenRepository.removeAllActiveSessionsFromRedis(userId);
     }
 
-    // ── Email verification token ──────────────────────────────────────────────
+    // ── Email verification OTP ─────────────────────────────────────────────
 
     /*
-     * Generates a short-lived JWT for email verification.
+     * Generates a 6-digit OTP, stores it in Redis with the userId, and returns it.
      */
-    public String generateEmailVerificationToken(UUID userId) {
-        return buildShortLivedToken(userId.toString(), TokenType.EMAIL_VERIFICATION, emailExpiry);
+    public String generateEmailVerificationOtp(UUID userId) {
+        String otp = generateOtp();
+        String key = otpKey("EMAIL", otp);
+        redis.opsForValue().set(key, userId.toString(), Duration.ofMillis(emailExpiry));
+        return otp;
     }
 
     /*
-     * Validates an email verification token:
-     * 1. Parses and verifies the JWT signature
-     * 2. Checks the token type matches
-     * 3. Checks expiration
+     * Validates an email verification OTP:
+     * 1. Looks up the OTP in Redis
+     * 2. If found, deletes it (one-time use) and returns the userId
+     * 3. If not found, throws
      */
-    public UUID validateEmailToken(String token) {
-        Claims claims = parseAndValidate(token, TokenType.EMAIL_VERIFICATION);
-        return UUID.fromString(claims.getSubject());
+    public UUID validateEmailOtp(String otp) {
+        String key = otpKey("EMAIL", otp);
+        String userId = redis.opsForValue().get(key);
+        if (userId == null) {
+            throw new BusinessException("Invalid or expired email verification OTP", HttpStatus.BAD_REQUEST);
+        }
+        redis.delete(key);
+        return UUID.fromString(userId);
     }
 
-    // ── Password reset token ──────────────────────────────────────────────────
+    // ── Password reset OTP ─────────────────────────────────────────────────
 
     /*
-     * Generates a short-lived JWT for password reset.
+     * Generates a 6-digit OTP, stores it in Redis with the userId, and returns it.
      */
-    public String generatePasswordResetToken(UUID userId) {
-        return buildShortLivedToken(userId.toString(), TokenType.PASSWORD_RESET, passwordResetExpiry);
+    public String generatePasswordResetOtp(UUID userId) {
+        String otp = generateOtp();
+        String key = otpKey("PASSWORD", otp);
+        redis.opsForValue().set(key, userId.toString(), Duration.ofMillis(passwordResetExpiry));
+        return otp;
     }
 
     /*
-     * Validates a password reset token:
-     * 1. Parses and verifies the JWT signature
-     * 2. Checks the token type matches
-     * 3. Checks expiration
+     * Validates a password reset OTP:
+     * 1. Looks up the OTP in Redis
+     * 2. If found, deletes it (one-time use) and returns the userId
+     * 3. If not found, throws
      */
-    public UUID validatePasswordResetToken(String token) {
-        Claims claims = parseAndValidate(token, TokenType.PASSWORD_RESET);
-        return UUID.fromString(claims.getSubject());
+    public UUID validatePasswordResetOtp(String otp) {
+        String key = otpKey("PASSWORD", otp);
+        String userId = redis.opsForValue().get(key);
+        if (userId == null) {
+            throw new BusinessException("Invalid or expired password reset OTP", HttpStatus.BAD_REQUEST);
+        }
+        redis.delete(key);
+        return UUID.fromString(userId);
     }
 
     // ── Shared helpers ────────────────────────────────────────────────────────
@@ -285,35 +307,17 @@ public class AuthTokenService {
     }
 
     /*
-     * Parses, type-checks, and expiration-checks a short-lived token.
-     * 1. Parses the JWT and verifies the signature
-     * 2. Validates the token type matches the expected type
-     * 3. Rejects if the token has expired
+     * Generates a cryptographically secure 6-digit OTP (000000–999999), zero-padded.
      */
-    private Claims parseAndValidate(String token, TokenType expected) {
-        try {
-            Claims claims = parseToken(token);
-            assertTokenType(claims, expected);
-            if (claims.getExpiration().before(new Date()))
-                throw new BusinessException("Invalid or expired " + expected.name().toLowerCase().replace('_', ' ') + " token", HttpStatus.BAD_REQUEST);
-            return claims;
-        } catch (ExpiredJwtException e) {
-            throw new BusinessException("Invalid or expired " + expected.name().toLowerCase().replace('_', ' ') + " token", HttpStatus.BAD_REQUEST);
-        }
+    private String generateOtp() {
+        int otp = SECURE_RANDOM.nextInt(1_000_000);
+        return String.format("%06d", otp);
     }
 
     /*
-     * Builds a short-lived JWT (email verification or password reset).
-     * 1. Sets subject, type claim, issued-at, and expiration
-     * 2. Signs with the HMAC secret key
+     * Builds the Redis key for an OTP: auth:otp:<type>:<otp>
      */
-    private String buildShortLivedToken(String subject, TokenType type, long expiryMs) {
-        return Jwts.builder()
-            .subject(subject)
-            .claim("type", type.name())
-            .issuedAt(new Date())
-            .expiration(new Date(System.currentTimeMillis() + expiryMs))
-            .signWith(secretKey)
-            .compact();
+    private String otpKey(String type, String otp) {
+        return OTP_KEY_PREFIX + type + ":" + otp;
     }
 }

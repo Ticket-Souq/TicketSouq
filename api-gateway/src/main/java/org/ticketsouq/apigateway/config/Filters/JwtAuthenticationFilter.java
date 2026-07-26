@@ -86,13 +86,13 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     private String extractAccessToken(HttpServletRequest request) {
         String header = request.getHeader(ACCESS_TOKEN_HEADER);
         if (!StringUtils.hasText(header)) return null;
-        return header.trim();
+        return header.startsWith("Bearer ") ? header.substring(7).trim() : header.trim();
     }
 
     private String extractRefreshToken(HttpServletRequest request) {
         String header = request.getHeader(REFRESH_TOKEN_HEADER);
         if (!StringUtils.hasText(header)) return null;
-        return header.trim();
+        return header.startsWith("Bearer ") ? header.substring(7).trim() : header.trim();
     }
 
     private void authenticate(String token, HttpServletRequest request) {

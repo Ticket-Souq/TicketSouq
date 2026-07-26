@@ -8,6 +8,8 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.redis.core.StringRedisTemplate;
+import org.springframework.data.redis.core.ValueOperations;
 import org.springframework.test.util.ReflectionTestUtils;
 import org.ticketsouq.apigateway.model.RefreshToken;
 import org.ticketsouq.apigateway.model.TokenType;
@@ -43,11 +45,17 @@ class AuthTokenServiceTest {
     private RefreshTokenRepository refreshTokenRepository;
     @Mock
     private AccessTokenRepository accessTokenRepository;
+    @Mock
+    private StringRedisTemplate redis;
+    @Mock
+    private ValueOperations<String, String> valueOps;
     private AuthTokenService authTokenService;
 
+    @SuppressWarnings("unchecked")
     @BeforeEach
     void setUp() {
-        authTokenService = new AuthTokenService(refreshTokenRepository, accessTokenRepository);
+        when(redis.opsForValue()).thenReturn(valueOps);
+        authTokenService = new AuthTokenService(refreshTokenRepository, accessTokenRepository, redis);
         ReflectionTestUtils.setField(authTokenService, "secret", SECRET);
         ReflectionTestUtils.setField(authTokenService, "accessExpiry", ACCESS_EXPIRY);
         ReflectionTestUtils.setField(authTokenService, "refreshExpiry", REFRESH_EXPIRY);
@@ -59,7 +67,7 @@ class AuthTokenServiceTest {
 
     @Test
     void init_shouldThrowWhenSecretTooShort() {
-        AuthTokenService svc = new AuthTokenService(refreshTokenRepository, accessTokenRepository);
+        AuthTokenService svc = new AuthTokenService(refreshTokenRepository, accessTokenRepository, redis);
         ReflectionTestUtils.setField(svc, "secret", "too-short");
 
         assertThatThrownBy(svc::init).isInstanceOf(IllegalStateException.class).hasMessageContaining("at least 32 bytes");
@@ -115,7 +123,7 @@ class AuthTokenServiceTest {
 
     @Test
     void isAccessTokenValid_shouldReturnFalseForExpiredToken() {
-        AuthTokenService svc = new AuthTokenService(refreshTokenRepository, accessTokenRepository);
+        AuthTokenService svc = new AuthTokenService(refreshTokenRepository, accessTokenRepository, redis);
         ReflectionTestUtils.setField(svc, "secret", SECRET);
         ReflectionTestUtils.setField(svc, "accessExpiry", -1000L);
         ReflectionTestUtils.setField(svc, "refreshExpiry", REFRESH_EXPIRY);
@@ -232,54 +240,55 @@ class AuthTokenServiceTest {
     }
 
     @Test
-    void validateEmailToken_shouldValidate() {
-        String token = authTokenService.generateEmailVerificationToken(USER_ID);
-        assertThat(authTokenService.validateEmailToken(token)).isEqualTo(USER_ID);
+    void generateEmailVerificationOtp_shouldGenerateAndStore() {
+        String otp = authTokenService.generateEmailVerificationOtp(USER_ID);
+
+        assertThat(otp).matches("^\\d{6}$");
+        verify(valueOps).set(argThat(key -> key.startsWith("auth:otp:EMAIL:")), eq(USER_ID.toString()), any(Duration.class));
     }
 
     @Test
-    void validateEmailToken_shouldRejectExpired() {
-        AuthTokenService svc = new AuthTokenService(refreshTokenRepository, accessTokenRepository);
-        ReflectionTestUtils.setField(svc, "secret", SECRET);
-        ReflectionTestUtils.setField(svc, "accessExpiry", ACCESS_EXPIRY);
-        ReflectionTestUtils.setField(svc, "refreshExpiry", REFRESH_EXPIRY);
-        ReflectionTestUtils.setField(svc, "emailExpiry", -1000L);
-        ReflectionTestUtils.setField(svc, "passwordResetExpiry", PASSWORD_RESET_EXPIRY);
-        ReflectionTestUtils.setField(svc, "issuer", ISSUER);
-        svc.init();
-        String token = svc.generateEmailVerificationToken(USER_ID);
+    void validateEmailOtp_shouldReturnUserIdWhenFound() {
+        String otp = "123456";
+        when(valueOps.get("auth:otp:EMAIL:123456")).thenReturn(USER_ID.toString());
 
-        assertThatThrownBy(() -> svc.validateEmailToken(token)).isInstanceOf(BusinessException.class)
-            .hasMessageContaining("expired email verification token");
+        assertThat(authTokenService.validateEmailOtp(otp)).isEqualTo(USER_ID);
+        verify(redis).delete("auth:otp:EMAIL:123456");
     }
 
     @Test
-    void validateEmailToken_shouldRejectWrongType() {
-        String token = authTokenService.generatePasswordResetToken(USER_ID);
-        assertThatThrownBy(() -> authTokenService.validateEmailToken(token)).isInstanceOf(BusinessException.class)
-            .hasMessageContaining("Invalid token type");
+    void validateEmailOtp_shouldRejectWhenNotFound() {
+        when(valueOps.get("auth:otp:EMAIL:000000")).thenReturn(null);
+
+        assertThatThrownBy(() -> authTokenService.validateEmailOtp("000000"))
+            .isInstanceOf(BusinessException.class)
+            .hasMessageContaining("Invalid or expired email verification OTP");
     }
 
     @Test
-    void validatePasswordResetToken_shouldValidate() {
-        String token = authTokenService.generatePasswordResetToken(USER_ID);
-        assertThat(authTokenService.validatePasswordResetToken(token)).isEqualTo(USER_ID);
+    void generatePasswordResetOtp_shouldGenerateAndStore() {
+        String otp = authTokenService.generatePasswordResetOtp(USER_ID);
+
+        assertThat(otp).matches("^\\d{6}$");
+        verify(valueOps).set(argThat(key -> key.startsWith("auth:otp:PASSWORD:")), eq(USER_ID.toString()), any(Duration.class));
     }
 
     @Test
-    void validatePasswordResetToken_shouldRejectExpired() {
-        AuthTokenService svc = new AuthTokenService(refreshTokenRepository, accessTokenRepository);
-        ReflectionTestUtils.setField(svc, "secret", SECRET);
-        ReflectionTestUtils.setField(svc, "accessExpiry", ACCESS_EXPIRY);
-        ReflectionTestUtils.setField(svc, "refreshExpiry", REFRESH_EXPIRY);
-        ReflectionTestUtils.setField(svc, "emailExpiry", EMAIL_EXPIRY);
-        ReflectionTestUtils.setField(svc, "passwordResetExpiry", -1000L);
-        ReflectionTestUtils.setField(svc, "issuer", ISSUER);
-        svc.init();
-        String token = svc.generatePasswordResetToken(USER_ID);
+    void validatePasswordResetOtp_shouldReturnUserIdWhenFound() {
+        String otp = "654321";
+        when(valueOps.get("auth:otp:PASSWORD:654321")).thenReturn(USER_ID.toString());
 
-        assertThatThrownBy(() -> svc.validatePasswordResetToken(token)).isInstanceOf(BusinessException.class)
-            .hasMessageContaining("expired password reset token");
+        assertThat(authTokenService.validatePasswordResetOtp(otp)).isEqualTo(USER_ID);
+        verify(redis).delete("auth:otp:PASSWORD:654321");
+    }
+
+    @Test
+    void validatePasswordResetOtp_shouldRejectWhenNotFound() {
+        when(valueOps.get("auth:otp:PASSWORD:000000")).thenReturn(null);
+
+        assertThatThrownBy(() -> authTokenService.validatePasswordResetOtp("000000"))
+            .isInstanceOf(BusinessException.class)
+            .hasMessageContaining("Invalid or expired password reset OTP");
     }
 
     private String createTestAccessToken() {

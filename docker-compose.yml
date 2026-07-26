@@ -473,7 +473,7 @@ services:
     container_name: event-service
     environment:
       SPRING_PROFILES_ACTIVE: Docker
-      SEARCH_ENGINE: ES
+      SEARCH_ENGINE: ES # PG,ES
     depends_on:
       config-server:
         condition: service_healthy

@@ -72,8 +72,8 @@ public class AuthController {
     }
 
     @PostMapping("/email-varification")
-    public ResponseEntity<Void> verifyEmail(@RequestBody String token) {
-        authService.verifyEmail(token);
+    public ResponseEntity<Void> verifyEmail(@Valid @RequestBody VerifyEmailRequest req) {
+        authService.verifyEmail(req.otp());
         return ResponseEntity.ok().build();
     }
 

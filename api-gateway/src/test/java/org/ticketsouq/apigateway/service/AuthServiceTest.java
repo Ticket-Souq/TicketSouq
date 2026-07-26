@@ -313,7 +313,7 @@ class AuthServiceTest {
         AuthCredential unverified = AuthCredential.builder().userId(UUID.randomUUID()).email("u@t.com")
             .passwordHash("hash").role(Role.CUSTOMER).isActive(true).isVerified(false).locked(false).build();
         when(credentialRepository.findByEmail("u@t.com")).thenReturn(Optional.of(unverified));
-        when(authTokenService.generateEmailVerificationToken(unverified.getUserId())).thenReturn("email-token");
+        when(authTokenService.generateEmailVerificationOtp(unverified.getUserId())).thenReturn("123456");
 
         authService.triggerVerificationEmail("u@t.com");
 
@@ -332,10 +332,10 @@ class AuthServiceTest {
     @Test
     void verifyEmail_shouldVerify() {
         UUID userId = USER_ID;
-        when(authTokenService.validateEmailToken("verify-token")).thenReturn(userId);
+        when(authTokenService.validateEmailOtp("123456")).thenReturn(userId);
         when(credentialRepository.findByUserId(userId)).thenReturn(Optional.of(customerCredential));
 
-        authService.verifyEmail("verify-token");
+        authService.verifyEmail("123456");
 
         assertThat(customerCredential.getIsVerified()).isTrue();
         verify(credentialRepository).save(customerCredential);
@@ -344,7 +344,7 @@ class AuthServiceTest {
     @Test
     void triggerPasswordReset_shouldSend() {
         when(credentialRepository.findByEmail("test@test.com")).thenReturn(Optional.of(customerCredential));
-        when(authTokenService.generatePasswordResetToken(USER_ID)).thenReturn("reset-token");
+        when(authTokenService.generatePasswordResetOtp(USER_ID)).thenReturn("654321");
 
         authService.triggerPasswordReset("test@test.com");
 
@@ -354,11 +354,11 @@ class AuthServiceTest {
     @Test
     void resetPassword_shouldReset() {
         UUID userId = USER_ID;
-        when(authTokenService.validatePasswordResetToken("reset-token")).thenReturn(userId);
+        when(authTokenService.validatePasswordResetOtp("654321")).thenReturn(userId);
         when(credentialRepository.findByUserId(userId)).thenReturn(Optional.of(customerCredential));
         when(passwordEncoder.encode("newPassword123")).thenReturn("newEncoded");
 
-        authService.resetPassword(new ResetPasswordRequest("reset-token", "newPassword123"));
+        authService.resetPassword(new ResetPasswordRequest("654321", "newPassword123"));
 
         assertThat(customerCredential.getPasswordHash()).isEqualTo("newEncoded");
         verify(authTokenService).invalidateAllSession(userId);
@@ -366,20 +366,20 @@ class AuthServiceTest {
 
     @Test
     void resetPassword_shouldThrowOnInvalidToken() {
-        when(authTokenService.validatePasswordResetToken("invalid"))
+        when(authTokenService.validatePasswordResetOtp("000000"))
             .thenThrow(new BusinessException("Invalid", HttpStatus.BAD_REQUEST));
 
-        assertThatThrownBy(() -> authService.resetPassword(new ResetPasswordRequest("invalid", "newPwd")))
+        assertThatThrownBy(() -> authService.resetPassword(new ResetPasswordRequest("000000", "newPwd")))
             .isInstanceOf(BusinessException.class);
     }
 
     @Test
     void resetPassword_shouldWrapRuntimeException() {
-        when(authTokenService.validatePasswordResetToken("bad"))
+        when(authTokenService.validatePasswordResetOtp("bad"))
             .thenThrow(new RuntimeException("parse error"));
 
         assertThatThrownBy(() -> authService.resetPassword(new ResetPasswordRequest("bad", "newPwd")))
-            .isInstanceOf(BusinessException.class).hasMessageContaining("Invalid or expired reset token");
+            .isInstanceOf(BusinessException.class).hasMessageContaining("Invalid or expired reset OTP");
     }
 
     @Test
