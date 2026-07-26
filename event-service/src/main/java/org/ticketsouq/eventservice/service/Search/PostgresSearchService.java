@@ -9,7 +9,6 @@ import org.ticketsouq.eventservice.dto.FrontendMap.EventCardResponse;
 import org.ticketsouq.eventservice.model.Event;
 import org.ticketsouq.eventservice.repository.EventRepository;
 
-@Service
 @RequiredArgsConstructor
 public class PostgresSearchService implements SearchService {
 

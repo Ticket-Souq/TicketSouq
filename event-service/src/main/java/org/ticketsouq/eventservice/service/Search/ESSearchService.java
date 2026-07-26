@@ -20,7 +20,7 @@ import org.ticketsouq.eventservice.repository.EventRepository;
 import java.util.*;
 import java.util.stream.Collectors;
 
-@Service
+//@Service
 @RequiredArgsConstructor
 public class ESSearchService implements SearchService {
 

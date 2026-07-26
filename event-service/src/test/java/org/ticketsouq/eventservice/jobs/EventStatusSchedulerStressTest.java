@@ -329,7 +329,7 @@ class EventStatusSchedulerStressTest {
             executor.submit(() -> {
                 try {
                     scheduler.onEventCancelled(new EventCancelledEvent(
-                        UUID.randomUUID(), eventId, UUID.randomUUID(), Instant.now()));
+                        UUID.randomUUID(), eventId, Instant.now()));
                 } finally {
                     latch.countDown();
                 }

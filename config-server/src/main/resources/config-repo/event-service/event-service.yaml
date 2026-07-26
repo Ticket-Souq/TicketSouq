@@ -9,7 +9,7 @@ kafka:
   group-id: event-service
 
 search:
-  engine: ${SEARCH_ENGINE:PG}
+  engine: ${SEARCH_ENGINE:ES}
 
 spring:
   sql:
