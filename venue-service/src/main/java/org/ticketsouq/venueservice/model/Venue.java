@@ -19,8 +19,8 @@ public class Venue {
     @GeneratedValue(strategy = GenerationType.UUID)
     UUID id;
 
-    @Column(name = "org_id", nullable = false)
-    UUID orgId;
+    @Column(name = "organization", nullable = false)
+    String organization;
 
     @Column(name = "name", nullable = false)
     String name;

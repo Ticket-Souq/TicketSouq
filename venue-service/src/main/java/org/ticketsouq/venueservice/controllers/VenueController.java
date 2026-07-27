@@ -17,15 +17,14 @@ import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/v1/venue")
-//@CrossOrigin(origins = "*")
 @RequiredArgsConstructor
 public class VenueController {
 
     private final VenueService venueService;
 
     @PostMapping
-    public ResponseEntity<VenueResponse> create(@Valid @RequestBody CreateVenueRequest request) {
-        VenueResponse response = venueService.create(request);
+    public ResponseEntity<VenueResponse> create(@RequestHeader("X-User-Id") UUID userId, @Valid @RequestBody CreateVenueRequest request) {
+        VenueResponse response = venueService.create(userId, request);
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
@@ -37,8 +36,8 @@ public class VenueController {
     }
 
     @GetMapping
-    public ResponseEntity<Page<VenueResponse>> listByOrg(@RequestParam UUID orgId, Pageable pageable) {
-        Page<VenueResponse> page = venueService.listByOrg(orgId, pageable);
+    public ResponseEntity<Page<VenueResponse>> listByOrganization(@RequestHeader("X-User-Id") UUID userId, Pageable pageable) {
+        Page<VenueResponse> page = venueService.listByOrganization(userId, pageable);
         return ResponseEntity.ok(page);
     }
 

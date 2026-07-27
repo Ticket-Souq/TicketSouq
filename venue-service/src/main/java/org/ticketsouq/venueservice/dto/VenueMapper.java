@@ -2,6 +2,7 @@ package org.ticketsouq.venueservice.dto;
 
 import org.mapstruct.BeanMapping;
 import org.mapstruct.Mapper;
+import org.mapstruct.Mapping;
 import org.mapstruct.MappingTarget;
 import org.mapstruct.NullValuePropertyMappingStrategy;
 import org.ticketsouq.venueservice.model.Venue;
@@ -9,6 +10,7 @@ import org.ticketsouq.venueservice.model.Venue;
 @Mapper(componentModel = "spring")
 public interface VenueMapper {
 
+    @Mapping(target = "organization", ignore = true)
     Venue toEntity(CreateVenueRequest request);
 
     @BeanMapping(nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.IGNORE)

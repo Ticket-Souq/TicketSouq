@@ -8,5 +8,5 @@ import org.ticketsouq.venueservice.model.Venue;
 import java.util.UUID;
 
 public interface VenueRepository extends JpaRepository<Venue, UUID> {
-    Page<Venue> findByOrgId(UUID orgId, Pageable pageable);
+    Page<Venue> findByOrganization(String organization, Pageable pageable);
 }
