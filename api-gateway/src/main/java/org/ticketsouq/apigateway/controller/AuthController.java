@@ -41,7 +41,7 @@ public class AuthController {
     }
 
     @PostMapping("/refresh")
-    public ResponseEntity<AuthResponse> refresh(@RequestHeader("Authorization") String authHeader) {
+    public ResponseEntity<AuthResponse> refresh(@RequestHeader("X-Refresh-Token") String authHeader) {
         String token = authHeader.startsWith("Bearer ") ? authHeader.substring(7) : authHeader;
         return ResponseEntity.ok(authService.refresh(token));
     }
@@ -126,6 +126,11 @@ public class AuthController {
     @PostMapping("/org/generate-accounts")
     public ResponseEntity<List<GeneratedAccount>> generateAccounts(@AuthenticationPrincipal String orgHeadUserId, @RequestBody GenerateAccountRequest req) {
         return ResponseEntity.ok(authService.generateAccountsForOrg(UUID.fromString(orgHeadUserId), req));
+    }
+
+    @GetMapping("/org/members")
+    public ResponseEntity<List<OrgMemberWithStatus>> getMembers(@AuthenticationPrincipal String orgHeadUserId) {
+        return ResponseEntity.ok(authService.getOrgMembers(UUID.fromString(orgHeadUserId)));
     }
 
 }

@@ -275,6 +275,19 @@ public class AuthService {
         sendAuditEventWithNoReason("Approve Organization Head Request", credential.getUserId());
     }
 
+    @Transactional(readOnly = true)
+    public List<OrgMemberWithStatus> getOrgMembers(UUID orgHeadUserId) {
+        List<OrgMemberResponse> members = userServiceClient.getOrgMembers(orgHeadUserId);
+        return members.stream().map(m -> {
+            boolean active = credentialRepository.findByUserId(m.userId())
+                .map(AuthCredential::getIsActive)
+                .orElse(false);
+            return new OrgMemberWithStatus(
+                m.userId(), m.name(), m.email(), m.memberRole(),
+                m.orgId(), m.organizationName(), active);
+        }).toList();
+    }
+
     @Transactional
     public List<GeneratedAccount> generateAccountsForOrg(UUID orgHeadUserId, GenerateAccountRequest req) {
         if (req.consumerCount()==0 && req.agentCount()==0) return List.of();

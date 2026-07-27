@@ -7,7 +7,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.ticketsouq.sharedmodule.ApiGateway.dto.CreateUserRequest;
 import org.ticketsouq.sharedmodule.ApiGateway.dto.GenerateMembersRequest;
-import org.ticketsouq.userservice.dto.MemberSummaryResponse;
+import org.ticketsouq.userservice.dto.OrgMemberResponse;
 import org.ticketsouq.userservice.service.UserService;
 
 import java.util.List;
@@ -52,6 +52,11 @@ public class UserPrivateController {
     @GetMapping("/org-head-email")
     public ResponseEntity<String> getOrgHeadEmail(@RequestParam String organizationName) {
         return ResponseEntity.ok(userService.getOrgHeadEmailByOrgName(organizationName));
+    }
+
+    @GetMapping("/org/members")
+    public ResponseEntity<List<OrgMemberResponse>> getOrgMembers(@RequestHeader("X-User-Id") UUID headUserId) {
+        return ResponseEntity.ok(userService.getOrgMembersByHead(headUserId));
     }
 
 }

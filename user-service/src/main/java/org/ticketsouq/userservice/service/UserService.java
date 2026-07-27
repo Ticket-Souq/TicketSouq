@@ -2,13 +2,13 @@ package org.ticketsouq.userservice.service;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.jspecify.annotations.Nullable;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.ticketsouq.sharedmodule.ApiGateway.dto.CreateUserRequest;
 import org.ticketsouq.sharedmodule.ApiGateway.dto.GenerateMembersRequest;
 import org.ticketsouq.sharedmodule.GeneralExceptions.BusinessException;
+import org.ticketsouq.userservice.dto.OrgMemberResponse;
 import org.ticketsouq.userservice.dto.UserProfileResponse;
 import org.ticketsouq.userservice.mapper.UserMapper;
 import org.ticketsouq.userservice.model.MemberRole;
@@ -16,7 +16,7 @@ import org.ticketsouq.userservice.model.OrgMember;
 import org.ticketsouq.userservice.model.OrgStatus;
 import org.ticketsouq.userservice.model.Organization;
 import org.ticketsouq.userservice.model.User;
-import org.ticketsouq.userservice.dto.MemberSummaryResponse;
+import org.ticketsouq.sharedmodule.UserService.dto.UserEmail;
 import org.ticketsouq.userservice.repository.OrgMemberRepository;
 import org.ticketsouq.userservice.repository.OrganizationRepository;
 import org.ticketsouq.userservice.repository.UserRepository;
@@ -140,7 +140,16 @@ public class UserService {
     }
 
     @Transactional(readOnly = true)
-    public List<MemberSummaryResponse> getMembersByIds(List<UUID> ids) {
+    public List<OrgMemberResponse> getOrgMembersByHead(UUID headUserId) {
+        OrgMember head = orgMemberRepository.findByUserIdAndMemberRole(headUserId, MemberRole.HEAD)
+            .orElseThrow(() -> new BusinessException("Organization head not found", HttpStatus.NOT_FOUND));
+        return orgMemberRepository.findByOrganization_Id(head.getOrganization().getId()).stream()
+            .map(userMapper::toResponse)
+            .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public List<UserEmail> getUsersEmails(List<UUID> ids) {
         if (ids == null || ids.isEmpty()) return List.of();
         return userRepository.findMemberSummariesByIds(ids);
     }
