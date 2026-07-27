@@ -17,11 +17,6 @@ public class AuditController {
 
     private final AuditService auditService;
 
-//    @PostMapping
-//    public ResponseEntity<Void> create(@Valid @RequestBody CreateAuditLogRequest request) {
-//        auditService.produceEvent(request);
-//        return ResponseEntity.status(HttpStatus.ACCEPTED).build();
-//    }
 
     @GetMapping
     public ResponseEntity<List<AuditLogResponse>> getAll() {
