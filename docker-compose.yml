@@ -295,6 +295,9 @@ services:
       GF_AUTH_ANONYMOUS_ORG_ROLE: Admin
       GF_AUTH_DISABLE_LOGIN_FORM: true
       GF_PLUGINS_PREINSTALL: hamedkarbasi93-kafka-datasource
+      GF_SECURITY_ALLOW_EMBEDDING: true
+      GF_SECURITY_COOKIE_SAMESITE: none
+      GF_SECURITY_ALLOW_GRANULATE_ACL: false
     volumes:
       - ./Docker/grafana:/etc/grafana/provisioning/datasources:ro
     depends_on:

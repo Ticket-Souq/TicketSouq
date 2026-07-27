@@ -43,23 +43,23 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         }
 
         String accessToken = extractAccessToken(request);
-        String refreshToken = extractRefreshToken(request);
+//        String refreshToken = extractRefreshToken(request);
 
         if (accessToken != null) {
             try {
                 if (authTokenService.isAccessTokenValid(accessToken)) {
                     authenticate(accessToken, request);
-                    chain.doFilter(request, response);
-                    return;
+//                    chain.doFilter(request, response);
+//                    return;
                 }
             } catch (Exception e) {
                 log.debug("Access token validation failed: {}", e.getMessage());
             }
         }
 
-        if (refreshToken != null) {
-            handleRefreshFlow(refreshToken, accessToken, request, response);
-        }
+//        if (refreshToken != null) {
+//            handleRefreshFlow(refreshToken, accessToken, request, response);
+//        }
 
         chain.doFilter(request, response);
     }
