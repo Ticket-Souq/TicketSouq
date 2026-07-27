@@ -22,7 +22,7 @@ public record TicketResponse(
     // Zone
     String zoneCategory,
     // Seat
-    Integer row,
+    String row,
     Integer seatNumber,
     String seatCategory,
     LocalDateTime createdAt

@@ -3,9 +3,8 @@ package org.ticketsouq.eventservice.service.Search;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
-import org.springframework.stereotype.Service;
 import org.ticketsouq.eventservice.dto.EventSearchRequest;
-import org.ticketsouq.eventservice.dto.FrontendMap.EventCardResponse;
+import org.ticketsouq.eventservice.dto.EventCardResponse;
 import org.ticketsouq.eventservice.model.Event;
 import org.ticketsouq.eventservice.repository.EventRepository;
 

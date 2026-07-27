@@ -1,4 +1,4 @@
-package org.ticketsouq.eventservice.dto.FrontendMap;
+package org.ticketsouq.eventservice.dto;
 
 import lombok.Builder;
 import org.ticketsouq.eventservice.model.Event;

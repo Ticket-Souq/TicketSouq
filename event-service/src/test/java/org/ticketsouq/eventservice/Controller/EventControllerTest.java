@@ -10,16 +10,15 @@ import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.mapping.JpaMetamodelMappingContext;
 import org.springframework.http.MediaType;
+import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 import org.ticketsouq.eventservice.dto.*;
-import org.ticketsouq.eventservice.dto.FrontendMap.CreateEventWithLayoutRequest;
-import org.ticketsouq.eventservice.dto.FrontendMap.EventCardResponse;
-import org.ticketsouq.eventservice.dto.FrontendMap.EventLayoutResponse;
 import org.ticketsouq.eventservice.model.enums.EventStatus;
 import org.ticketsouq.eventservice.model.enums.SeatStatus;
 import org.ticketsouq.eventservice.service.EventService;
 import org.ticketsouq.eventservice.service.LockService;
+import org.ticketsouq.eventservice.repository.EventCategoryRepository;
 import org.ticketsouq.eventservice.service.Search.SearchService;
 import org.ticketsouq.eventservice.service.SeatService;
 import org.ticketsouq.eventservice.service.SectionService;
@@ -42,6 +41,7 @@ class EventControllerTest {
     @Autowired private ObjectMapper objectMapper;
 
     @MockitoBean private EventService eventService;
+    @MockitoBean private EventCategoryRepository eventCategoryRepository;
     @MockitoBean private SearchService eventSearchService;
     @MockitoBean private SectionService sectionService;
     @MockitoBean private SeatService seatService;
@@ -52,15 +52,23 @@ class EventControllerTest {
     @DisplayName("Should return 201 when creating an event")
     void givenValidRequest_whenCreateEvent_thenReturn201() throws Exception {
         UUID userId = UUID.randomUUID();
-        CreateEventWithLayoutRequest request = new CreateEventWithLayoutRequest(
-            "SEAT", "Event", "Desc", UUID.randomUUID(), "Concert",
-            "url", Instant.now(), Instant.now().plusSeconds(7200),
-            List.of(), List.of());
+        CreateEventRequest request = new CreateEventRequest(
+            "Event", "Desc", "Location", UUID.randomUUID(), "Concert",
+            null, Instant.now(), Instant.now().plusSeconds(7200),
+            List.of());
 
-        mockMvc.perform(post("/api/v1/events")
-                .header("X-User-Id", userId.toString())
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(request)))
+        MockMultipartFile eventPart = new MockMultipartFile(
+            "event", "", MediaType.APPLICATION_JSON_VALUE,
+            objectMapper.writeValueAsBytes(request));
+
+        MockMultipartFile posterPart = new MockMultipartFile(
+            "poster", "poster.jpg", MediaType.IMAGE_JPEG_VALUE,
+            "fake-image-content".getBytes());
+
+        mockMvc.perform(multipart("/api/v1/events")
+                .file(eventPart)
+                .file(posterPart)
+                .header("X-User-Id", userId.toString()))
             .andExpect(status().isCreated());
     }
 
@@ -80,10 +88,10 @@ class EventControllerTest {
     @DisplayName("Should return 200 with event ID when getting event by ID")
     void givenExistingEventId_whenGetById_thenReturn200() throws Exception {
         UUID eventId = UUID.randomUUID();
-        EventLayoutResponse response = new EventLayoutResponse(
-            eventId, "SEAT_BASED", "name", "desc", null, "org",
-            "PUBLISHED", "cat", "url", Instant.now(), Instant.now(),
-            List.of(), List.of());
+        EventFullResponse response = new EventFullResponse(
+            eventId, "name", "desc", null, null, "cat", "org",
+            "url", EventStatus.PUBLISHED, null, Instant.now(), Instant.now(),
+            List.of());
         when(eventService.getById(eventId)).thenReturn(response);
 
         mockMvc.perform(get("/api/v1/events/{id}", eventId))

@@ -30,12 +30,6 @@ public class Seat {
     @JsonIgnore
     private Section section;
 
-    @Column(name = "row", nullable = false)
-    private Integer row;
-
-    @Column(name = "col", nullable = false)
-    private Integer col;
-
     @Column(name = "lable", nullable = false)
     private String lable;
 

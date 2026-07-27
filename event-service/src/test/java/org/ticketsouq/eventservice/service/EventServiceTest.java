@@ -13,13 +13,12 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.ticketsouq.eventservice.Client.UserServiceClient;
-import org.ticketsouq.eventservice.dto.FrontendMap.CreateEventWithLayoutRequest;
-import org.ticketsouq.eventservice.dto.FrontendMap.EventCardResponse;
-import org.ticketsouq.eventservice.dto.FrontendMap.EventFrontendMapper;
-import org.ticketsouq.eventservice.dto.FrontendMap.EventLayoutResponse;
+import org.ticketsouq.eventservice.dto.CreateEventRequest;
+import org.ticketsouq.eventservice.dto.EventCardResponse;
+import org.ticketsouq.eventservice.dto.EventFullResponse;
+import org.ticketsouq.eventservice.mapper.EventMapper;
 import org.ticketsouq.eventservice.model.Event;
 import org.ticketsouq.eventservice.model.Seat;
-import org.ticketsouq.eventservice.model.SeatLock;
 import org.ticketsouq.eventservice.model.Section;
 import org.ticketsouq.eventservice.model.enums.BookingModel;
 import org.ticketsouq.eventservice.model.enums.EventStatus;
@@ -35,9 +34,9 @@ import org.ticketsouq.sharedmodule.EventService.events.EventCreatedEvent;
 import org.ticketsouq.sharedmodule.EventService.events.EventPayoutReleaseEvent;
 import org.ticketsouq.sharedmodule.GeneralExceptions.ConflictException;
 import org.ticketsouq.sharedmodule.GeneralExceptions.ResourceNotFoundException;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.time.Instant;
-import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -46,7 +45,6 @@ import java.util.UUID;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -58,10 +56,11 @@ class EventServiceTest {
     @Mock private EventRepository eventRepository;
     @Mock private SearchService eventSearchService;
     @Mock private ApplicationEventPublisher eventPublisher;
-    @Mock private EventFrontendMapper eventFrontendMapper;
+    @Mock private EventMapper eventMapper;
     @Mock private UserServiceClient userServiceClient;
     @Mock private SeatLockRepository seatLockRepository;
     @Mock private SeatRepository seatRepository;
+    @Mock private PosterStorageService posterStorageService;
 
     @Captor private ArgumentCaptor<Object> eventCaptor;
 
@@ -70,22 +69,23 @@ class EventServiceTest {
     @BeforeEach
     void setUp() {
         eventService = new EventService(eventRepository, eventSearchService, eventPublisher,
-            eventFrontendMapper, userServiceClient, seatLockRepository, seatRepository);
+            eventMapper, userServiceClient, seatLockRepository, seatRepository, posterStorageService);
     }
 
     @Test
     @DisplayName("Should save, index and publish events when creating a valid event")
-    void givenValidRequest_whenCreate_thenSaveIndexAndPublishEvents() {
+    void givenValidRequest_whenCreate_thenSaveIndexAndPublishEvents() throws Exception {
         UUID userId = UUID.randomUUID();
-        CreateEventWithLayoutRequest request = new CreateEventWithLayoutRequest(
-            "SEAT", "Test Event", "Desc", UUID.randomUUID(), "Concert",
-            "url", Instant.now(), Instant.now().plusSeconds(7200),
-            List.of(), List.of());
+        CreateEventRequest request = new CreateEventRequest(
+            "Test Event", "Desc", "Location", UUID.randomUUID(), "Concert",
+            BookingModel.SEAT, Instant.now(), Instant.now().plusSeconds(7200),
+            List.of());
         Event event = Event.builder().id(UUID.randomUUID()).title("Test Event").bookingModel(BookingModel.SEAT).build();
+        MultipartFile poster = org.mockito.Mockito.mock(MultipartFile.class);
 
-        when(eventFrontendMapper.buildEvent(userId, request)).thenReturn(event);
+        when(eventMapper.buildEvent(userId, request, null)).thenReturn(event);
 
-        eventService.create(userId, request);
+        eventService.create(userId, request, poster);
 
         verify(eventRepository).save(event);
         verify(eventSearchService).indexEvent(event);
@@ -124,7 +124,7 @@ class EventServiceTest {
         eventService.getById(id);
 
         verify(seatLockRepository).findBySeatIdInAndExpiresAtAfter(any(), any());
-        verify(eventFrontendMapper).toEventLayoutResponse(eq(event), any(Set.class));
+        verify(eventMapper).toEventFullResponse(eq(event), any(Set.class));
     }
 
     @Test
@@ -133,13 +133,13 @@ class EventServiceTest {
         UUID id = UUID.randomUUID();
         Event event = Event.builder().id(id).bookingModel(BookingModel.SEAT).build();
         when(eventRepository.findEventById(id)).thenReturn(Optional.of(event));
-        EventLayoutResponse expected = new EventLayoutResponse(
-            id, "SEAT_BASED", "name", "desc", null, "org",
-            "PUBLISHED", "cat", "url", Instant.now(), Instant.now(),
-            List.of(), List.of());
-        when(eventFrontendMapper.toEventLayoutResponse(eq(event), eq(Set.of()))).thenReturn(expected);
+        EventFullResponse expected = new EventFullResponse(
+            id, "name", "desc", null, null, "cat", "org",
+            "url", EventStatus.PUBLISHED, BookingModel.SEAT, Instant.now(), Instant.now(),
+            List.of());
+        when(eventMapper.toEventFullResponse(eq(event), eq(Set.of()))).thenReturn(expected);
 
-        EventLayoutResponse result = eventService.getById(id);
+        EventFullResponse result = eventService.getById(id);
 
         assertThat(result).isEqualTo(expected);
     }
@@ -150,13 +150,13 @@ class EventServiceTest {
         UUID id = UUID.randomUUID();
         Event event = Event.builder().id(id).bookingModel(BookingModel.ZONE).build();
         when(eventRepository.findEventById(id)).thenReturn(Optional.of(event));
-        EventLayoutResponse expected = new EventLayoutResponse(
-            id, "ZONE_BASED", "name", "desc", null, "org",
-            "PUBLISHED", "cat", "url", Instant.now(), Instant.now(),
-            List.of(), List.of());
-        when(eventFrontendMapper.toEventLayoutResponse(eq(event), eq(Set.of()))).thenReturn(expected);
+        EventFullResponse expected = new EventFullResponse(
+            id, "name", "desc", null, null, "cat", "org",
+            "url", EventStatus.PUBLISHED, BookingModel.ZONE, Instant.now(), Instant.now(),
+            List.of());
+        when(eventMapper.toEventFullResponse(eq(event), eq(Set.of()))).thenReturn(expected);
 
-        EventLayoutResponse result = eventService.getById(id);
+        EventFullResponse result = eventService.getById(id);
 
         assertThat(result).isEqualTo(expected);
     }
@@ -263,7 +263,7 @@ class EventServiceTest {
         eventService.getById(id);
 
         verify(seatLockRepository).findBySeatIdInAndExpiresAtAfter(eq(List.of(seatId)), any());
-        verify(eventFrontendMapper).toEventLayoutResponse(eq(event), eq(Set.of()));
+        verify(eventMapper).toEventFullResponse(eq(event), eq(Set.of()));
     }
 
     @Test

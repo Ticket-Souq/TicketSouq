@@ -34,6 +34,9 @@ public class Event {
     @Column(columnDefinition = "TEXT")
     private String description;
 
+    @Column(nullable = false)
+    private String location;
+
     @Column(name = "venue_template_id")
     private UUID venueTemplateId;
 
@@ -47,7 +50,7 @@ public class Event {
     @Column(name = "createdBy_id")
     private UUID createdBy;
 
-    @Column(nullable = false)
+    @Column(nullable = false, columnDefinition = "TEXT")
     private String PosterUrl;
 
     @Enumerated(EnumType.STRING)

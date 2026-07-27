@@ -16,7 +16,7 @@ public record CreateTicketsRequest(
     public record TicketItem(
         @NotNull String type,
         UUID seatId,
-        Integer row,
+        String row,
         Integer seatNumber,
         UUID sectionId,
         String category,

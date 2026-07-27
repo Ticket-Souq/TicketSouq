@@ -57,7 +57,7 @@ class RepositoryTests extends RepositoryTestBase {
                 .build();
             event.setSections(new ArrayList<>(List.of(section)));
             Seat seat = Seat.builder().id(UUID.randomUUID()).section(section)
-                .row(1).col(1).lable("A1").status(SeatStatus.AVAILABLE).build();
+                .lable("A1").status(SeatStatus.AVAILABLE).build();
             section.setSeats(new ArrayList<>(List.of(seat)));
             eventRepository.save(event);
 
@@ -128,7 +128,7 @@ class RepositoryTests extends RepositoryTestBase {
             Section section = sectionRepository.save(Section.builder().id(UUID.randomUUID()).event(event)
                 .name("VIP").capacity(10).remainingCapacity(10).build());
             seat = seatRepository.save(Seat.builder().id(UUID.randomUUID()).section(section)
-                .row(1).col(1).lable("A1").status(SeatStatus.AVAILABLE).build());
+                .lable("A1").status(SeatStatus.AVAILABLE).build());
         }
 
         @Test
@@ -172,7 +172,7 @@ class RepositoryTests extends RepositoryTestBase {
         @Test
         void givenMultipleExpiredLocks_whenDeleteByExpiresAtBefore_thenRespectLimit() {
             Seat seat2 = seatRepository.save(Seat.builder().id(UUID.randomUUID()).section(seat.getSection())
-                .row(1).col(2).lable("A2").status(SeatStatus.AVAILABLE).build());
+                .lable("A2").status(SeatStatus.AVAILABLE).build());
             seatLockRepository.save(SeatLock.builder().seatId(seat.getId()).reservationId("res-1")
                 .expiresAt(LocalDateTime.now().minusMinutes(10)).build());
             seatLockRepository.save(SeatLock.builder().seatId(seat2.getId()).reservationId("res-2")

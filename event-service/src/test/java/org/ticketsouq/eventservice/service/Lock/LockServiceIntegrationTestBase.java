@@ -109,8 +109,6 @@ abstract class LockServiceIntegrationTestBase {
         Seat seat = Seat.builder()
             .id(seatId)
             .section(section)
-            .row(1)
-            .col(1)
             .lable("A1")
             .status(status)
             .build();

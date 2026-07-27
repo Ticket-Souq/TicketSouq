@@ -17,7 +17,7 @@ public class SeatTicket extends Ticket {
     private UUID seatId;
 
     @Column(name = "seat_row")
-    private Integer row;
+    private String row;
 
     @Column(name = "seat_number")
     private Integer seatNumber;

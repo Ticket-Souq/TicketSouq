@@ -11,7 +11,7 @@ import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.ticketsouq.eventservice.dto.EventSearchRequest;
-import org.ticketsouq.eventservice.dto.FrontendMap.EventCardResponse;
+import org.ticketsouq.eventservice.dto.EventCardResponse;
 import org.ticketsouq.eventservice.model.Event;
 import org.ticketsouq.eventservice.model.enums.EventStatus;
 import org.ticketsouq.eventservice.repository.EventRepository;

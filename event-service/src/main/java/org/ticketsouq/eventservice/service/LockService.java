@@ -240,7 +240,7 @@ public class LockService {
             Section section = sectionRepository.findById(zoneLock.getZoneId())
                 .orElseThrow(() -> new ResourceNotFoundException("Section", zoneLock.getZoneId()));
             for (int i = 0; i < zoneLock.getQuantity(); i++) {
-                tickets.add(new TicketReservationDto(section.getPrice(), null, null, section.getName()));
+                tickets.add(new TicketReservationDto(section.getPrice(), null, section.getName()));
             }
             eventPublisher.publishEvent(event);
             return;
@@ -252,7 +252,7 @@ public class LockService {
                 .toList();
             List<Seat> seats = seatRepository.findByIdsWithSection(seatIds);
             for (Seat seat : seats) {
-                tickets.add(new TicketReservationDto(seat.getSection().getPrice(), seat.getRow(), seat.getLable(), seat.getSection().getName()));
+                tickets.add(new TicketReservationDto(seat.getSection().getPrice(), seat.getLable(), seat.getSection().getName()));
             }
             eventPublisher.publishEvent(event);
             return;

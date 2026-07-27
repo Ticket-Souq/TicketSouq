@@ -142,9 +142,9 @@ public class TicketService {
 
     private TicketDraft fromSagaTicketItem(TicketReservationDto item) {
         return new TicketDraft(
-            item.row() != null ? "SEAT" : "ZONE",
+            item.label() != null ? "SEAT" : "ZONE",
             null,
-            item.row(),
+            parseSeatRow(item.label()),
             parseSeatNumber(item.label()),
             null,
             item.sectionName(),
@@ -153,6 +153,8 @@ public class TicketService {
             item.price()
         );
     }
+
+
 
     private Ticket createEntity(TicketDraft draft) {
         if ("SEAT".equalsIgnoreCase(draft.type()) || draft.row() != null) {
@@ -221,6 +223,16 @@ public class TicketService {
         }
     }
 
+    private String parseSeatRow(String label) {
+        if (label == null) {
+            return null;
+        }
+
+        String text = label.replaceAll("\\d+", "").trim();
+
+        return text.isBlank() ? null : text;
+    }
+
     private String defaultString(String value, String fallback) {
         return value != null ? value : fallback;
     }
@@ -228,7 +240,7 @@ public class TicketService {
     private record TicketDraft(
         String type,
         UUID seatId,
-        Integer row,
+        String row,
         Integer seatNumber,
         UUID sectionId,
         String category,

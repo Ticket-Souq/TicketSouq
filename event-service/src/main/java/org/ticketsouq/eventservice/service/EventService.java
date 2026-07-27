@@ -1,15 +1,17 @@
 package org.ticketsouq.eventservice.service;
 
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 import org.ticketsouq.eventservice.Client.UserServiceClient;
-import org.ticketsouq.eventservice.dto.FrontendMap.*;
+import org.ticketsouq.eventservice.dto.CreateEventRequest;
+import org.ticketsouq.eventservice.dto.EventCardResponse;
+import org.ticketsouq.eventservice.dto.EventFullResponse;
+import org.ticketsouq.eventservice.mapper.EventMapper;
 import org.ticketsouq.eventservice.model.Event;
 import org.ticketsouq.eventservice.model.Seat;
 import org.ticketsouq.eventservice.model.SeatLock;
@@ -46,15 +48,17 @@ public class EventService {
     private final EventRepository eventRepository;
     private final SearchService SearchProvider;
     private final ApplicationEventPublisher eventPublisher;
-    private final EventFrontendMapper eventFrontendMapper;
+    private final EventMapper eventMapper;
     private final UserServiceClient userServiceClient;
     private final SeatLockRepository seatLockRepository;
     private final SeatRepository seatRepository;
+    private final PosterStorageService posterStorageService;
 
 
     @Transactional
-    public void create(UUID userId, CreateEventWithLayoutRequest request) {
-        Event event = eventFrontendMapper.buildEvent(userId, request);
+    public void create(UUID userId, CreateEventRequest request, MultipartFile poster) {
+        String posterUrl = posterStorageService.store(poster);
+        Event event = eventMapper.buildEvent(userId, request, posterUrl);
         eventRepository.save(event);
         SearchProvider.indexEvent(event);
         eventPublisher.publishEvent(new AuditEvent("Event Created", userId, "", Instant.now()));
@@ -62,7 +66,7 @@ public class EventService {
     }
 
     @Transactional(readOnly = true)
-    public EventLayoutResponse getById(UUID id) {
+    public EventFullResponse getById(UUID id) {
         Event event = eventRepository.findEventById(id).orElseThrow(() -> new ResourceNotFoundException("Event", id));
 
         if (event.getBookingModel() == BookingModel.SEAT && event.getSections() != null) {
@@ -78,11 +82,11 @@ public class EventService {
                 Set<UUID> lockedSeatIds = activeLocks.stream()
                     .map(SeatLock::getSeatId)
                     .collect(Collectors.toSet());
-                return eventFrontendMapper.toEventLayoutResponse(event, lockedSeatIds);
+                return eventMapper.toEventFullResponse(event, lockedSeatIds);
             }
         }
 
-        return eventFrontendMapper.toEventLayoutResponse(event, Collections.emptySet());
+        return eventMapper.toEventFullResponse(event, Collections.emptySet());
     }
 
     @Transactional(readOnly = true)

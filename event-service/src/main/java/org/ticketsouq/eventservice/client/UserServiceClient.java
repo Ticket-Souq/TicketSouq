@@ -10,5 +10,5 @@ import java.util.UUID;
 public interface UserServiceClient {
 
     @GetMapping("/organization")
-    String getOrganizationName(@RequestParam UUID userId);
+    String getOrganizationName(@RequestParam("id") UUID userId);
 }
