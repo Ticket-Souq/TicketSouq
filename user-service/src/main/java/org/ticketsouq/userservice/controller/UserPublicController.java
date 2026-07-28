@@ -56,11 +56,6 @@ public class UserPublicController {
         return ResponseEntity.ok(orgService.getAllOrganizations());
     }
 
-    @GetMapping("/{id}/display-name")
-    public ResponseEntity<String> getUserDisplayRoleOrName(@PathVariable("id") UUID id) {
-        return ResponseEntity.ok(userService.getUserDisplayRoleOrName(id));
-    }
-
     @PostMapping("/emails")
     public ResponseEntity<List<UserEmail>> getUsersEmails(@RequestBody List<UUID> ids) {
         return ResponseEntity.ok(userService.getUsersEmails(ids));

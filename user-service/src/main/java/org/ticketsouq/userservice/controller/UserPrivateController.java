@@ -11,6 +11,7 @@ import org.ticketsouq.userservice.dto.OrgMemberResponse;
 import org.ticketsouq.userservice.service.UserService;
 
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 @RestController
@@ -57,6 +58,11 @@ public class UserPrivateController {
     @GetMapping("/org/members")
     public ResponseEntity<List<OrgMemberResponse>> getOrgMembers(@RequestHeader("X-User-Id") UUID headUserId) {
         return ResponseEntity.ok(userService.getOrgMembersByHead(headUserId));
+    }
+
+    @GetMapping("/name")
+    public ResponseEntity<Map<UUID, String>> getUserNames(@RequestParam List<UUID> ids) {
+        return ResponseEntity.ok(userService.getUserNames(ids));
     }
 
 }

@@ -22,7 +22,9 @@ import org.ticketsouq.userservice.repository.OrganizationRepository;
 import org.ticketsouq.userservice.repository.UserRepository;
 
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 @Slf4j
 @Service
@@ -130,13 +132,13 @@ public class UserService {
     }
 
     @Transactional(readOnly = true)
-    public String getUserDisplayRoleOrName(UUID userId) {
-        return orgMemberRepository.findByUserId(userId)
-            .map(member -> member.getMemberRole().name())
-            .orElseGet(() -> userRepository.findById(userId)
-                .map(User::getName)
-                .orElseThrow(() -> new BusinessException(
-                    "User not found with ID: " + userId, HttpStatus.NOT_FOUND)));
+    public Map<UUID, String> getUserNames(List<UUID> userIds) {
+        if (userIds == null || userIds.isEmpty()) return Map.of();
+        return userRepository.findNamesByIds(userIds).stream()
+            .collect(Collectors.toMap(
+                row -> (UUID) row[0],
+                row -> (String) row[1]
+            ));
     }
 
     @Transactional(readOnly = true)

@@ -22,4 +22,7 @@ public interface UserRepository extends JpaRepository<User, UUID> {
            "FROM User u " +
            "WHERE u.id IN :ids")
     List<UserEmail> findMemberSummariesByIds(@Param("ids") List<UUID> ids);
+
+    @Query("SELECT u.id, u.name FROM User u WHERE u.id IN :ids")
+    List<Object[]> findNamesByIds(@Param("ids") List<UUID> ids);
 }
