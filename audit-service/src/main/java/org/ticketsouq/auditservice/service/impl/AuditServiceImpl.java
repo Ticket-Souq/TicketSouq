@@ -2,6 +2,7 @@ package org.ticketsouq.auditservice.service.impl;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.ticketsouq.auditservice.client.userServiceClient;
@@ -51,7 +52,7 @@ public class AuditServiceImpl implements AuditService {
 
     @Override
     public List<AuditLogResponse> findAll() {
-        return toResponses(repository.findAll());
+        return toResponses(repository.findAllByOrderByMadeAtDesc());
     }
 
     // ── helpers ─────────────────────────────────────────────────────────────
