@@ -26,5 +26,6 @@ public record TicketResponse(
     String row,
     Integer seatNumber,
     String seatCategory,
+    UUID templateSeatId,
     LocalDateTime createdAt
 ) {}

@@ -2,8 +2,10 @@ package org.ticketsouq.ticketservice.controller;
 
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.ticketsouq.ticketservice.dto.OrganizerReserveRequest;
 import org.ticketsouq.ticketservice.dto.TicketResponse;
 import org.ticketsouq.ticketservice.dto.UpdateTicketStatusRequest;
 import org.ticketsouq.ticketservice.service.TicketService;
@@ -48,5 +50,11 @@ public class TicketController {
     @GetMapping("/organizer/{eventId}")
     public ResponseEntity<List<TicketResponse>> getOrganizerTickets(@PathVariable UUID eventId) {
         return ResponseEntity.ok(ticketService.getOrganizerTickets(eventId));
+    }
+
+    @PostMapping("/reserve/organizer")
+    public ResponseEntity<TicketResponse> reserveOrganizer(@RequestHeader("X-User-Id") UUID userId,
+                                                            @Valid @RequestBody OrganizerReserveRequest request) {
+        return ResponseEntity.status(HttpStatus.CREATED).body(ticketService.reserveOrganizerTicket(userId, request));
     }
 }

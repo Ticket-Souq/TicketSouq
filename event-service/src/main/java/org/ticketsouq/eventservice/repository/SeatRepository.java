@@ -31,4 +31,7 @@ public interface SeatRepository extends JpaRepository<Seat, UUID> {
     List<Seat> findByIdInWithLock(@Param("seatIds") List<UUID> seatIds);
 
     List<Seat> findBySectionIdIn(List<UUID> sectionIds);
+
+    @Query("SELECT s FROM Seat s JOIN FETCH s.section sec JOIN FETCH sec.event e WHERE s.templateSeatId = :templateSeatId AND e.id = :eventId")
+    Optional<Seat> findByTemplateSeatIdAndEventId(@Param("templateSeatId") UUID templateSeatId, @Param("eventId") UUID eventId);
 }

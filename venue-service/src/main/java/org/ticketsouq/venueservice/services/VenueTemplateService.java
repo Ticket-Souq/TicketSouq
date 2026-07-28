@@ -44,10 +44,7 @@ public class VenueTemplateService {
     }
 
     @Transactional(readOnly = true)
-    public VenueTemplateResponse getById(UUID venueId, UUID templateId) {
-        if (!venueRepository.existsById(venueId)) {
-            throw new BusinessException("Venue not found: " + venueId, HttpStatus.NOT_FOUND);
-        }
+    public VenueTemplateResponse getById(UUID templateId) {
         return templateRepository.findById(templateId)
                 .map(templateMapper::toResponse)
                 .orElseThrow(() -> new BusinessException("VenueTemplate not found: " + templateId, HttpStatus.NOT_FOUND));

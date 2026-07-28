@@ -30,6 +30,21 @@ public class SeatService {
 
 
     @Transactional
+    public SeatResponse updateOrganizerSeatStatusByTemplateId(UUID eventId, UUID templateSeatId, UpdateSeatStatusRequest request, UUID userId) {
+        Seat seat = seatRepository.findByTemplateSeatIdAndEventId(templateSeatId, eventId)
+            .orElseThrow(() -> new ResourceNotFoundException("Seat" , templateSeatId));
+
+        Event event = seat.getSection().getEvent();
+        validateEventCanBeUpdated(event);
+        validateSeatBased(event);
+        validateSeatStatusTransition(seat.getStatus(), request.status());
+        updateRemainingCapacity(seat.getSection(), seat.getStatus(), request.status());
+        seat.setStatus(request.status());
+        applicationEventPublisher.publishEvent(new AuditEvent("Seat Status updated by Org Member", userId, "", Instant.now()));
+        return SeatResponse.from(seatRepository.save(seat));
+    }
+
+    @Transactional
     public SeatResponse updateOrganizerSeatStatus(UUID seatId, UpdateSeatStatusRequest request, UUID userId) {
 
         Seat seat = seatRepository.findByIdWithSectionAndEvent(seatId).orElseThrow(() -> new ResourceNotFoundException("Seat not found.", seatId));

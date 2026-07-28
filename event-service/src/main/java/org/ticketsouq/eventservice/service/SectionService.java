@@ -31,6 +31,34 @@ public class SectionService {
     private final ApplicationEventPublisher applicationEventPublisher;
 
     @Transactional
+    public SectionResponse organizerReserve(UUID sectionId, UUID userId) {
+        Section section = sectionRepository.findById(sectionId).orElseThrow(() -> new ResourceNotFoundException("Section not found.", sectionId));
+        Event event = section.getEvent();
+        validateEventCanBeUpdated(event);
+        if (event.getBookingModel() != BookingModel.ZONE) {
+            throw new BadRequestException("Organizer reserve is only available for zone-based events.");
+        }
+        if (section.getRemainingCapacity() < 1) {
+            throw new ConflictException("No remaining capacity in this section.");
+        }
+        section.setRemainingCapacity(section.getRemainingCapacity() - 1);
+        applicationEventPublisher.publishEvent(new AuditEvent("Organizer reserved 1 ticket in section", userId, "", Instant.now()));
+        return SectionResponse.from(sectionRepository.save(section));
+    }
+
+    @Transactional
+    public SectionResponse organizerRelease(UUID sectionId, UUID userId) {
+        Section section = sectionRepository.findById(sectionId).orElseThrow(() -> new ResourceNotFoundException("Section not found.", sectionId));
+        Event event = section.getEvent();
+        if (event.getBookingModel() != BookingModel.ZONE) {
+            throw new BadRequestException("Organizer release is only available for zone-based events.");
+        }
+        section.setRemainingCapacity(section.getRemainingCapacity() + 1);
+        applicationEventPublisher.publishEvent(new AuditEvent("Organizer released 1 ticket in section", userId, "", Instant.now()));
+        return SectionResponse.from(sectionRepository.save(section));
+    }
+
+    @Transactional
     public SectionResponse updateSection(UUID sectionId, UpdateSectionRequest request, UUID userId) {
 
         if (request.name() == null && request.price() == null && request.capacity() == null) {

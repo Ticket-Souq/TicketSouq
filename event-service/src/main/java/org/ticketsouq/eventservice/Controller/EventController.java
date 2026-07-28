@@ -74,6 +74,16 @@ public class EventController {
         return ResponseEntity.ok(sectionService.updateSection(sectionId, request, userId));
     }
 
+    @PatchMapping("/sections/{sectionId}/organizer-reserve")
+    public ResponseEntity<SectionResponse> organizerReserveSection(@PathVariable UUID sectionId, @RequestHeader("X-User-Id") UUID userId) {
+        return ResponseEntity.ok(sectionService.organizerReserve(sectionId, userId));
+    }
+
+    @PatchMapping("/sections/{sectionId}/organizer-release")
+    public ResponseEntity<SectionResponse> organizerReleaseSection(@PathVariable UUID sectionId, @RequestHeader("X-User-Id") UUID userId) {
+        return ResponseEntity.ok(sectionService.organizerRelease(sectionId, userId));
+    }
+
     @DeleteMapping("/{eventId}") // must be org_head / admin
     public ResponseEntity<Void> cancelEvent(@PathVariable UUID eventId, @RequestHeader("X-User-Id") UUID userId) {
         eventService.cancelEvent(eventId, userId);
@@ -92,6 +102,11 @@ public class EventController {
     @PatchMapping("/seats/{seatId}/status") // must be org_head / agent
     public ResponseEntity<SeatResponse> updateOrganizerSeatStatus(@PathVariable UUID seatId, @Valid @RequestBody UpdateSeatStatusRequest request, @RequestHeader("X-User-Id") UUID userId) {
         return ResponseEntity.ok(seatService.updateOrganizerSeatStatus(seatId, request, userId));
+    }
+
+    @PatchMapping("/{eventId}/seats/template/{templateSeatId}/status")
+    public ResponseEntity<SeatResponse> updateOrganizerSeatStatusByTemplateId(@PathVariable UUID eventId, @PathVariable UUID templateSeatId, @Valid @RequestBody UpdateSeatStatusRequest request, @RequestHeader("X-User-Id") UUID userId) {
+        return ResponseEntity.ok(seatService.updateOrganizerSeatStatusByTemplateId(eventId, templateSeatId, request, userId));
     }
 
     @GetMapping("/{eventId}/zones")

@@ -22,7 +22,6 @@ import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/v1/venue/{venueId}/templates")
-//@CrossOrigin(origins = "*")
 @RequiredArgsConstructor
 public class VenueTemplateController {
 
@@ -46,9 +45,8 @@ public class VenueTemplateController {
     @GetMapping("/{templateId}")
     public ResponseEntity<VenueTemplateResponse> getTemplate(@PathVariable String venueId,
                                                               @PathVariable String templateId) {
-        UUID venueUuid = UUIDUtils.parse(venueId);
         UUID templateUuid = UUIDUtils.parse(templateId);
-        VenueTemplateResponse response = templateService.getById(venueUuid, templateUuid);
+        VenueTemplateResponse response = templateService.getById(templateUuid);
         return ResponseEntity.ok(response);
     }
 

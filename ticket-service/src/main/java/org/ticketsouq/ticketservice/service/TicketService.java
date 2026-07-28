@@ -6,6 +6,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.ticketsouq.sharedmodule.TicketService.dto.CreateTicketRequest;
 import org.ticketsouq.ticketservice.dto.CreateTicketsRequest;
+import org.ticketsouq.ticketservice.dto.OrganizerReserveRequest;
 import org.ticketsouq.ticketservice.dto.UpdateTicketStatusRequest;
 import org.ticketsouq.ticketservice.dto.TicketResponse;
 import org.ticketsouq.ticketservice.model.EventSnapshot;
@@ -110,6 +111,28 @@ public class TicketService {
         ticketRepository.saveAll(tickets);
     }
 
+    @Transactional
+    public TicketResponse reserveOrganizerTicket(UUID userId, OrganizerReserveRequest request) {
+        SeatTicket ticket = new SeatTicket();
+        ticket.setEventId(request.eventId());
+        ticket.setUserId(userId);
+        ticket.setPrice(request.price() != null ? request.price() : BigDecimal.ZERO);
+        ticket.setReservationStatus("ACTIVE");
+        ticket.setConsumed(false);
+        ticket.setHolderName(request.holderName());
+        ticket.setCategory(request.sectionName());
+        ticket.setTemplateSeatId(request.templateSeatId());
+
+        String label = request.label();
+        if (label != null) {
+            ticket.setRow(parseSeatRow(label));
+            ticket.setSeatNumber(parseSeatNumber(label));
+        }
+
+        ticketRepository.save(ticket);
+        return toResponse(ticket);
+    }
+
     private List<TicketResponse> persistTickets(
         UUID reservationId,
         UUID userId,
@@ -199,7 +222,8 @@ public class TicketService {
         if (ticket instanceof SeatTicket seatTicket) {
             builder.row(seatTicket.getRow())
                 .seatNumber(seatTicket.getSeatNumber())
-                .seatCategory(seatTicket.getCategory());
+                .seatCategory(seatTicket.getCategory())
+                .templateSeatId(seatTicket.getTemplateSeatId());
         } else if (ticket instanceof ZoneTicket zoneTicket) {
             builder.zoneCategory(zoneTicket.getCategory());
         }

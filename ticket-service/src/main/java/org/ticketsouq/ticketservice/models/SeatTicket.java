@@ -16,6 +16,9 @@ public class SeatTicket extends Ticket {
     @Column(name = "seat_id")
     private UUID seatId;
 
+    @Column(name = "template_seat_id")
+    private UUID templateSeatId;
+
     @Column(name = "seat_row")
     private String row;
 
