@@ -31,6 +31,16 @@ public interface EventRepository extends JpaRepository<Event, UUID> {
     List<Event> findByStatusIn(List<EventStatus> statuses);
 
     @Query(value = """
+        SELECT DISTINCT e FROM Event e
+        LEFT JOIN FETCH e.sections
+        WHERE e.organization = :organization
+        ORDER BY e.startDate DESC
+        """, countQuery = """
+        SELECT COUNT(e) FROM Event e WHERE e.organization = :organization
+        """)
+    Page<Event> findByOrganizationWithSections(@Param("organization") String organization, Pageable pageable);
+
+    @Query(value = """
         SELECT e.* FROM events e
         LEFT JOIN event_categories ec ON ec.id = e.event_category_id
         WHERE (:title IS NULL OR e.title % :title)

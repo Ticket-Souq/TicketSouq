@@ -23,7 +23,10 @@ import java.util.UUID;
 public class Seat {
 
     @Id
+    @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
+
+    private UUID templateSeatId;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "section_id", nullable = false)

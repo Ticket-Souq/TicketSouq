@@ -15,6 +15,7 @@ import org.ticketsouq.eventservice.model.enums.SeatStatus;
 import org.ticketsouq.eventservice.repository.EventCategoryRepository;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 @Component
 @RequiredArgsConstructor
@@ -79,7 +80,7 @@ public class EventMapper {
 
     private Section buildSection(Event event, CreateEventRequest.CreateSectionRequest dto, BookingModel bookingModel) {
         Section section = Section.builder()
-            .id(dto.id() != null ? dto.id() : UUID.randomUUID())
+            .templateSectionId(dto.id())
             .event(event)
             .name(dto.name())
             .capacity(dto.capacity())
@@ -89,15 +90,15 @@ public class EventMapper {
             .build();
 
         if (bookingModel == BookingModel.SEAT && dto.seats() != null) {
-            List<Seat> seats = dto.seats().stream()
+            Set<Seat> seats = dto.seats().stream()
                 .map(seatDto -> buildSeat(section, seatDto))
-                .toList();
+                .collect(Collectors.toSet());
             section.setSeats(seats);
             section.setRemainingCapacity(dto.capacity() - (int) seats.stream()
                 .filter(s -> s.getStatus() != SeatStatus.AVAILABLE)
                 .count());
         } else {
-            section.setSeats(new ArrayList<>());
+            section.setSeats(new LinkedHashSet<>());
         }
 
         return section;
@@ -106,7 +107,7 @@ public class EventMapper {
     private Seat buildSeat(Section section, CreateEventRequest.CreateSectionRequest.CreateSeatRequest dto) {
         SeatStatus status = mapSeatStatus(dto.status());
         return Seat.builder()
-            .id(dto.id() != null ? dto.id() : UUID.randomUUID())
+            .templateSeatId(dto.id())
             .section(section)
             .lable(dto.lable())
             .status(status)
@@ -130,13 +131,14 @@ public class EventMapper {
 
     private EventFullResponse.SectionFullResponse toSectionFullResponse(Section section, Set<UUID> lockedSeatIds) {
         List<EventFullResponse.SectionFullResponse.SeatFullResponse> seats = Optional.ofNullable(section.getSeats())
-            .orElse(List.of())
+            .orElse(Set.of())
             .stream()
             .map(seat -> toSeatFullResponse(seat, lockedSeatIds))
             .toList();
 
         return new EventFullResponse.SectionFullResponse(
             section.getId(),
+            section.getTemplateSectionId(),
             section.getName(),
             section.getCapacity(),
             section.getRemainingCapacity(),
@@ -155,6 +157,7 @@ public class EventMapper {
         }
         return new EventFullResponse.SectionFullResponse.SeatFullResponse(
             seat.getId(),
+            seat.getTemplateSeatId(),
             status
         );
     }

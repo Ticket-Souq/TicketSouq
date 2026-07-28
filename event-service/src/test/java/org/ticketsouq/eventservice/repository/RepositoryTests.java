@@ -58,7 +58,7 @@ class RepositoryTests extends RepositoryTestBase {
             event.setSections(new ArrayList<>(List.of(section)));
             Seat seat = Seat.builder().id(UUID.randomUUID()).section(section)
                 .lable("A1").status(SeatStatus.AVAILABLE).build();
-            section.setSeats(new ArrayList<>(List.of(seat)));
+            section.setSeats(new java.util.LinkedHashSet<>(List.of(seat)));
             eventRepository.save(event);
 
             Optional<Event> found = eventRepository.findEventById(event.getId());

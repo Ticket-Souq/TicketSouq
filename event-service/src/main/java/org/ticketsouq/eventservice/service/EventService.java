@@ -98,6 +98,16 @@ public class EventService {
             .map(EventCardResponse::from);
     }
 
+    @Transactional(readOnly = true)
+    public Page<EventFullResponse> getManagementEvents(UUID userId, Pageable pageable) {
+        String organization = userServiceClient.getOrganizationName(userId);
+        return eventRepository.findByOrganizationWithSections(organization, pageable)
+            .map(event -> {
+                event.getSections().forEach(Section::getSeats);
+                return eventMapper.toEventFullResponse(event, Collections.emptySet());
+            });
+    }
+
     @Transactional
     public void activateEvent(UUID eventId) {
         eventRepository.findById(eventId).ifPresent(event -> {

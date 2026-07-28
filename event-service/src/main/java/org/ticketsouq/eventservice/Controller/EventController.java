@@ -64,6 +64,11 @@ public class EventController {
         return ResponseEntity.ok(eventService.getEvents(userId, pageable));
     }
 
+    @GetMapping("/management")
+    public ResponseEntity<Page<EventFullResponse>> getManagementEvents(@RequestHeader("X-User-Id") UUID userId, Pageable pageable) {
+        return ResponseEntity.ok(eventService.getManagementEvents(userId, pageable));
+    }
+
     @PatchMapping("/sections/{sectionId}")
     public ResponseEntity<SectionResponse> updateSection(@PathVariable UUID sectionId, @Valid @RequestBody UpdateSectionRequest request, @RequestHeader("X-User-Id") UUID userId) {
         return ResponseEntity.ok(sectionService.updateSection(sectionId, request, userId));

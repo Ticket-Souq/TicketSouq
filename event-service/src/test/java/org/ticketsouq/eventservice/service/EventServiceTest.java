@@ -109,15 +109,15 @@ class EventServiceTest {
         UUID id = UUID.randomUUID();
         Section section = Section.builder()
             .id(UUID.randomUUID()).build();
-        section.setSeats(List.of(
+        section.setSeats(new java.util.LinkedHashSet<>(List.of(
             Seat.builder().id(UUID.randomUUID()).build()
-        ));
+        )));
         Event event = Event.builder()
             .id(id)
             .bookingModel(BookingModel.SEAT)
             .sections(List.of(section))
             .build();
-        List<Seat> seats = section.getSeats();
+        List<Seat> seats = new java.util.ArrayList<>(section.getSeats());
         when(seatRepository.findBySectionIdIn(List.of(section.getId()))).thenReturn(seats);
         when(eventRepository.findEventById(id)).thenReturn(Optional.of(event));
 
@@ -245,16 +245,16 @@ class EventServiceTest {
         Section section = Section.builder()
             .id(UUID.randomUUID())
             .build();
-        section.setSeats(List.of(
+        section.setSeats(new java.util.LinkedHashSet<>(List.of(
             Seat.builder().id(seatId).build()
-        ));
+        )));
         Event event = Event.builder()
             .id(id)
             .bookingModel(BookingModel.SEAT)
             .sections(List.of(section))
             .build();
 
-        List<Seat> seats = section.getSeats();
+        List<Seat> seats = new java.util.ArrayList<>(section.getSeats());
         when(seatRepository.findBySectionIdIn(List.of(section.getId()))).thenReturn(seats);
         when(eventRepository.findEventById(id)).thenReturn(Optional.of(event));
         when(seatLockRepository.findBySeatIdInAndExpiresAtAfter(

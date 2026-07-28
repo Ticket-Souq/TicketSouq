@@ -14,9 +14,9 @@ public record EventFullResponse (
     String eventCategoryName, String organization, String PosterUrl, EventStatus status,
     BookingModel bookingModel, Instant startDate, Instant finishDate,
     List<SectionFullResponse> sections){
-        public record SectionFullResponse(UUID id, String name, Integer capacity, Integer remainingCapacity, String color,
+        public record SectionFullResponse(UUID id, UUID templateSectionId, String name, Integer capacity, Integer remainingCapacity, String color,
                                  BigDecimal price, List<SeatFullResponse> seats) {
 
-            public record SeatFullResponse(UUID id, SeatStatus status) {}
+            public record SeatFullResponse(UUID id, UUID templateSeatId, SeatStatus status) {}
         }
 }
