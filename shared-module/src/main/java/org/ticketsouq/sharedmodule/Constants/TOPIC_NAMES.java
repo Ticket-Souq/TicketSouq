@@ -37,6 +37,10 @@ public final class TOPIC_NAMES {
     public static final String SAGA_LOCK_CONFIRM_COMPENSATE = "saga.lock.confirm.compensate";
     public static final String SAGA_LOCK_CONFIRM_REPLY = "saga.lock.confirm.reply";
 
+    // ─── Organizer Reservations ───────────────────────────────
+    public static final String ORGANIZER_RESERVATION_CREATED = "organizer.reservation.created";
+    public static final String ORGANIZER_RESERVATION_CANCELLED = "organizer.reservation.cancelled";
+
     // ─── Audit Service ────────────────────────────────────────
     public static final String AUDIT_EVENT = "audit.event";
 

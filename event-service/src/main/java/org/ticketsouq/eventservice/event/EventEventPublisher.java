@@ -13,6 +13,8 @@ import org.ticketsouq.sharedmodule.EventService.events.EventCancelledEvent;
 import org.ticketsouq.sharedmodule.EventService.events.EventCompletedEvent;
 import org.ticketsouq.sharedmodule.EventService.events.EventCreatedEvent;
 import org.ticketsouq.sharedmodule.EventService.events.EventPayoutReleaseEvent;
+import org.ticketsouq.sharedmodule.EventService.events.OrganizerReservationCancelledEvent;
+import org.ticketsouq.sharedmodule.EventService.events.OrganizerReservationCreatedEvent;
 import org.ticketsouq.sharedmodule.ReservationService.events.SagaLockConfirmReplyEvent;
 import org.ticketsouq.sharedmodule.utils.LogUtils;
 
@@ -102,6 +104,26 @@ public class EventEventPublisher {
         kafkaTemplate.send(SAGA_LOCK_CONFIRM_REPLY, event.reservationId().toString(), event).whenComplete((result, ex) -> {
             if (ex != null) {
                 LogUtils.logEventPublishingFailed(EVENT_SERVICE ,SAGA_LOCK_CONFIRM_REPLY);
+            }
+        });
+    }
+
+    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
+    public void sendOrganizerReservationCreated(OrganizerReservationCreatedEvent event) {
+        LogUtils.logEventPublished(EVENT_SERVICE, ORGANIZER_RESERVATION_CREATED);
+        kafkaTemplate.send(ORGANIZER_RESERVATION_CREATED, event.eventId().toString(), event).whenComplete((result, ex) -> {
+            if (ex != null) {
+                LogUtils.logEventPublishingFailed(EVENT_SERVICE, ORGANIZER_RESERVATION_CREATED);
+            }
+        });
+    }
+
+    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
+    public void sendOrganizerReservationCancelled(OrganizerReservationCancelledEvent event) {
+        LogUtils.logEventPublished(EVENT_SERVICE, ORGANIZER_RESERVATION_CANCELLED);
+        kafkaTemplate.send(ORGANIZER_RESERVATION_CANCELLED, event.eventId().toString(), event).whenComplete((result, ex) -> {
+            if (ex != null) {
+                LogUtils.logEventPublishingFailed(EVENT_SERVICE, ORGANIZER_RESERVATION_CANCELLED);
             }
         });
     }

@@ -7,6 +7,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.ticketsouq.sharedmodule.EventService.dto.ReservationRequest;
 import org.ticketsouq.eventservice.dto.ZoneStatusResponse;
+import org.ticketsouq.eventservice.Client.UserServiceClient;
 import org.ticketsouq.eventservice.model.*;
 import org.ticketsouq.eventservice.model.enums.BookingModel;
 import org.ticketsouq.eventservice.model.enums.EventStatus;
@@ -34,6 +35,7 @@ public class LockService {
     private final SeatLockRepository seatLockRepository;
     private final ZoneLockRepository zoneLockRepository;
     private final ApplicationEventPublisher eventPublisher;
+    private final UserServiceClient userServiceClient;
 
     @Value("${app.lock.ttl:10}")
     private int lockTtlMinutes;
@@ -234,13 +236,15 @@ public class LockService {
         List<TicketReservationDto> tickets = new ArrayList<>();
         BeginReservationEvent event = new BeginReservationEvent(request.eventId(), UUID.fromString(request.reservationId()), userId, tickets);
 
+        Map<String, String> nameMap = userServiceClient.getUserNames(List.of(userId));
+        String holderName = nameMap.getOrDefault(userId.toString(), "Unknown");
 
         if (zoneLockOpt.isPresent()) {
             ZoneLock zoneLock = zoneLockOpt.get();
             Section section = sectionRepository.findById(zoneLock.getZoneId())
                 .orElseThrow(() -> new ResourceNotFoundException("Section", zoneLock.getZoneId()));
             for (int i = 0; i < zoneLock.getQuantity(); i++) {
-                tickets.add(new TicketReservationDto(section.getPrice(), null, section.getName()));
+                tickets.add(new TicketReservationDto(section.getPrice(), null, section.getName(), holderName));
             }
             eventPublisher.publishEvent(event);
             return;
@@ -252,7 +256,7 @@ public class LockService {
                 .toList();
             List<Seat> seats = seatRepository.findByIdsWithSection(seatIds);
             for (Seat seat : seats) {
-                tickets.add(new TicketReservationDto(seat.getSection().getPrice(), seat.getLable(), seat.getSection().getName()));
+                tickets.add(new TicketReservationDto(seat.getSection().getPrice(), seat.getLable(), seat.getSection().getName(), holderName));
             }
             eventPublisher.publishEvent(event);
             return;

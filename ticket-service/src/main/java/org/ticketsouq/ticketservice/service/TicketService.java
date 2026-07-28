@@ -73,6 +73,11 @@ public class TicketService {
         return toResponses(ticketRepository.findByReservationId(reservationId));
     }
 
+    @Transactional(readOnly = true)
+    public List<TicketResponse> getOrganizerTickets(UUID eventId) {
+        return toResponses(ticketRepository.findByEventIdAndReservationStatus(eventId, "ACTIVE"));
+    }
+
     @Transactional
     public TicketResponse updateTicketStatus(UUID ticketId, UpdateTicketStatusRequest request) {
         Ticket ticket = ticketRepository.findById(ticketId)
@@ -188,6 +193,7 @@ public class TicketService {
             .price(ticket.getPrice())
             .reservationStatus(ticket.getReservationStatus())
             .consumed(ticket.isConsumed())
+            .holderName(ticket.getHolderName())
             .createdAt(ticket.getCreatedAt());
 
         if (ticket instanceof SeatTicket seatTicket) {

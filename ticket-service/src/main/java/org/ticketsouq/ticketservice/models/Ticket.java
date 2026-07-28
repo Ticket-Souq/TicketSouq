@@ -42,6 +42,9 @@ public abstract class Ticket {
     @Column(name = "reservation_status")
     private String reservationStatus;
 
+    @Column(name = "holder_name")
+    private String holderName;
+
     @CreatedDate
     private LocalDateTime createdAt;
 

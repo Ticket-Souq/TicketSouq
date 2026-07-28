@@ -12,9 +12,8 @@ import java.util.List;
 import java.util.UUID;
 
 @RestController
-@RequestMapping("/api/v1/tickets")
+@RequestMapping("/api/v1/ticket")
 @RequiredArgsConstructor
-@CrossOrigin
 public class TicketController {
 
     private final TicketService ticketService;
@@ -44,5 +43,10 @@ public class TicketController {
     @PostMapping("/{id}/consume")
     public ResponseEntity<TicketResponse> consume(@PathVariable UUID id) {
         return ResponseEntity.ok(ticketService.consumeTicket(id));
+    }
+
+    @GetMapping("/organizer/{eventId}")
+    public ResponseEntity<List<TicketResponse>> getOrganizerTickets(@PathVariable UUID eventId) {
+        return ResponseEntity.ok(ticketService.getOrganizerTickets(eventId));
     }
 }

@@ -28,6 +28,9 @@ import org.ticketsouq.sharedmodule.EventService.events.EventCancelledEvent;
 import org.ticketsouq.sharedmodule.EventService.events.EventCompletedEvent;
 import org.ticketsouq.sharedmodule.EventService.events.EventCreatedEvent;
 import org.ticketsouq.sharedmodule.EventService.events.EventPayoutReleaseEvent;
+import org.ticketsouq.sharedmodule.EventService.events.OrganizerReservationCancelledEvent;
+import org.ticketsouq.sharedmodule.EventService.events.OrganizerReservationCreatedEvent;
+import org.ticketsouq.sharedmodule.EventService.dto.TicketReservationDto;
 import org.ticketsouq.sharedmodule.GeneralExceptions.ConflictException;
 import org.ticketsouq.sharedmodule.GeneralExceptions.ResourceNotFoundException;
 
@@ -36,6 +39,7 @@ import java.time.Instant;
 import java.time.LocalDateTime;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -63,6 +67,30 @@ public class EventService {
         SearchProvider.indexEvent(event);
         eventPublisher.publishEvent(new AuditEvent("Event Created", userId, "", Instant.now()));
         eventPublisher.publishEvent(toCreateMessage(event));
+
+        if (request.reservations() != null && !request.reservations().isEmpty()) {
+            List<UUID> unresolvedIds = request.reservations().stream()
+                .filter(r -> r.holderName() == null || r.holderName().isBlank())
+                .map(r -> userId)
+                .distinct()
+                .toList();
+
+            Map<String, String> nameMap = unresolvedIds.isEmpty()
+                ? Map.of()
+                : userServiceClient.getUserNames(unresolvedIds);
+
+            List<TicketReservationDto> resolved = request.reservations().stream()
+                .map(r -> {
+                    if (r.holderName() == null || r.holderName().isBlank()) {
+                        String name = nameMap.getOrDefault(userId.toString(), "Unknown");
+                        return new TicketReservationDto(r.price(), r.label(), r.sectionName(), name);
+                    }
+                    return r;
+                })
+                .toList();
+            eventPublisher.publishEvent(new OrganizerReservationCreatedEvent(
+                event.getId(), userId, resolved));
+        }
     }
 
     @Transactional(readOnly = true)
@@ -157,6 +185,7 @@ public class EventService {
 
         eventPublisher.publishEvent(new AuditEvent("Event Canceled", userId, "", Instant.now()));
         eventPublisher.publishEvent(new EventCancelledEvent(UUID.randomUUID(), event.getId(), Instant.now()));
+        eventPublisher.publishEvent(new OrganizerReservationCancelledEvent(event.getId()));
     }
 
     private void validateEventCanBeCancelled(Event event) {

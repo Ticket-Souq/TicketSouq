@@ -5,5 +5,6 @@ import java.math.BigDecimal;
 public record TicketReservationDto(
     BigDecimal price,
     String label,
-    String sectionName
+    String sectionName,
+    String holderName
 ) {}

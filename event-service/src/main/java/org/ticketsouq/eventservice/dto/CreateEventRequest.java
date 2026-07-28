@@ -5,6 +5,7 @@ import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
 import org.ticketsouq.eventservice.model.enums.BookingModel;
 import org.ticketsouq.eventservice.model.enums.SeatStatus;
+import org.ticketsouq.sharedmodule.EventService.dto.TicketReservationDto;
 
 import java.io.Serializable;
 import java.math.BigDecimal;
@@ -21,7 +22,8 @@ public record CreateEventRequest(
     BookingModel bookingModel,
     Instant startDate,
     Instant finishDate,
-    List<CreateSectionRequest> sections
+    List<CreateSectionRequest> sections,
+    List<TicketReservationDto> reservations
 ) {
     public record CreateSectionRequest(UUID id, String name, Integer capacity, String color, BigDecimal price,
                              List<CreateSeatRequest> seats) implements Serializable {

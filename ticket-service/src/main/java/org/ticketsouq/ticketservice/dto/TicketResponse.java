@@ -19,6 +19,7 @@ public record TicketResponse(
     BigDecimal price,
     String reservationStatus,
     boolean consumed,
+    String holderName,
     // Zone
     String zoneCategory,
     // Seat
