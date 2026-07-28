@@ -32,6 +32,14 @@ public class RoutesConfig {
     }
 
     @Bean
+    public RouterFunction<ServerResponse> posterRoutes() {
+        return GatewayRouterFunctions.route("poster-static")
+            .route(RequestPredicates.path("/uploads/posters/**"), HandlerFunctions.http())
+            .filter(LoadBalancerFilterFunctions.lb("event-service"))
+            .build();
+    }
+
+    @Bean
     public RouterFunction<ServerResponse> serviceRoutes() {
         String[] services = {
             "user-service",

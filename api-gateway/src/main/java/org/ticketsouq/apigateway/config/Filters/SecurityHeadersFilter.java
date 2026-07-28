@@ -21,6 +21,13 @@ public class SecurityHeadersFilter extends OncePerRequestFilter {
             HttpServletResponse res,
             FilterChain chain) throws ServletException, IOException {
 
+        String path = req.getRequestURI();
+
+        if (path.startsWith("/uploads/")) {
+            chain.doFilter(req, res);
+            return;
+        }
+
         // Prevent MIME-type sniffing (browser won't guess Content-Type)
         res.setHeader("X-Content-Type-Options", "nosniff");
 
