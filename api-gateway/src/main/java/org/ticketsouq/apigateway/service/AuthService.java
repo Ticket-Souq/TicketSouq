@@ -369,7 +369,7 @@ public class AuthService {
             credentialRepository.save(c);
             return null;
         });
-        throw new BusinessException("Bad credentials", HttpStatus.UNAUTHORIZED);
+        throw new BusinessException("Wrong password please try again", HttpStatus.UNAUTHORIZED);
     }
 
     private boolean hasPriorFailures(AuthCredential c) {

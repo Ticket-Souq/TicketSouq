@@ -171,7 +171,7 @@ public class AuthTokenService {
 
         UUID oldSessionId = UUID.fromString(claims.get("sid", String.class));
         RefreshToken oldSession = refreshTokenRepository.findRefreshTokenBySessionId(oldSessionId)
-            .orElseThrow(() -> new BusinessException("Invalid refresh token, please please log in again", HttpStatus.UNAUTHORIZED));
+            .orElseThrow(() -> new BusinessException("Invalid refresh token, please log in again", HttpStatus.UNAUTHORIZED));
 
         if (oldSession.isRevoked()) {
             UUID userId = oldSession.getUserId();

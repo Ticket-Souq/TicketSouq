@@ -191,7 +191,7 @@ class AuthServiceTest {
 
         assertThatThrownBy(() -> authService.login(req))
             .isInstanceOf(BusinessException.class)
-            .hasMessageContaining("Bad credentials");
+            .hasMessageContaining("Wrong password");
     }
 
     @Test
