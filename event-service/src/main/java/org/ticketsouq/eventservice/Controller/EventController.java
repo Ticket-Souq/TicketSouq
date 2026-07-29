@@ -60,7 +60,7 @@ public class EventController {
         return ResponseEntity.status(HttpStatus.CREATED).body(sectionService.createSection(eventId, request));
     }
     @GetMapping
-    public ResponseEntity<Page<EventCardResponse>> getEvents(@RequestHeader("X-User-Id") UUID userId, Pageable pageable) {
+    public ResponseEntity<Page<EventCardResponse>> getEvents(@RequestHeader(value = "X-User-Id", required = false) UUID userId, Pageable pageable) {
         return ResponseEntity.ok(eventService.getEvents(userId, pageable));
     }
 
@@ -91,7 +91,7 @@ public class EventController {
     }
 
     @GetMapping("/search")
-    public ResponseEntity<Page<EventCardResponse>> searchBy(@RequestHeader("X-User-Id") UUID userId, @ModelAttribute EventSearchRequest request, Pageable pageable) {
+    public ResponseEntity<Page<EventCardResponse>> searchBy(@RequestHeader(value = "X-User-Id", required = false) UUID userId, @ModelAttribute EventSearchRequest request, Pageable pageable) {
         if (request.title() == null && request.organization() == null && request.category() == null) {
             return ResponseEntity.ok(eventService.getEvents(userId, pageable));
         }else{

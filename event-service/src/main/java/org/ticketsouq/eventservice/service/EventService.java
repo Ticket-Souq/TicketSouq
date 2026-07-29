@@ -119,7 +119,7 @@ public class EventService {
 
     @Transactional(readOnly = true)
     public Page<EventCardResponse> getEvents(UUID userId, Pageable pageable) {
-        String organization = userServiceClient.getOrganizationName(userId);
+        String organization = userId != null ? userServiceClient.getOrganizationName(userId) : null;
 
         return eventRepository.
             findFilteredEvents(organization, List.of(EventStatus.PUBLISHED, EventStatus.ACTIVE), pageable)

@@ -53,9 +53,9 @@ class EventControllerTest {
     void givenValidRequest_whenCreateEvent_thenReturn201() throws Exception {
         UUID userId = UUID.randomUUID();
         CreateEventRequest request = new CreateEventRequest(
-            "Event", "Desc", "Location", UUID.randomUUID(), "Concert",
+            "Event", "Desc", null, UUID.randomUUID(), "Concert",
             null, Instant.now(), Instant.now().plusSeconds(7200),
-            List.of());
+            List.of(), List.of());
 
         MockMultipartFile eventPart = new MockMultipartFile(
             "event", "", MediaType.APPLICATION_JSON_VALUE,

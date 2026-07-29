@@ -77,9 +77,9 @@ class EventServiceTest {
     void givenValidRequest_whenCreate_thenSaveIndexAndPublishEvents() throws Exception {
         UUID userId = UUID.randomUUID();
         CreateEventRequest request = new CreateEventRequest(
-            "Test Event", "Desc", "Location", UUID.randomUUID(), "Concert",
+            "Test Event", "Desc", null, UUID.randomUUID(), "Concert",
             BookingModel.SEAT, Instant.now(), Instant.now().plusSeconds(7200),
-            List.of());
+            List.of(), List.of());
         Event event = Event.builder().id(UUID.randomUUID()).title("Test Event").bookingModel(BookingModel.SEAT).build();
         MultipartFile poster = org.mockito.Mockito.mock(MultipartFile.class);
 
