@@ -4,7 +4,6 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.transaction.event.TransactionPhase;
 import org.springframework.transaction.event.TransactionalEventListener;
-import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Component;
 import org.ticketsouq.sharedmodule.ApiGateway.event.AccountsGeneratedEvent;
 import org.ticketsouq.sharedmodule.ApiGateway.event.EmailVerificationEvent;
@@ -20,30 +19,30 @@ import static org.ticketsouq.sharedmodule.Constants.TOPIC_NAMES.*;
 @Slf4j
 public class AuthEventPublisher {
 
-    private final KafkaTemplate<String, Object> kafkaTemplate;
+    private final KafkaCircuitBreakerWrapper kafka;
 
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     public void sendVerificationEmail(EmailVerificationEvent event) {
         LogUtils.logEventPublished(API_GATEWAY,USER_EMAIL_VERIFICATION);
-        kafkaTemplate.send(USER_EMAIL_VERIFICATION, event.userId().toString(), event);
+        kafka.send(USER_EMAIL_VERIFICATION, event.userId().toString(), event);
     }
 
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     public void sendPasswordResetEmail(PasswordResetEvent event) {
         LogUtils.logEventPublished(API_GATEWAY,USER_PASSWORD_RESET);
-        kafkaTemplate.send(USER_PASSWORD_RESET, event.userId().toString(), event);
+        kafka.send(USER_PASSWORD_RESET, event.userId().toString(), event);
     }
 
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     public void sendAuditEvent(AuditEvent event) {
         LogUtils.logEventPublished(API_GATEWAY,AUDIT_EVENT);
-        kafkaTemplate.send(AUDIT_EVENT, event.madeById().toString(), event);
+        kafka.send(AUDIT_EVENT, event.madeById().toString(), event);
     }
 
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     public void sendAccountsGeneratedEmail(AccountsGeneratedEvent event) {
         LogUtils.logEventPublished(API_GATEWAY,ACCOUNTS_GENERATED);
-        kafkaTemplate.send(ACCOUNTS_GENERATED, event.orgHeadUserId().toString(), event);
+        kafka.send(ACCOUNTS_GENERATED, event.orgHeadUserId().toString(), event);
     }
 
 }

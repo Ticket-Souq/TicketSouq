@@ -57,8 +57,7 @@ public class UserServiceClientFallbackFactory implements FallbackFactory<UserSer
 
             @Override
             public boolean isBelongToBannedOrg(UUID userId) {
-                log.warn("user-service is unavailable (%s), assuming user %s is NOT banned".formatted(reason, userId));
-                return false;
+                throw new RuntimeException("user-service is unavailable (%s), login cannot be completed".formatted(reason), cause);
             }
 
             @Override
