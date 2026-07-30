@@ -29,7 +29,7 @@ public class OutboxRelay {
     private final TransactionTemplate transactionTemplate;
     private final OutboxProperties properties;
 
-    @Scheduled(fixedDelayString = "#{@outboxProperties.pollInterval}")
+    @Scheduled(fixedDelayString = "${app.outbox.poll-interval:2000}")
     public void publishPendingEvents() {
         transactionTemplate.executeWithoutResult(status -> {
             repository.resetStuckInProgress(properties.getMaxRetries(),
