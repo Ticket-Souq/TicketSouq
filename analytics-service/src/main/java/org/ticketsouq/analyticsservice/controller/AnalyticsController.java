@@ -10,7 +10,7 @@ import org.ticketsouq.analyticsservice.service.AnalyticsService;
 import java.util.Optional;
 
 @RestController
-@RequestMapping("/api/analytics")
+@RequestMapping("/api/v1/analytics")
 @RequiredArgsConstructor
 @Tag(name = "Analytics", description = "Org-wide and single-event analytics dashboards.")
 public class AnalyticsController {
@@ -19,24 +19,27 @@ public class AnalyticsController {
 
     @GetMapping("/overview/kpis")
     public ResponseEntity<OverviewKpiResponse> getOverviewKpis(
+        @RequestParam String orgId,
         @RequestParam(defaultValue = "30d") String range) {
-        return ResponseEntity.ok(analyticsService.getOverviewKpis(range));
+        return ResponseEntity.ok(analyticsService.getOverviewKpis(orgId, range));
     }
 
     @GetMapping("/overview/sales-pace")
     public ResponseEntity<SalesPaceResponse> getSalesPace(
+        @RequestParam String orgId,
         @RequestParam(defaultValue = "30d") String range,
         @RequestParam Optional<String> eventId) {
-        return ResponseEntity.ok(analyticsService.getSalesPace(range, eventId));
+        return ResponseEntity.ok(analyticsService.getSalesPace(orgId, range, eventId));
     }
 
     @GetMapping("/overview/events")
     public ResponseEntity<EventComparisonResponse> getEvents(
+        @RequestParam String orgId,
         @RequestParam(defaultValue = "30d") String range,
         @RequestParam(defaultValue = "revenue") String sort,
         @RequestParam(defaultValue = "1") int page,
         @RequestParam(defaultValue = "20") int pageSize) {
-        return ResponseEntity.ok(analyticsService.getEventComparison(range, sort, page, pageSize));
+        return ResponseEntity.ok(analyticsService.getEventComparison(orgId, range, sort, page, pageSize));
     }
 
     @GetMapping("/events/{eventId}/summary")

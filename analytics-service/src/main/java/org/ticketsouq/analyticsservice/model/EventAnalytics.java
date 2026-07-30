@@ -18,6 +18,9 @@ public class EventAnalytics {
     @Column(name = "organization_id", length = 36)
     private String organizationId;
 
+    @Column(name = "created_by", length = 36)
+    private String createdBy;
+
     @Column(name = "title")
     private String title;
 

@@ -26,10 +26,10 @@ public class AnalyticsServiceImpl implements AnalyticsService {
     private final SalesRecordRepository salesRecordRepository;
 
     @Override
-    public OverviewKpiResponse getOverviewKpis(String range) {
-        double revenue = eventAnalyticsRepository.sumTotalRevenue();
-        int ticketsSold = eventAnalyticsRepository.sumTotalTicketsSold();
-        int totalCapacity = eventAnalyticsRepository.sumTotalCapacity();
+    public OverviewKpiResponse getOverviewKpis(String orgId, String range) {
+        double revenue = eventAnalyticsRepository.sumTotalRevenueByOrg(orgId);
+        int ticketsSold = eventAnalyticsRepository.sumTotalTicketsSoldByOrg(orgId);
+        int totalCapacity = eventAnalyticsRepository.sumTotalCapacityByOrg(orgId);
 
         return new OverviewKpiResponse(
             new OverviewKpiResponse.RevenueKpi(revenue, "USD", 0),
@@ -40,12 +40,15 @@ public class AnalyticsServiceImpl implements AnalyticsService {
     }
 
     @Override
-    public SalesPaceResponse getSalesPace(String range, Optional<String> eventId) {
+    public SalesPaceResponse getSalesPace(String orgId, String range, Optional<String> eventId) {
         LocalDate from = parseRange(range);
         LocalDate to = LocalDate.now();
-        List<SalesRecord> records = eventId
-            .map(id -> salesRecordRepository.findByEventIdAndSaleDateBetweenOrderBySaleDateAsc(id, from, to))
-            .orElseGet(() -> salesRecordRepository.findBySaleDateBetweenOrderBySaleDateAsc(from, to));
+        List<SalesRecord> records;
+        if (eventId.isPresent()) {
+            records = salesRecordRepository.findByEventIdAndSaleDateBetweenOrderBySaleDateAsc(eventId.get(), from, to);
+        } else {
+            records = salesRecordRepository.findByOrganizationIdAndSaleDateBetweenOrderBySaleDateAsc(orgId, from, to);
+        }
 
         List<SalesPaceResponse.DataPoint> series = records.stream()
             .map(r -> new SalesPaceResponse.DataPoint(r.getSaleDate().toString(),
@@ -56,7 +59,7 @@ public class AnalyticsServiceImpl implements AnalyticsService {
     }
 
     @Override
-    public EventComparisonResponse getEventComparison(String range, String sort, int page, int pageSize) {
+    public EventComparisonResponse getEventComparison(String orgId, String range, String sort, int page, int pageSize) {
         Sort sorting = switch (sort) {
             case "revenue" -> Sort.by(Sort.Direction.DESC, "totalRevenue");
             case "tickets" -> Sort.by(Sort.Direction.DESC, "totalTicketsSold");
@@ -64,7 +67,7 @@ public class AnalyticsServiceImpl implements AnalyticsService {
             default -> Sort.by(Sort.Direction.DESC, "totalRevenue");
         };
         Pageable pageable = PageRequest.of(page - 1, pageSize, sorting);
-        Page<EventAnalytics> eventsPage = eventAnalyticsRepository.findAll(pageable);
+        Page<EventAnalytics> eventsPage = eventAnalyticsRepository.findByOrganizationId(orgId, pageable);
 
         List<EventComparisonResponse.EventRow> rows = eventsPage.getContent().stream()
             .map(e -> new EventComparisonResponse.EventRow(
