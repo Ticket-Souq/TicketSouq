@@ -27,6 +27,7 @@ spring:
       value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
       properties:
         spring.json.add.type.headers: true
+        enable.idempotence: true
     consumer:
       group-id: ${kafka.group-id}
       auto-offset-reset: earliest
