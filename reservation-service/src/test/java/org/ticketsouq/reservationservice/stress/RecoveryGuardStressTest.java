@@ -47,7 +47,7 @@ class RecoveryGuardStressTest extends AbstractIntegrationTest {
         transactionTemplate.executeWithoutResult(status -> {
             BeginReservationEvent event = new BeginReservationEvent(
                 UUID.randomUUID(), recoveryReservationId, UUID.randomUUID(),
-                List.of(new TicketReservationDto(new BigDecimal("50.00"), 1, "A1", "VIP"))
+                List.of(new TicketReservationDto(new BigDecimal("50.00"),  "A1", "VIP",""))
             );
             Reservation res = reservationService.createReservation(event);
             ReservationContext context = reservationService.createReservationContext(res, event);

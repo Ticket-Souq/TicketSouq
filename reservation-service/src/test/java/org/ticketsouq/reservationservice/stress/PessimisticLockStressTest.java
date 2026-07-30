@@ -6,15 +6,14 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.transaction.support.TransactionTemplate;
+import org.ticketsouq.outbox.repository.OutboxEventRepository;
 import org.ticketsouq.reservationservice.core.SagaOrchestrator;
 import org.ticketsouq.reservationservice.core.SagaStep;
 import org.ticketsouq.reservationservice.dto.ReservationContext;
 import org.ticketsouq.reservationservice.integration.AbstractIntegrationTest;
 import org.ticketsouq.reservationservice.model.Reservation;
 import org.ticketsouq.reservationservice.model.SagaInstance;
-import org.ticketsouq.reservationservice.model.enums.OutboxStatus;
 import org.ticketsouq.reservationservice.model.enums.SagaStatus;
-import org.ticketsouq.reservationservice.repository.OutboxEventRepository;
 import org.ticketsouq.reservationservice.repository.ReservationRepository;
 import org.ticketsouq.reservationservice.repository.SagaInstanceRepository;
 import org.ticketsouq.reservationservice.service.ReservationService;
@@ -61,7 +60,7 @@ class PessimisticLockStressTest extends AbstractIntegrationTest {
         userId = UUID.randomUUID();
         eventId = UUID.randomUUID();
         tickets = List.of(
-            new TicketReservationDto(new BigDecimal("50.00"), 1, "A1", "VIP")
+            new TicketReservationDto(new BigDecimal("50.00"), "1", "A1", "VIP")
         );
     }
 

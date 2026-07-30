@@ -7,10 +7,11 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.transaction.support.TransactionTemplate;
+import org.ticketsouq.outbox.entity.OutboxEvent;
+import org.ticketsouq.outbox.entity.OutboxStatus;
+import org.ticketsouq.outbox.repository.OutboxEventRepository;
 import org.ticketsouq.reservationservice.integration.AbstractIntegrationTest;
-import org.ticketsouq.reservationservice.model.OutboxEvent;
-import org.ticketsouq.reservationservice.model.enums.OutboxStatus;
-import org.ticketsouq.reservationservice.repository.OutboxEventRepository;
+
 
 import java.time.Duration;
 import java.time.Instant;
@@ -68,7 +69,7 @@ class OutboxLockStressTest extends AbstractIntegrationTest {
             executor.submit(() -> {
                 try {
                     startLatch.await();
-                    int claimed = transactionTemplate.execute(status ->
+                    int claimed = transactionTemplate.execute(_ ->
                         outboxEventRepository.markInProgress(outboxEventId)
                     );
                     if (claimed == 1) {
