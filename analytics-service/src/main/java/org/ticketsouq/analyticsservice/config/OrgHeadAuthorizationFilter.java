@@ -34,13 +34,6 @@ public class OrgHeadAuthorizationFilter extends OncePerRequestFilter {
             return;
         }
 
-        boolean isAdmin = auth.getAuthorities().stream()
-            .anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN"));
-        if (isAdmin) {
-            chain.doFilter(request, response);
-            return;
-        }
-
         boolean isOrgHead = auth.getAuthorities().stream()
             .anyMatch(a -> a.getAuthority().equals("ROLE_ORG_HEAD"));
         if (!isOrgHead) {
@@ -48,12 +41,17 @@ public class OrgHeadAuthorizationFilter extends OncePerRequestFilter {
             return;
         }
 
-        String userId = auth.getName();
+        String userOrgId = (String) request.getAttribute("orgId");
+        if (userOrgId == null) {
+            response.sendError(HttpStatus.FORBIDDEN.value(), "Access denied: organization not found");
+            return;
+        }
+
         String path = request.getRequestURI();
 
         if (path.contains("/api/v1/analytics/overview/")) {
             String orgId = request.getParameter("orgId");
-            if (orgId == null || !eventAnalyticsRepository.existsByOrganizationIdAndCreatedBy(orgId, userId)) {
+            if (orgId == null || !userOrgId.equals(orgId)) {
                 response.sendError(HttpStatus.FORBIDDEN.value(), "Access denied: organization mismatch");
                 return;
             }
@@ -68,8 +66,8 @@ public class OrgHeadAuthorizationFilter extends OncePerRequestFilter {
                 response.sendError(HttpStatus.NOT_FOUND.value(), "Event not found");
                 return;
             }
-            if (!userId.equals(event.getCreatedBy())) {
-                response.sendError(HttpStatus.FORBIDDEN.value(), "Access denied: you do not own this event");
+            if (!userOrgId.equals(event.getOrganizationId())) {
+                response.sendError(HttpStatus.FORBIDDEN.value(), "Access denied: event does not belong to your organization");
                 return;
             }
         }

@@ -18,6 +18,8 @@ import org.ticketsouq.userservice.repository.OrgMemberRepository;
 import org.ticketsouq.userservice.repository.OrganizationRepository;
 import org.ticketsouq.userservice.repository.UserRepository;
 
+import org.ticketsouq.userservice.dto.UserContextResponse;
+
 import java.util.List;
 import java.util.UUID;
 
@@ -115,5 +117,23 @@ public class UserService {
     @Transactional(readOnly = true)
     public String getOrganizationNameByUserId(UUID userId) {
         return orgMemberRepository.findOrganizationNameByUserId(userId).orElse(null);
+    }
+
+    @Transactional(readOnly = true)
+    public String getOrgIdByUserId(UUID userId) {
+        return orgMemberRepository.findOrgIdByUserIdAndMemberRole(userId, MemberRole.HEAD)
+            .map(UUID::toString)
+            .orElse(null);
+    }
+
+    @Transactional(readOnly = true)
+    public UserContextResponse getUserContext(UUID userId) {
+        return orgMemberRepository.findOrgIdByUserIdAndMemberRole(userId, MemberRole.HEAD)
+            .map(orgId -> new UserContextResponse("ROLE_ORG_HEAD", orgId.toString()))
+            .orElseGet(() -> orgMemberRepository.findOrgIdByUserIdAndMemberRole(userId, MemberRole.AGENT)
+                .map(orgId -> new UserContextResponse("ROLE_ORG_MEMBER", orgId.toString()))
+                .orElseGet(() -> orgMemberRepository.findOrgIdByUserIdAndMemberRole(userId, MemberRole.CONSUMER)
+                    .map(orgId -> new UserContextResponse("ROLE_ORG_MEMBER", orgId.toString()))
+                    .orElse(new UserContextResponse(null, null))));
     }
 }

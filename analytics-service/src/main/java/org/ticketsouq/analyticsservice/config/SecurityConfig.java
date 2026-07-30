@@ -8,14 +8,13 @@ import org.springframework.security.config.annotation.web.configuration.EnableWe
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.web.SecurityFilterChain;
-import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
 @Configuration
 @EnableWebSecurity
 @RequiredArgsConstructor
 public class SecurityConfig {
 
-    private final JwtAuthFilter jwtAuthFilter;
+    private final UserContextFilter userContextFilter;
     private final OrgHeadAuthorizationFilter orgHeadAuthorizationFilter;
 
     @Bean
@@ -27,8 +26,8 @@ public class SecurityConfig {
                 .requestMatchers("/api/v1/analytics/**").authenticated()
                 .anyRequest().permitAll()
             )
-            .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class)
-            .addFilterAfter(orgHeadAuthorizationFilter, JwtAuthFilter.class)
+            .addFilterBefore(userContextFilter, org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter.class)
+            .addFilterAfter(orgHeadAuthorizationFilter, UserContextFilter.class)
             .build();
     }
 }

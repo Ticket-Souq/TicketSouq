@@ -7,6 +7,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.ticketsouq.sharedmodule.ApiGateway.dto.CreateUserRequest;
 import org.ticketsouq.sharedmodule.ApiGateway.dto.GenerateMembersRequest;
+import org.ticketsouq.userservice.dto.UserContextResponse;
 import org.ticketsouq.userservice.service.UserService;
 
 import java.util.UUID;
@@ -45,5 +46,15 @@ public class UserPrivateController {
     @GetMapping("/organization")
     public ResponseEntity<String> getOrganizationNameByUserId(@RequestParam UUID id) {
         return ResponseEntity.ok(userService.getOrganizationNameByUserId(id));
+    }
+
+    @GetMapping("/org-id")
+    public ResponseEntity<String> getOrgIdByUserId(@RequestParam UUID userId) {
+        return ResponseEntity.ok(userService.getOrgIdByUserId(userId));
+    }
+
+    @GetMapping("/user-context")
+    public ResponseEntity<UserContextResponse> getUserContext(@RequestParam UUID userId) {
+        return ResponseEntity.ok(userService.getUserContext(userId));
     }
 }
