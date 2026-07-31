@@ -8,6 +8,7 @@ import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 import org.ticketsouq.paymentservice.dto.PaymentRequest;
+import org.ticketsouq.paymentservice.dto.PaymentResponse;
 import org.ticketsouq.paymentservice.enums.PaymentStatus;
 import org.ticketsouq.paymentservice.model.PaymentModel;
 import org.ticketsouq.paymentservice.paymentProviders.PaymentProvider;
@@ -54,10 +55,10 @@ public class SagaPaymentCommandConsumer {
             return;
         }
 
-        var request = new PaymentRequest(command.reservationId(), command.userId(), command.eventId(), command.amount());
+        PaymentRequest request = new PaymentRequest(command.reservationId(), command.userId(), command.eventId(), command.amount());
 
         try {
-            var response = paymentProvider.pay(request);
+            PaymentResponse response = paymentProvider.pay(request);
 
             if (response.paymentStatus() == PaymentStatus.PENDING) {
                 log.info("Payment initiated for reservationId={}, paymentId={} and waiting for async completion",

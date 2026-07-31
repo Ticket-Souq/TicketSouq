@@ -10,6 +10,8 @@ kafka:
 
 payment:
   provider: ${PROVIDER:mock}
+  mock:
+    success-rate: ${MOCK_SUCCESS_RATE:50}
 
 stripe:
   secret-key: ${STRIPE_SECRET:sk_test_xxxxxxxxx}

@@ -10,23 +10,20 @@ import org.ticketsouq.paymentservice.repository.PaymentRepository;
 import org.ticketsouq.sharedmodule.GeneralExceptions.ResourceNotFoundException;
 import org.ticketsouq.sharedmodule.PaymentService.exception.PaymentException;
 
-import java.math.BigDecimal;
 import java.util.UUID;
+import java.util.concurrent.ThreadLocalRandom;
 
 @RequiredArgsConstructor
 public class MockPaymentProvider implements PaymentProvider {
 
     private final PaymentRepository paymentRepository;
+    private final int successRate;
 
     @Override
     @Transactional
     public PaymentResponse pay(PaymentRequest request) {
-        PaymentStatus status;
-        if (request.amount().compareTo(BigDecimal.valueOf(1000)) > 0) {
-            status = PaymentStatus.SUCCESS;
-        } else {
-            status = PaymentStatus.FAILED;
-        }
+        int rate = Math.max(0, Math.min(100, successRate));
+        PaymentStatus status = ThreadLocalRandom.current().nextInt(100) < rate ? PaymentStatus.SUCCESS : PaymentStatus.FAILED;
 
         PaymentModel payment = PaymentModel.builder()
                 .reservationID(request.reservationID())
@@ -38,9 +35,7 @@ public class MockPaymentProvider implements PaymentProvider {
 
         paymentRepository.save(payment);
 
-        String msg = status == PaymentStatus.SUCCESS
-                ? "Payment has been completed"
-                : "Payment Failed";
+        String msg = status == PaymentStatus.SUCCESS ? "Payment has been completed" : "Payment Failed";
 
         return new PaymentResponse(null, payment.getId(), payment.getPaymentStatus(), msg);
     }

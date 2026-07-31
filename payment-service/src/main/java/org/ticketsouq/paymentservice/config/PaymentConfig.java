@@ -1,5 +1,6 @@
 package org.ticketsouq.paymentservice.config;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -19,7 +20,9 @@ public class PaymentConfig {
 
     @Bean
     @ConditionalOnProperty(name = "payment.provider", havingValue = "mock", matchIfMissing = true)
-    public PaymentProvider mockPaymentProvider(PaymentRepository paymentRepository) {
-        return new MockPaymentProvider(paymentRepository);
+    public PaymentProvider mockPaymentProvider(
+        PaymentRepository paymentRepository,
+        @Value("${payment.mock.success-rate:100}") int successRate) {
+        return new MockPaymentProvider(paymentRepository, successRate);
     }
 }
