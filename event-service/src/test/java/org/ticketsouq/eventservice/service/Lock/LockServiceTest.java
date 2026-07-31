@@ -6,8 +6,8 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.test.util.ReflectionTestUtils;
+import org.ticketsouq.outbox.service.OutboxWriter;
 import org.ticketsouq.eventservice.Client.UserServiceClient;
 import org.ticketsouq.eventservice.dto.*;
 import org.ticketsouq.eventservice.model.*;
@@ -44,16 +44,15 @@ class LockServiceTest {
     @Mock private SectionRepository sectionRepository;
     @Mock private SeatLockRepository seatLockRepository;
     @Mock private ZoneLockRepository zoneLockRepository;
-    @Mock private ApplicationEventPublisher eventPublisher;
+    @Mock private OutboxWriter outboxWriter;
     @Mock private UserServiceClient userServiceClient;
-
 
     private LockService lockService;
 
     @BeforeEach
     void setUp() {
         lockService = new LockService(eventRepository, seatRepository, sectionRepository,
-            seatLockRepository, zoneLockRepository, eventPublisher, userServiceClient);
+            seatLockRepository, zoneLockRepository, outboxWriter, userServiceClient);
         ReflectionTestUtils.setField(lockService, "lockTtlMinutes", 10);
     }
 

@@ -6,8 +6,8 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.context.ApplicationEventPublisher;
 import org.ticketsouq.eventservice.dto.CreateSectionRequest;
+import org.ticketsouq.outbox.service.OutboxWriter;
 import org.ticketsouq.eventservice.dto.SectionResponse;
 import org.ticketsouq.eventservice.dto.UpdateSectionRequest;
 import org.ticketsouq.eventservice.model.Event;
@@ -28,20 +28,23 @@ import java.util.UUID;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
+import static org.ticketsouq.sharedmodule.Constants.TOPIC_NAMES.AUDIT_EVENT;
 
 @ExtendWith(MockitoExtension.class)
 class SectionServiceTest {
 
     @Mock private SectionRepository sectionRepository;
     @Mock private EventRepository eventRepository;
-    @Mock private ApplicationEventPublisher applicationEventPublisher;
+    @Mock private OutboxWriter outboxWriter;
 
     private SectionService sectionService;
 
     @BeforeEach
     void setUp() {
-        sectionService = new SectionService(sectionRepository, eventRepository, applicationEventPublisher);
+        sectionService = new SectionService(sectionRepository, eventRepository, outboxWriter);
     }
 
     @Test
@@ -77,7 +80,7 @@ class SectionServiceTest {
         assertThat(response.name()).isEqualTo("New Name");
         assertThat(response.capacity()).isEqualTo(120);
         assertThat(response.remainingCapacity()).isEqualTo(100);
-        verify(applicationEventPublisher).publishEvent(any(AuditEvent.class));
+        verify(outboxWriter).save(any(AuditEvent.class), eq(AUDIT_EVENT), anyString());
     }
 
     @Test
@@ -107,7 +110,7 @@ class SectionServiceTest {
         SectionResponse response = sectionService.updateSection(sectionId, request, userId);
 
         assertThat(response.name()).isEqualTo("Section A");
-        verify(applicationEventPublisher).publishEvent(any(AuditEvent.class));
+        verify(outboxWriter).save(any(AuditEvent.class), eq(AUDIT_EVENT), anyString());
     }
 
     @Test
