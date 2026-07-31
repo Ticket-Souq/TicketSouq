@@ -34,14 +34,6 @@ public class LocksController {
         return ResponseEntity.ok(response);
     }
 
-    @PostMapping("/{eventId}/zones/batch")
-    public ResponseEntity<LockZonesResponse> lockZones(
-        @PathVariable UUID eventId,
-        @Valid @RequestBody LockZonesRequest request) {
-        LockZonesResponse response = lockService.acquireZoneLocks(eventId, request);
-        return ResponseEntity.ok(response);
-    }
-
     @PostMapping("/reserve")
     public ResponseEntity<Void> reserve(@Valid @RequestBody ReservationRequest request , @RequestHeader("X-User-Id") UUID userId) {
         lockService.reserve(request,userId);

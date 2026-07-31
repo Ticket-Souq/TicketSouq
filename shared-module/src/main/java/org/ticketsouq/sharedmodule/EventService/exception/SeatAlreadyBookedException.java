@@ -8,8 +8,8 @@ import java.util.UUID;
 public class SeatAlreadyBookedException extends ConflictException {
 
 
-    public SeatAlreadyBookedException(List<UUID> conflictingSeats) {
-        super("Seats already booked: " + conflictingSeats);
+    public SeatAlreadyBookedException() {
+        super("One or more of the Seats you selected is already booked");
     }
 
 }
