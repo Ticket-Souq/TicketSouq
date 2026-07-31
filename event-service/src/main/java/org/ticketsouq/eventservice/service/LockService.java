@@ -240,14 +240,23 @@ public class LockService {
         List<TicketReservationDto> tickets = new ArrayList<>();
         BeginReservationEvent event = new BeginReservationEvent(request.eventId(), UUID.fromString(request.reservationId()), userId, tickets);
 
+        List<ReservationTicketDto> requested = request.tickets() != null ? request.tickets() : List.of();
+
         Map<String, String> nameMap = userServiceClient.getUserNames(List.of(userId));
-        String holderName = nameMap.getOrDefault(userId.toString(), "Unknown");
+        String accountHolderName = nameMap.getOrDefault(userId.toString(), "Unknown");
 
         if (zoneLockOpt.isPresent()) {
             ZoneLock zoneLock = zoneLockOpt.get();
             Section section = sectionRepository.findById(zoneLock.getZoneId())
                 .orElseThrow(() -> new ResourceNotFoundException("Section", zoneLock.getZoneId()));
+            List<String> zoneHolders = requested.stream()
+                .filter(t -> t.sectionId() != null && t.sectionId().equals(zoneLock.getZoneId()))
+                .map(t -> t.holderName() != null ? t.holderName().trim() : "")
+                .toList();
             for (int i = 0; i < zoneLock.getQuantity(); i++) {
+                String holderName = (i < zoneHolders.size() && !zoneHolders.get(i).isEmpty())
+                    ? zoneHolders.get(i)
+                    : accountHolderName;
                 tickets.add(new TicketReservationDto(section.getPrice(), null, section.getName(), holderName));
             }
             eventPublisher.publishEvent(event);
@@ -259,8 +268,24 @@ public class LockService {
                 .map(SeatLock::getSeatId)
                 .toList();
             List<Seat> seats = seatRepository.findByIdsWithSection(seatIds);
+            Map<UUID, String> holderBySeat = requested.stream()
+                .filter(t -> t.seatId() != null)
+                .collect(Collectors.toMap(
+                    ReservationTicketDto::seatId,
+                    t -> t.holderName() != null ? t.holderName().trim() : "",
+                    (a, b) -> a));
+            Map<UUID, String> labelBySeat = requested.stream()
+                .filter(t -> t.seatId() != null && t.label() != null && !t.label().isBlank())
+                .collect(Collectors.toMap(
+                    ReservationTicketDto::seatId,
+                    ReservationTicketDto::label,
+                    (a, b) -> a));
             for (Seat seat : seats) {
-                tickets.add(new TicketReservationDto(seat.getSection().getPrice(), seat.getLable(), seat.getSection().getName(), holderName));
+                String holderName = holderBySeat.getOrDefault(seat.getId(), accountHolderName);
+                if (holderName == null || holderName.isEmpty()) holderName = accountHolderName;
+                String label = labelBySeat.getOrDefault(seat.getId(), seat.getLable());
+                if (label == null || label.isBlank()) label = seat.getLable();
+                tickets.add(new TicketReservationDto(seat.getSection().getPrice(), label, seat.getSection().getName(), holderName));
             }
             eventPublisher.publishEvent(event);
             return;

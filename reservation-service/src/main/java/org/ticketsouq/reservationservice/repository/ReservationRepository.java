@@ -10,6 +10,6 @@ import java.util.UUID;
 
 @Repository
 public interface ReservationRepository extends JpaRepository<Reservation, UUID> {
-    List<Reservation> findByUserId(UUID userId);
+    List<Reservation> findByUserIdOrderByCreatedAtDesc(UUID userId);
     List<Reservation> findByStatus(ReservationStatus status);
 }

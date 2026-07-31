@@ -40,9 +40,16 @@ public class ReservationService {
 
     @Transactional(readOnly = true)
     public List<ReservationResponse> getReservationsByUser(UUID userId) {
-        return reservationRepository.findByUserId(userId)
+        return reservationRepository.findByUserIdOrderByCreatedAtDesc(userId)
             .stream()
             .map(reservationMapper::toResponse)
             .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public java.util.Optional<ReservationResponse> getReservation(UUID reservationId, UUID userId) {
+        return reservationRepository.findById(reservationId)
+            .filter(r -> r.getUserId().equals(userId))
+            .map(reservationMapper::toResponse);
     }
 }
