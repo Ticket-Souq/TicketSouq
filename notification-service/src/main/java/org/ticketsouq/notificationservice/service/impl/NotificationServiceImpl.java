@@ -23,6 +23,7 @@ import org.ticketsouq.sharedmodule.NotificationService.exception.NotificationNot
 import org.ticketsouq.sharedmodule.NotificationService.exception.UserEmailProjectionNotFoundException;
 import org.ticketsouq.sharedmodule.PaymentService.events.PaymentSuccessEvent;
 import org.ticketsouq.sharedmodule.PaymentService.events.RefundCompletedEvent;
+import org.ticketsouq.sharedmodule.UserService.events.OrganizationStatusChangedEvent;
 
 
 import java.util.*;
@@ -223,5 +224,23 @@ public class NotificationServiceImpl implements NotificationService {
             variables
         );
 
+    }
+
+    @Override
+    @Transactional
+    public void handleOrgStatusChanged(OrganizationStatusChangedEvent event) {
+        NotificationTemplate template = switch (event.status()) {
+            case "APPROVED" -> NotificationTemplate.ORG_APPROVED;
+            case "BANNED" -> NotificationTemplate.ORG_BANNED;
+            case "REJECTED" -> NotificationTemplate.ORG_REJECTED;
+            default -> throw new IllegalArgumentException("Unsupported organization status: " + event.status());
+        };
+
+        emailJobService.createEmailJob(
+            event.messageId(),
+            event.orgHeadEmail(),
+            template,
+            Map.of("organizationName", event.organizationName())
+        );
     }
 }

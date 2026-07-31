@@ -11,6 +11,7 @@ import org.ticketsouq.sharedmodule.ApiGateway.event.PasswordChangedEvent;
 import org.ticketsouq.sharedmodule.ApiGateway.event.PasswordResetEvent;
 import org.ticketsouq.sharedmodule.PaymentService.events.PaymentSuccessEvent;
 import org.ticketsouq.sharedmodule.PaymentService.events.RefundCompletedEvent;
+import org.ticketsouq.sharedmodule.UserService.events.OrganizationStatusChangedEvent;
 
 import static org.ticketsouq.sharedmodule.Constants.TOPIC_NAMES.*;
 
@@ -51,5 +52,10 @@ public class NotificationEventConsumer {
     @KafkaListener(topics = ACCOUNTS_GENERATED)
     public void AccountGeneratedConsumer(AccountsGeneratedEvent event) {
         notificationService.handleAccountGenerated(event);
+    }
+
+    @KafkaListener(topics = ORG_STATUS_CHANGED)
+    public void orgStatusChangedConsumer(OrganizationStatusChangedEvent event) {
+        notificationService.handleOrgStatusChanged(event);
     }
 }

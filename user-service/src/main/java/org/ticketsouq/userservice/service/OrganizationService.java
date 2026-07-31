@@ -8,6 +8,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.ticketsouq.outbox.service.OutboxWriter;
 import org.ticketsouq.sharedmodule.AuditService.events.AuditEvent;
 import org.ticketsouq.sharedmodule.GeneralExceptions.BusinessException;
+import org.ticketsouq.sharedmodule.UserService.events.OrganizationStatusChangedEvent;
 import org.ticketsouq.userservice.model.MemberRole;
 import org.ticketsouq.userservice.model.OrgMember;
 import org.ticketsouq.userservice.model.OrgStatus;
@@ -20,6 +21,7 @@ import java.util.List;
 import java.util.UUID;
 
 import static org.ticketsouq.sharedmodule.Constants.TOPIC_NAMES.AUDIT_EVENT;
+import static org.ticketsouq.sharedmodule.Constants.TOPIC_NAMES.ORG_STATUS_CHANGED;
 
 @Slf4j
 @Service
@@ -41,6 +43,14 @@ public class OrganizationService {
             "Change Organization [" + org.getName() + "] Status to " + newStatus.name(),
             adminId, "Admin Decision", Instant.now()
         ), AUDIT_EVENT, adminId.toString());
+
+        outboxWriter.save(new OrganizationStatusChangedEvent(
+            UUID.randomUUID(),
+            orgHeadId,
+            head.getUser().getEmail(),
+            org.getName(),
+            newStatus.name()
+        ), ORG_STATUS_CHANGED, orgHeadId.toString());
 
         log.info("Admin {} changed status of Organization {} to {}", adminId, org.getName(), newStatus);
     }

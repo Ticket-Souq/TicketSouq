@@ -8,6 +8,7 @@ import org.ticketsouq.sharedmodule.ApiGateway.event.PasswordChangedEvent;
 import org.ticketsouq.sharedmodule.ApiGateway.event.PasswordResetEvent;
 import org.ticketsouq.sharedmodule.PaymentService.events.PaymentSuccessEvent;
 import org.ticketsouq.sharedmodule.PaymentService.events.RefundCompletedEvent;
+import org.ticketsouq.sharedmodule.UserService.events.OrganizationStatusChangedEvent;
 
 import java.util.List;
 import java.util.UUID;
@@ -31,5 +32,7 @@ public interface NotificationService {
     void handleAccountGenerated(AccountsGeneratedEvent event);
 
     void handleRefundCompleted(RefundCompletedEvent event);
+
+    void handleOrgStatusChanged(OrganizationStatusChangedEvent event);
 }
 
