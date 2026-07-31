@@ -60,12 +60,9 @@ public class TicketService {
     }
 
     @Transactional(readOnly = true)
-    public TicketResponse getTicketById(UUID ticketId, UUID userId) {
+    public TicketResponse getTicketById(UUID ticketId) {
         Ticket ticket = ticketRepository.findById(ticketId)
             .orElseThrow(() -> new EntityNotFoundException("Ticket not found: " + ticketId));
-        if (!ticket.getUserId().equals(userId)) {
-            throw new SecurityException("Ticket does not belong to user");
-        }
         return toResponse(ticket);
     }
 
@@ -146,6 +143,7 @@ public class TicketService {
             ticket.setUserId(userId);
             ticket.setEventId(eventId);
             ticket.setPrice(draft.price());
+            ticket.setHolderName(draft.holderName());
             ticket.setReservationStatus("ACTIVE");
             ticket.setConsumed(false);
 
@@ -164,7 +162,8 @@ public class TicketService {
             item.category(),
             item.category(),
             item.category(),
-            item.price()
+            item.price(),
+            null
         );
     }
 
@@ -178,7 +177,8 @@ public class TicketService {
             item.sectionName(),
             item.label(),
             item.sectionName(),
-            item.price()
+            item.price(),
+            item.holderName()
         );
     }
 
@@ -207,6 +207,7 @@ public class TicketService {
     private TicketResponse toResponse(Ticket ticket, EventSnapshot eventSnapshot) {
         TicketResponse.TicketResponseBuilder builder = TicketResponse.builder()
             .id(ticket.getId())
+            .eventId(ticket.getEventId())
             .ticketType(ticket instanceof SeatTicket ? "SEAT" : "ZONE")
             .eventTitle(eventSnapshot.getTitle())
             .eventStartDate(eventSnapshot.getStartDate())
@@ -276,6 +277,7 @@ public class TicketService {
         String category,
         String label,
         String sectionName,
-        BigDecimal price
+        BigDecimal price,
+        String holderName
     ) {}
 }

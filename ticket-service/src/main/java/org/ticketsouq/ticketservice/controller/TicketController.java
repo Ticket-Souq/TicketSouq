@@ -26,9 +26,8 @@ public class TicketController {
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<TicketResponse> getTicket(@PathVariable UUID id,
-                                                     @RequestHeader("X-User-Id") UUID userId) {
-        return ResponseEntity.ok(ticketService.getTicketById(id, userId));
+    public ResponseEntity<TicketResponse> getTicket(@PathVariable UUID id) {
+        return ResponseEntity.ok(ticketService.getTicketById(id));
     }
 
     @GetMapping(params = "reservationId")

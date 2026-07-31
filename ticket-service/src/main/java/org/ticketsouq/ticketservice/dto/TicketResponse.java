@@ -10,6 +10,7 @@ import java.util.UUID;
 @Builder
 public record TicketResponse(
     UUID id,
+    UUID eventId,
     String ticketType,
     String eventTitle,
     Instant eventStartDate,
