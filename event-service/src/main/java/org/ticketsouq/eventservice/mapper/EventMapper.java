@@ -24,7 +24,7 @@ public class EventMapper {
     private final EventCategoryRepository eventCategoryRepository;
     private final UserServiceClient userServiceClient;
 
-    public Event buildEvent(UUID userId, CreateEventRequest request, String posterUrl) {
+    public Event buildEvent(UUID userId, CreateEventRequest request, String posterUrl, String bannerUrl) {
         EventCategory category = resolveCategory(request.eventCategoryName());
         String organization = userServiceClient.getOrganizationName(userId);
         BookingModel bookingModel = request.bookingModel() != null ? request.bookingModel() : BookingModel.SEAT;
@@ -38,6 +38,7 @@ public class EventMapper {
             .organization(organization)
             .createdBy(userId)
             .PosterUrl(posterUrl)
+            .bannerUrl(bannerUrl)
             .status(EventStatus.PUBLISHED)
             .bookingModel(bookingModel)
             .startDate(request.startDate())
@@ -54,11 +55,11 @@ public class EventMapper {
         return event;
     }
 
-    public EventFullResponse toEventFullResponse(Event event, Set<UUID> lockedSeatIds) {
+    public EventFullResponse toEventFullResponse(Event event, Set<UUID> lockedSeatIds, Map<UUID, Integer> adjustedRemaining) {
         List<EventFullResponse.SectionFullResponse> sections = Optional.ofNullable(event.getSections())
             .orElse(List.of())
             .stream()
-            .map(section -> toSectionFullResponse(section, lockedSeatIds))
+            .map(section -> toSectionFullResponse(section, lockedSeatIds, adjustedRemaining))
             .toList();
 
         return new EventFullResponse(
@@ -70,12 +71,17 @@ public class EventMapper {
             event.getEventCategory() != null ? event.getEventCategory().getName() : null,
             event.getOrganization(),
             event.getPosterUrl(),
+            event.getBannerUrl(),
             event.getStatus(),
             event.getBookingModel(),
             event.getStartDate(),
             event.getFinishDate(),
             sections
         );
+    }
+
+    public EventFullResponse toEventFullResponse(Event event, Set<UUID> lockedSeatIds) {
+        return toEventFullResponse(event, lockedSeatIds, Collections.emptyMap());
     }
 
     private Section buildSection(Event event, CreateEventRequest.CreateSectionRequest dto, BookingModel bookingModel) {
@@ -129,19 +135,21 @@ public class EventMapper {
         };
     }
 
-    private EventFullResponse.SectionFullResponse toSectionFullResponse(Section section, Set<UUID> lockedSeatIds) {
+    private EventFullResponse.SectionFullResponse toSectionFullResponse(Section section, Set<UUID> lockedSeatIds, Map<UUID, Integer> adjustedRemaining) {
         List<EventFullResponse.SectionFullResponse.SeatFullResponse> seats = Optional.ofNullable(section.getSeats())
             .orElse(Set.of())
             .stream()
             .map(seat -> toSeatFullResponse(seat, lockedSeatIds))
             .toList();
 
+        Integer adjusted = adjustedRemaining.get(section.getId());
+
         return new EventFullResponse.SectionFullResponse(
             section.getId(),
             section.getTemplateSectionId(),
             section.getName(),
             section.getCapacity(),
-            section.getRemainingCapacity(),
+            adjusted != null ? adjusted : section.getRemainingCapacity(),
             section.getColor(),
             section.getPrice(),
             seats

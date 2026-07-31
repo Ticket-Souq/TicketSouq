@@ -53,6 +53,9 @@ public class Event {
     @Column(nullable = false, columnDefinition = "TEXT")
     private String PosterUrl;
 
+    @Column(columnDefinition = "TEXT")
+    private String bannerUrl;
+
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private EventStatus status;

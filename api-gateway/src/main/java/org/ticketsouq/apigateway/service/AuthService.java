@@ -342,8 +342,9 @@ public class AuthService {
                 && c.getLockedUntil().isBefore(Instant.now().plus(Duration.ofHours(1)));
 
             if (lockedDueToFailedAttempts) {
+                LocalDateTime time = c.getLockedUntil().atZone(ZoneId.systemDefault()).toLocalDateTime();
                 String failedLoginMessage = "Account is locked until " +
-                    c.getLockedUntil().atZone(ZoneId.systemDefault()).toLocalDateTime() +
+                    time.getHour() +":"+ time.getMinute()+
                     ". Because of multiple failed login attempt.";
                 throw new BusinessException(failedLoginMessage, HttpStatus.UNAUTHORIZED);
             }

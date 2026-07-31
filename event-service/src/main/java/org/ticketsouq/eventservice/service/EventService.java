@@ -16,11 +16,13 @@ import org.ticketsouq.eventservice.model.Event;
 import org.ticketsouq.eventservice.model.Seat;
 import org.ticketsouq.eventservice.model.SeatLock;
 import org.ticketsouq.eventservice.model.Section;
+import org.ticketsouq.eventservice.model.ZoneLock;
 import org.ticketsouq.eventservice.model.enums.BookingModel;
 import org.ticketsouq.eventservice.model.enums.EventStatus;
 import org.ticketsouq.eventservice.repository.EventRepository;
 import org.ticketsouq.eventservice.repository.SeatLockRepository;
 import org.ticketsouq.eventservice.repository.SeatRepository;
+import org.ticketsouq.eventservice.repository.ZoneLockRepository;
 import org.ticketsouq.eventservice.service.Search.SearchService;
 import org.ticketsouq.sharedmodule.AuditService.events.AuditEvent;
 import org.ticketsouq.sharedmodule.EventService.events.EventActivatedEvent;
@@ -38,6 +40,7 @@ import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -56,13 +59,15 @@ public class EventService {
     private final UserServiceClient userServiceClient;
     private final SeatLockRepository seatLockRepository;
     private final SeatRepository seatRepository;
+    private final ZoneLockRepository zoneLockRepository;
     private final PosterStorageService posterStorageService;
 
 
     @Transactional
-    public void create(UUID userId, CreateEventRequest request, MultipartFile poster) {
+    public void create(UUID userId, CreateEventRequest request, MultipartFile poster, MultipartFile banner) {
         String posterUrl = posterStorageService.store(poster);
-        Event event = eventMapper.buildEvent(userId, request, posterUrl);
+        String bannerUrl = posterStorageService.store(banner);
+        Event event = eventMapper.buildEvent(userId, request, posterUrl, bannerUrl);
         eventRepository.save(event);
         SearchProvider.indexEvent(event);
         eventPublisher.publishEvent(new AuditEvent("Event Created", userId, "", Instant.now()));
@@ -93,12 +98,15 @@ public class EventService {
         }
     }
 
-    @Transactional(readOnly = true)
-    public EventFullResponse getById(UUID id) {
-        Event event = eventRepository.findEventById(id).orElseThrow(() -> new ResourceNotFoundException("Event", id));
+    private record LockInfo(Set<UUID> lockedSeatIds, Map<UUID, Integer> adjustedRemaining) {}
 
-        if (event.getBookingModel() == BookingModel.SEAT && event.getSections() != null) {
+    private LockInfo computeLockInfo(Event event) {
+        Map<UUID, Integer> adjustedRemaining = new HashMap<>();
+        Set<UUID> lockedSeatIds = Collections.emptySet();
 
+        if (event.getSections() == null) return new LockInfo(lockedSeatIds, adjustedRemaining);
+
+        if (event.getBookingModel() == BookingModel.SEAT) {
             List<UUID> sectionIds = event.getSections().stream()
                 .map(Section::getId)
                 .toList();
@@ -107,14 +115,38 @@ public class EventService {
 
             if (!allSeatIds.isEmpty()) {
                 List<SeatLock> activeLocks = seatLockRepository.findBySeatIdInAndExpiresAtAfter(allSeatIds, LocalDateTime.now());
-                Set<UUID> lockedSeatIds = activeLocks.stream()
+                Set<UUID> foundLockedIds = activeLocks.stream()
                     .map(SeatLock::getSeatId)
                     .collect(Collectors.toSet());
-                return eventMapper.toEventFullResponse(event, lockedSeatIds);
+                lockedSeatIds = foundLockedIds;
+
+                Map<UUID, Long> lockedPerSection = seats.stream()
+                    .filter(s -> foundLockedIds.contains(s.getId()))
+                    .collect(Collectors.groupingBy(s -> s.getSection().getId(), Collectors.counting()));
+
+                for (Section section : event.getSections()) {
+                    long lockedCount = lockedPerSection.getOrDefault(section.getId(), 0L);
+                    adjustedRemaining.put(section.getId(),
+                        Math.max(0, section.getRemainingCapacity() - (int) lockedCount));
+                }
+            }
+        } else if (event.getBookingModel() == BookingModel.ZONE) {
+            LocalDateTime now = LocalDateTime.now();
+            for (Section section : event.getSections()) {
+                int activeSum = zoneLockRepository.sumActiveQuantityByZoneId(section.getId(), now);
+                adjustedRemaining.put(section.getId(),
+                    Math.max(0, section.getRemainingCapacity() - activeSum));
             }
         }
 
-        return eventMapper.toEventFullResponse(event, Collections.emptySet());
+        return new LockInfo(lockedSeatIds, adjustedRemaining);
+    }
+
+    @Transactional(readOnly = true)
+    public EventFullResponse getById(UUID id) {
+        Event event = eventRepository.findEventById(id).orElseThrow(() -> new ResourceNotFoundException("Event", id));
+        LockInfo info = computeLockInfo(event);
+        return eventMapper.toEventFullResponse(event, info.lockedSeatIds, info.adjustedRemaining);
     }
 
     @Transactional(readOnly = true)
@@ -132,7 +164,8 @@ public class EventService {
         return eventRepository.findByOrganizationWithSections(organization, pageable)
             .map(event -> {
                 event.getSections().forEach(Section::getSeats);
-                return eventMapper.toEventFullResponse(event, Collections.emptySet());
+                LockInfo info = computeLockInfo(event);
+                return eventMapper.toEventFullResponse(event, info.lockedSeatIds, info.adjustedRemaining);
             });
     }
 

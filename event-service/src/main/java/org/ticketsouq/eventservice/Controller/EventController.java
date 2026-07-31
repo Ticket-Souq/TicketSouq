@@ -36,8 +36,9 @@ public class EventController {
     public ResponseEntity<Void> create(
             @RequestHeader("X-User-Id") UUID userId,
             @RequestPart("poster") MultipartFile poster,
+            @RequestPart(value = "banner", required = false) MultipartFile banner,
             @RequestPart("event") @Valid CreateEventRequest request) {
-        eventService.create(userId, request, poster);
+        eventService.create(userId, request, poster, banner);
         return ResponseEntity.status(HttpStatus.CREATED).build();
     }
 

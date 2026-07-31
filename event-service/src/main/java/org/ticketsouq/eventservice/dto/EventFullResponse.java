@@ -11,7 +11,7 @@ import java.util.UUID;
 
 public record EventFullResponse (
     UUID id, String title, String description, String location, UUID venueTemplateId,
-    String eventCategoryName, String organization, String PosterUrl, EventStatus status,
+    String eventCategoryName, String organization, String PosterUrl, String bannerUrl, EventStatus status,
     BookingModel bookingModel, Instant startDate, Instant finishDate,
     List<SectionFullResponse> sections){
         public record SectionFullResponse(UUID id, UUID templateSectionId, String name, Integer capacity, Integer remainingCapacity, String color,

@@ -23,6 +23,7 @@ public interface EventRepository extends JpaRepository<Event, UUID> {
 
     @Query("""
         SELECT e FROM Event e
+        LEFT JOIN FETCH e.eventCategory
         WHERE (:organization IS NULL AND e.status IN :statuses) OR (:organization IS NOT NULL AND e.organization = :organization)
         ORDER BY e.startDate ASC
         """)

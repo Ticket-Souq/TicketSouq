@@ -12,6 +12,9 @@ public record EventCardResponse(
     UUID id,
     String title,
     String posterUrl,
+    String bannerUrl,
+    String location,
+    String categoryName,
     EventStatus status,
     Instant startDate
 ) {
@@ -20,6 +23,9 @@ public record EventCardResponse(
             .id(event.getId())
             .title(event.getTitle())
             .posterUrl(event.getPosterUrl())
+            .bannerUrl(event.getBannerUrl())
+            .location(event.getLocation())
+            .categoryName(event.getEventCategory() != null ? event.getEventCategory().getName() : null)
             .status(event.getStatus())
             .startDate(event.getStartDate())
             .build();

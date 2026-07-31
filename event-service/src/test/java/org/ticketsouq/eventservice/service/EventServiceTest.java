@@ -82,10 +82,11 @@ class EventServiceTest {
             List.of(), List.of());
         Event event = Event.builder().id(UUID.randomUUID()).title("Test Event").bookingModel(BookingModel.SEAT).build();
         MultipartFile poster = org.mockito.Mockito.mock(MultipartFile.class);
+        MultipartFile banner = org.mockito.Mockito.mock(MultipartFile.class);
 
-        when(eventMapper.buildEvent(userId, request, null)).thenReturn(event);
+        when(eventMapper.buildEvent(userId, request, null, null)).thenReturn(event);
 
-        eventService.create(userId, request, poster);
+        eventService.create(userId, request, poster, banner);
 
         verify(eventRepository).save(event);
         verify(eventSearchService).indexEvent(event);

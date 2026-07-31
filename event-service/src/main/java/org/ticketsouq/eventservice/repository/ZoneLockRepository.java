@@ -9,6 +9,7 @@ import org.springframework.data.repository.query.Param;
 import org.ticketsouq.eventservice.model.ZoneLock;
 
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -22,6 +23,10 @@ public interface ZoneLockRepository extends JpaRepository<ZoneLock, UUID> {
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("SELECT zl FROM ZoneLock zl WHERE zl.reservationId = :reservationId")
     Optional<ZoneLock> findByReservationIdWithLock(@Param("reservationId") String reservationId);
+
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("SELECT zl FROM ZoneLock zl WHERE zl.reservationId = :reservationId")
+    List<ZoneLock> findAllByReservationIdWithLock(@Param("reservationId") String reservationId);
 
     void deleteByReservationId(String reservationId);
 

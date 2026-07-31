@@ -63,7 +63,7 @@ public class LockService {
         }
 
         List<UUID> bookedSeats = seats.stream()
-            .filter(s -> s.getStatus() == SeatStatus.BOOKED)
+            .filter(s -> s.getStatus() == SeatStatus.BOOKED || s.getStatus() == SeatStatus.BOOKED_ORGANIZER)
             .map(Seat::getId)
             .toList();
         if (!bookedSeats.isEmpty()) {
@@ -127,18 +127,65 @@ public class LockService {
     }
 
     @Transactional
+    public LockZonesResponse acquireZoneLocks(UUID eventId, LockZonesRequest request) {
+        Event event = eventRepository.findById(eventId)
+            .orElseThrow(() -> new ResourceNotFoundException("Event", eventId));
+
+        if (event.getStatus() != EventStatus.PUBLISHED) {
+            throw new ConflictException("Only published events can be locked.");
+        }
+        if (event.getBookingModel() != BookingModel.ZONE) {
+            throw new InvalidEventTypeException(BookingModel.ZONE.name());
+        }
+
+        LocalDateTime now = LocalDateTime.now();
+        UUID reservationId = UUID.randomUUID();
+        LocalDateTime expiresAt = now.plusMinutes(lockTtlMinutes);
+        List<ZoneLock> locks = new ArrayList<>();
+
+        for (LockZonesRequest.ZoneItem item : request.zones()) {
+            Section section = sectionRepository.findByIdAndEventIdWithLock(item.zoneId(), eventId)
+                .orElseThrow(() -> new ResourceNotFoundException("Section", item.zoneId()));
+
+            int activeSum = zoneLockRepository.sumActiveQuantityByZoneId(item.zoneId(), now);
+            int available = section.getRemainingCapacity() - activeSum;
+
+            if (available < item.quantity()) {
+                zoneLockRepository.deleteByReservationId(String.valueOf(reservationId));
+                throw new ZoneCapacityExceededException(available);
+            }
+
+            ZoneLock lock = ZoneLock.builder()
+                .zoneId(item.zoneId())
+                .reservationId(String.valueOf(reservationId))
+                .quantity(item.quantity())
+                .expiresAt(expiresAt)
+                .build();
+            locks.add(lock);
+        }
+
+        zoneLockRepository.saveAll(locks);
+
+        List<LockZonesResponse.ZoneDetail> details = locks.stream()
+            .map(l -> new LockZonesResponse.ZoneDetail(l.getZoneId(), l.getQuantity()))
+            .toList();
+
+        return new LockZonesResponse(reservationId, "LOCKED", expiresAt, details);
+    }
+
+    @Transactional
     public ConfirmResponse confirm(String reservationId) {
         List<SeatLock> seatLocks = seatLockRepository.findByReservationIdWithLock(reservationId);
-        Optional<ZoneLock> zoneLockOpt = zoneLockRepository.findByReservationIdWithLock(reservationId);
+        List<ZoneLock> zoneLocks = zoneLockRepository.findAllByReservationIdWithLock(reservationId);
 
-        if (seatLocks.isEmpty() && zoneLockOpt.isEmpty()) {
+        if (seatLocks.isEmpty() && zoneLocks.isEmpty()) {
             return ConfirmResponse.CONFIRMED;
         }
 
         if (!seatLocks.isEmpty()) {
             confirmSeats(seatLocks, reservationId);
         } else {
-            confirmZone(zoneLockOpt.get(), reservationId);
+            confirmZones(zoneLocks, reservationId);
         }
 
         return ConfirmResponse.CONFIRMED;
@@ -180,16 +227,20 @@ public class LockService {
         seatLockRepository.deleteByReservationId(reservationId);
     }
 
-    private void confirmZone(ZoneLock zoneLock, String reservationId) {
-        if (zoneLock.getExpiresAt().isBefore(LocalDateTime.now())) {
+    private void confirmZones(List<ZoneLock> zoneLocks, String reservationId) {
+        LocalDateTime now = LocalDateTime.now();
+        boolean expired = zoneLocks.stream().anyMatch(zl -> zl.getExpiresAt().isBefore(now));
+        if (expired) {
             zoneLockRepository.deleteByReservationId(reservationId);
             throw new LockExpiredException(reservationId);
         }
 
-        Section section = sectionRepository.findByIdWithLock(zoneLock.getZoneId())
-            .orElseThrow(() -> new ResourceNotFoundException("Section", zoneLock.getZoneId()));
+        for (ZoneLock zoneLock : zoneLocks) {
+            Section section = sectionRepository.findByIdWithLock(zoneLock.getZoneId())
+                .orElseThrow(() -> new ResourceNotFoundException("Section", zoneLock.getZoneId()));
+            section.setRemainingCapacity(section.getRemainingCapacity() - zoneLock.getQuantity());
+        }
 
-        section.setRemainingCapacity(section.getRemainingCapacity() - zoneLock.getQuantity());
         zoneLockRepository.deleteByReservationId(reservationId);
     }
 

@@ -12,7 +12,7 @@ import org.ticketsouq.sharedmodule.ReservationService.dto.*;
 import java.util.UUID;
 
 @RestController
-@RequestMapping("/api/v1/events/locks")
+@RequestMapping("/api/v1/event/locks")
 @RequiredArgsConstructor
 public class LocksController {
 
@@ -31,6 +31,14 @@ public class LocksController {
         @PathVariable UUID eventId,
         @Valid @RequestBody LockZoneRequest request) {
         LockZoneResponse response = lockService.acquireZoneLock(eventId, request);
+        return ResponseEntity.ok(response);
+    }
+
+    @PostMapping("/{eventId}/zones/batch")
+    public ResponseEntity<LockZonesResponse> lockZones(
+        @PathVariable UUID eventId,
+        @Valid @RequestBody LockZonesRequest request) {
+        LockZonesResponse response = lockService.acquireZoneLocks(eventId, request);
         return ResponseEntity.ok(response);
     }
 
