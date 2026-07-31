@@ -46,7 +46,7 @@ public class AnalyticsEventProcessingService {
         }
         eventAnalyticsRepository.save(EventAnalytics.builder()
             .eventId(eventId)
-            .organizationId(event.organization())
+            .organizationName(event.organization())
             .createdBy(event.createdby().toString())
             .title(event.title())
             .status(EventStatus.CREATED)
@@ -119,7 +119,7 @@ public class AnalyticsEventProcessingService {
             analytics.setTotalRevenue(analytics.getTotalRevenue().add(event.amount()));
             analytics.setTotalTicketsSold(analytics.getTotalTicketsSold() + 1);
             eventAnalyticsRepository.save(analytics);
-            upsertSalesRecord(eventId, analytics.getOrganizationId(), event.amount(), 1);
+            upsertSalesRecord(eventId, analytics.getOrganizationName(), event.amount(), 1);
         });
         log.info("Processed PaymentSuccess for event {}, amount={}", eventId, event.amount());
     }
@@ -145,7 +145,7 @@ public class AnalyticsEventProcessingService {
 //            analytics.setTotalRevenue(analytics.getTotalRevenue().subtract(event.amount()));
 //            analytics.setTotalTicketsSold(Math.max(0, analytics.getTotalTicketsSold() - 1));
 //            eventAnalyticsRepository.save(analytics);
-//            upsertSalesRecord(eventId, analytics.getOrganizationId(), event.amount().negate(), -1);
+//            upsertSalesRecord(eventId, analytics.getOrganizationName(), event.amount().negate(), -1);
 //        });
 //        log.info("Processed RefundCompleted for event {}, amount={}", eventId, event.amount());
 //    }
@@ -178,12 +178,12 @@ public class AnalyticsEventProcessingService {
         return true;
     }
 
-    private void upsertSalesRecord(String eventId, String organizationId, BigDecimal amountDelta, int ticketsDelta) {
+    private void upsertSalesRecord(String eventId, String organizationName, BigDecimal amountDelta, int ticketsDelta) {
         LocalDate today = LocalDate.now(ZoneId.of("UTC"));
         SalesRecord record = salesRecordRepository.findByEventIdAndSaleDate(eventId, today)
             .orElse(SalesRecord.builder()
                 .eventId(eventId)
-                .organizationId(organizationId)
+                .organizationName(organizationName)
                 .saleDate(today)
                 .ticketsSold(0)
                 .revenue(BigDecimal.ZERO)

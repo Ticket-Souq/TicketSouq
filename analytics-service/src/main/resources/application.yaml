@@ -38,9 +38,6 @@ spring:
         spring.json.trusted.packages: "*"
         spring.json.use.type.headers: true
 
-jwt:
-  secret: changeme-this-must-be-at-least-32-bytes-long-for-sha256
-
 server:
   port: 42323
 

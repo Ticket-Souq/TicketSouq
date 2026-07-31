@@ -8,16 +8,16 @@ import org.ticketsouq.analyticsservice.model.EventAnalytics;
 
 public interface EventAnalyticsRepository extends JpaRepository<EventAnalytics, String> {
 
-    @Query("SELECT COALESCE(SUM(e.totalRevenue), 0) FROM EventAnalytics e WHERE e.organizationId = :orgId")
-    double sumTotalRevenueByOrg(String orgId);
+    @Query("SELECT COALESCE(SUM(e.totalRevenue), 0) FROM EventAnalytics e WHERE e.organizationName = :orgName")
+    double sumTotalRevenueByOrgName(String orgName);
 
-    @Query("SELECT COALESCE(SUM(e.totalTicketsSold), 0) FROM EventAnalytics e WHERE e.organizationId = :orgId")
-    int sumTotalTicketsSoldByOrg(String orgId);
+    @Query("SELECT COALESCE(SUM(e.totalTicketsSold), 0) FROM EventAnalytics e WHERE e.organizationName = :orgName")
+    int sumTotalTicketsSoldByOrgName(String orgName);
 
-    @Query("SELECT COALESCE(SUM(e.capacity), 0) FROM EventAnalytics e WHERE e.organizationId = :orgId")
-    int sumTotalCapacityByOrg(String orgId);
+    @Query("SELECT COALESCE(SUM(e.capacity), 0) FROM EventAnalytics e WHERE e.organizationName = :orgName")
+    int sumTotalCapacityByOrgName(String orgName);
 
-    Page<EventAnalytics> findByOrganizationId(String orgId, Pageable pageable);
+    Page<EventAnalytics> findByOrganizationName(String orgName, Pageable pageable);
 
-    boolean existsByOrganizationIdAndCreatedBy(String orgId, String createdBy);
+    boolean existsByOrganizationNameAndCreatedBy(String orgName, String createdBy);
 }

@@ -6,6 +6,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
+import org.ticketsouq.analyticsservice.Client.UserServiceClient;
 import org.ticketsouq.analyticsservice.dto.*;
 import org.ticketsouq.analyticsservice.model.EventAnalytics;
 import org.ticketsouq.analyticsservice.model.SalesRecord;
@@ -17,6 +18,7 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
@@ -24,12 +26,14 @@ public class AnalyticsServiceImpl implements AnalyticsService {
 
     private final EventAnalyticsRepository eventAnalyticsRepository;
     private final SalesRecordRepository salesRecordRepository;
+    private final UserServiceClient userServiceClient;
 
     @Override
-    public OverviewKpiResponse getOverviewKpis(String orgId, String range) {
-        double revenue = eventAnalyticsRepository.sumTotalRevenueByOrg(orgId);
-        int ticketsSold = eventAnalyticsRepository.sumTotalTicketsSoldByOrg(orgId);
-        int totalCapacity = eventAnalyticsRepository.sumTotalCapacityByOrg(orgId);
+    public OverviewKpiResponse getOverviewKpis(String userId, String range) {
+        String orgName = resolveOrgName(userId);
+        double revenue = eventAnalyticsRepository.sumTotalRevenueByOrgName(orgName);
+        int ticketsSold = eventAnalyticsRepository.sumTotalTicketsSoldByOrgName(orgName);
+        int totalCapacity = eventAnalyticsRepository.sumTotalCapacityByOrgName(orgName);
 
         return new OverviewKpiResponse(
             new OverviewKpiResponse.RevenueKpi(revenue, "USD", 0),
@@ -40,14 +44,14 @@ public class AnalyticsServiceImpl implements AnalyticsService {
     }
 
     @Override
-    public SalesPaceResponse getSalesPace(String orgId, String range, Optional<String> eventId) {
+    public SalesPaceResponse getSalesPace(String userId, String range, Optional<String> eventId) {
         LocalDate from = parseRange(range);
         LocalDate to = LocalDate.now();
         List<SalesRecord> records;
         if (eventId.isPresent()) {
             records = salesRecordRepository.findByEventIdAndSaleDateBetweenOrderBySaleDateAsc(eventId.get(), from, to);
         } else {
-            records = salesRecordRepository.findByOrganizationIdAndSaleDateBetweenOrderBySaleDateAsc(orgId, from, to);
+            records = salesRecordRepository.findByOrganizationNameAndSaleDateBetweenOrderBySaleDateAsc(resolveOrgName(userId), from, to);
         }
 
         List<SalesPaceResponse.DataPoint> series = records.stream()
@@ -59,7 +63,7 @@ public class AnalyticsServiceImpl implements AnalyticsService {
     }
 
     @Override
-    public EventComparisonResponse getEventComparison(String orgId, String range, String sort, int page, int pageSize) {
+    public EventComparisonResponse getEventComparison(String userId, String range, String sort, int page, int pageSize) {
         Sort sorting = switch (sort) {
             case "revenue" -> Sort.by(Sort.Direction.DESC, "totalRevenue");
             case "tickets" -> Sort.by(Sort.Direction.DESC, "totalTicketsSold");
@@ -67,7 +71,7 @@ public class AnalyticsServiceImpl implements AnalyticsService {
             default -> Sort.by(Sort.Direction.DESC, "totalRevenue");
         };
         Pageable pageable = PageRequest.of(page - 1, pageSize, sorting);
-        Page<EventAnalytics> eventsPage = eventAnalyticsRepository.findByOrganizationId(orgId, pageable);
+        Page<EventAnalytics> eventsPage = eventAnalyticsRepository.findByOrganizationName(resolveOrgName(userId), pageable);
 
         List<EventComparisonResponse.EventRow> rows = eventsPage.getContent().stream()
             .map(e -> new EventComparisonResponse.EventRow(
@@ -124,6 +128,14 @@ public class AnalyticsServiceImpl implements AnalyticsService {
     }
 
     // ── helpers ──────────────────────────────────────────────
+
+    private String resolveOrgName(String userId) {
+        try {
+            return userServiceClient.getOrganizationNameByUserId(UUID.fromString(userId));
+        } catch (IllegalArgumentException e) {
+            return null;
+        }
+    }
 
     private LocalDate parseRange(String range) {
         return switch (range) {
