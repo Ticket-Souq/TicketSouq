@@ -3,11 +3,8 @@ package org.ticketsouq.apigateway.service;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.ArgumentCaptor;
-import org.mockito.Captor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.transaction.PlatformTransactionManager;
@@ -17,6 +14,7 @@ import org.ticketsouq.apigateway.model.AuthCredential;
 import org.ticketsouq.apigateway.model.RefreshToken;
 import org.ticketsouq.apigateway.model.Role;
 import org.ticketsouq.apigateway.repository.AuthCredentialRepository;
+import org.ticketsouq.outbox.service.OutboxWriter;
 import org.ticketsouq.sharedmodule.ApiGateway.dto.CreateUserRequest;
 import org.ticketsouq.sharedmodule.ApiGateway.dto.GenerateAccountRequest;
 import org.ticketsouq.sharedmodule.ApiGateway.dto.GenerateMembersRequest;
@@ -38,6 +36,10 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
+import static org.ticketsouq.sharedmodule.Constants.TOPIC_NAMES.ACCOUNTS_GENERATED;
+import static org.ticketsouq.sharedmodule.Constants.TOPIC_NAMES.AUDIT_EVENT;
+import static org.ticketsouq.sharedmodule.Constants.TOPIC_NAMES.USER_EMAIL_VERIFICATION;
+import static org.ticketsouq.sharedmodule.Constants.TOPIC_NAMES.USER_PASSWORD_RESET;
 
 @ExtendWith(MockitoExtension.class)
 class AuthServiceTest {
@@ -48,19 +50,16 @@ class AuthServiceTest {
     @Mock private PasswordEncoder passwordEncoder;
     @Mock private UserServiceClient userServiceClient;
     @Mock private AuthCredentialRepository credentialRepository;
-    @Mock private ApplicationEventPublisher eventPublisher;
+    @Mock private OutboxWriter outboxWriter;
     @Mock private PlatformTransactionManager transactionManager;
     private AuthService authService;
     private AuthCredential customerCredential;
     private AuthCredential verifiedCredential;
 
-    @Captor
-    private ArgumentCaptor<Object> eventCaptor;
-
     @BeforeEach
     void setUp() {
         authService = new AuthService(authTokenService, passwordEncoder, userServiceClient,
-            credentialRepository, eventPublisher, transactionManager);
+            credentialRepository, outboxWriter, transactionManager);
 
         customerCredential = AuthCredential.builder()
             .userId(USER_ID)
@@ -103,8 +102,8 @@ class AuthServiceTest {
             c.getRole() == Role.CUSTOMER && c.getIsActive() && !c.getIsVerified() && !c.getLocked()));
 
         verify(userServiceClient).registerUser(any(CreateUserRequest.class));
-        verify(eventPublisher).publishEvent(any(EmailVerificationEvent.class));
-        verify(eventPublisher).publishEvent(any(AuditEvent.class));
+        verify(outboxWriter).save(any(EmailVerificationEvent.class), eq(USER_EMAIL_VERIFICATION), anyString());
+        verify(outboxWriter).save(any(AuditEvent.class), eq(AUDIT_EVENT), anyString());
     }
 
     @Test
@@ -317,7 +316,7 @@ class AuthServiceTest {
 
         authService.triggerVerificationEmail("u@t.com");
 
-        verify(eventPublisher).publishEvent(any(EmailVerificationEvent.class));
+        verify(outboxWriter).save(any(EmailVerificationEvent.class), eq(USER_EMAIL_VERIFICATION), anyString());
     }
 
     @Test
@@ -326,7 +325,7 @@ class AuthServiceTest {
 
         authService.triggerVerificationEmail("test@test.com");
 
-        verify(eventPublisher, never()).publishEvent(any(EmailVerificationEvent.class));
+        verify(outboxWriter, never()).save(any(), any(), any());
     }
 
     @Test
@@ -348,7 +347,7 @@ class AuthServiceTest {
 
         authService.triggerPasswordReset("test@test.com");
 
-        verify(eventPublisher).publishEvent(any(PasswordResetEvent.class));
+        verify(outboxWriter).save(any(PasswordResetEvent.class), eq(USER_PASSWORD_RESET), anyString());
     }
 
     @Test
@@ -411,7 +410,7 @@ class AuthServiceTest {
 
         assertThat(customerCredential.getIsActive()).isFalse();
         verify(authTokenService).invalidateAllSession(USER_ID);
-        verify(eventPublisher).publishEvent(any(AuditEvent.class));
+        verify(outboxWriter).save(any(AuditEvent.class), eq(AUDIT_EVENT), anyString());
     }
 
     @Test
@@ -425,7 +424,7 @@ class AuthServiceTest {
 
         assertThat(orgHead.getLocked()).isFalse();
         assertThat(orgHead.getLockedUntil()).isNull();
-        verify(eventPublisher).publishEvent(any(AuditEvent.class));
+        verify(outboxWriter).save(any(AuditEvent.class), eq(AUDIT_EVENT), anyString());
     }
 
     @Test
@@ -444,7 +443,7 @@ class AuthServiceTest {
         assertThat(accounts.stream().filter(a -> "ORG_Agent".equals(a.role())).count()).isEqualTo(2);
         assertThat(accounts.stream().filter(a -> "ORG_Consumer".equals(a.role())).count()).isEqualTo(3);
         verify(userServiceClient).generateMembers(any(GenerateMembersRequest.class));
-        verify(eventPublisher).publishEvent(any(AccountsGeneratedEvent.class));
+        verify(outboxWriter).save(any(AccountsGeneratedEvent.class), eq(ACCOUNTS_GENERATED), anyString());
         verify(credentialRepository, times(5)).save(any());
     }
 
