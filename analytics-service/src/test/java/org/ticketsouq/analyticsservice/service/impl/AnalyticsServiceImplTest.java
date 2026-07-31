@@ -10,6 +10,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
+import org.ticketsouq.analyticsservice.Client.UserServiceClient;
 import org.ticketsouq.analyticsservice.dto.*;
 import org.ticketsouq.analyticsservice.model.EventAnalytics;
 import org.ticketsouq.analyticsservice.model.SalesRecord;
@@ -21,6 +22,7 @@ import java.time.Instant;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
@@ -35,20 +37,29 @@ class AnalyticsServiceImplTest {
     @Mock
     private SalesRecordRepository salesRecordRepository;
 
+    @Mock
+    private UserServiceClient userServiceClient;
+
     @InjectMocks
     private AnalyticsServiceImpl service;
 
-    private final String orgId = "org-1";
+    private final String userId = "11111111-1111-1111-1111-111111111111";
+    private final String orgName = "org-1";
+
+    private void stubOrgName() {
+        when(userServiceClient.getOrganizationNameByUserId(UUID.fromString(userId))).thenReturn(orgName);
+    }
 
     // ──── getOverviewKpis ────
 
     @Test
     void getOverviewKpis_shouldReturnOrgScopedKpis() {
-        when(eventAnalyticsRepository.sumTotalRevenueByOrg(orgId)).thenReturn(5000.0);
-        when(eventAnalyticsRepository.sumTotalTicketsSoldByOrg(orgId)).thenReturn(100);
-        when(eventAnalyticsRepository.sumTotalCapacityByOrg(orgId)).thenReturn(200);
+        stubOrgName();
+        when(eventAnalyticsRepository.sumTotalRevenueByOrgName(orgName)).thenReturn(5000.0);
+        when(eventAnalyticsRepository.sumTotalTicketsSoldByOrgName(orgName)).thenReturn(100);
+        when(eventAnalyticsRepository.sumTotalCapacityByOrgName(orgName)).thenReturn(200);
 
-        OverviewKpiResponse response = service.getOverviewKpis(orgId, "30d");
+        OverviewKpiResponse response = service.getOverviewKpis(userId, "30d");
 
         assertEquals(5000.0, response.revenue().value());
         assertEquals("USD", response.revenue().currency());
@@ -61,11 +72,12 @@ class AnalyticsServiceImplTest {
 
     @Test
     void getOverviewKpis_whenNoTicketsSold_avgPriceShouldBeZero() {
-        when(eventAnalyticsRepository.sumTotalRevenueByOrg(orgId)).thenReturn(0.0);
-        when(eventAnalyticsRepository.sumTotalTicketsSoldByOrg(orgId)).thenReturn(0);
-        when(eventAnalyticsRepository.sumTotalCapacityByOrg(orgId)).thenReturn(0);
+        stubOrgName();
+        when(eventAnalyticsRepository.sumTotalRevenueByOrgName(orgName)).thenReturn(0.0);
+        when(eventAnalyticsRepository.sumTotalTicketsSoldByOrgName(orgName)).thenReturn(0);
+        when(eventAnalyticsRepository.sumTotalCapacityByOrgName(orgName)).thenReturn(0);
 
-        OverviewKpiResponse response = service.getOverviewKpis(orgId, "30d");
+        OverviewKpiResponse response = service.getOverviewKpis(userId, "30d");
 
         assertEquals(0.0, response.avgTicketPrice().value());
     }
@@ -78,38 +90,40 @@ class AnalyticsServiceImplTest {
                 anyString(), any(LocalDate.class), any(LocalDate.class)))
                 .thenReturn(List.of());
 
-        service.getSalesPace(orgId, "30d", Optional.of("evt-1"));
+        service.getSalesPace(userId, "30d", Optional.of("evt-1"));
 
         verify(salesRecordRepository).findByEventIdAndSaleDateBetweenOrderBySaleDateAsc(
                 eq("evt-1"), any(LocalDate.class), any(LocalDate.class));
-        verify(salesRecordRepository, never()).findByOrganizationIdAndSaleDateBetweenOrderBySaleDateAsc(
+        verify(salesRecordRepository, never()).findByOrganizationNameAndSaleDateBetweenOrderBySaleDateAsc(
                 anyString(), any(LocalDate.class), any(LocalDate.class));
     }
 
     @Test
     void getSalesPace_withoutEventId_shouldQueryByOrgAndDate() {
-        when(salesRecordRepository.findByOrganizationIdAndSaleDateBetweenOrderBySaleDateAsc(
+        stubOrgName();
+        when(salesRecordRepository.findByOrganizationNameAndSaleDateBetweenOrderBySaleDateAsc(
                 anyString(), any(LocalDate.class), any(LocalDate.class)))
                 .thenReturn(List.of());
 
-        service.getSalesPace(orgId, "30d", Optional.empty());
+        service.getSalesPace(userId, "30d", Optional.empty());
 
-        verify(salesRecordRepository).findByOrganizationIdAndSaleDateBetweenOrderBySaleDateAsc(
-                eq(orgId), any(LocalDate.class), any(LocalDate.class));
+        verify(salesRecordRepository).findByOrganizationNameAndSaleDateBetweenOrderBySaleDateAsc(
+                eq(orgName), any(LocalDate.class), any(LocalDate.class));
     }
 
     @Test
     void getSalesPace_shouldMapTicketsSold_defaultZeroWhenNull() {
+        stubOrgName();
         SalesRecord record = SalesRecord.builder()
                 .saleDate(LocalDate.of(2026, 7, 21))
                 .ticketsSold(null)
                 .revenue(BigDecimal.valueOf(100))
                 .build();
-        when(salesRecordRepository.findByOrganizationIdAndSaleDateBetweenOrderBySaleDateAsc(
+        when(salesRecordRepository.findByOrganizationNameAndSaleDateBetweenOrderBySaleDateAsc(
                 anyString(), any(LocalDate.class), any(LocalDate.class)))
                 .thenReturn(List.of(record));
 
-        SalesPaceResponse response = service.getSalesPace(orgId, "30d", Optional.empty());
+        SalesPaceResponse response = service.getSalesPace(userId, "30d", Optional.empty());
 
         assertEquals(1, response.series().size());
         assertEquals(0, response.series().get(0).ticketsCumulative());
@@ -117,16 +131,17 @@ class AnalyticsServiceImplTest {
 
     @Test
     void getSalesPace_shouldMapTicketsSoldCorrectly() {
+        stubOrgName();
         SalesRecord record = SalesRecord.builder()
                 .saleDate(LocalDate.of(2026, 7, 21))
                 .ticketsSold(15)
                 .revenue(BigDecimal.valueOf(300))
                 .build();
-        when(salesRecordRepository.findByOrganizationIdAndSaleDateBetweenOrderBySaleDateAsc(
+        when(salesRecordRepository.findByOrganizationNameAndSaleDateBetweenOrderBySaleDateAsc(
                 anyString(), any(LocalDate.class), any(LocalDate.class)))
                 .thenReturn(List.of(record));
 
-        SalesPaceResponse response = service.getSalesPace(orgId, "30d", Optional.empty());
+        SalesPaceResponse response = service.getSalesPace(userId, "30d", Optional.empty());
 
         assertEquals("2026-07-21", response.series().get(0).date());
         assertEquals(15, response.series().get(0).ticketsCumulative());
@@ -136,13 +151,14 @@ class AnalyticsServiceImplTest {
 
     @Test
     void getEventComparison_shouldSortByRevenueDescAsDefault() {
-        when(eventAnalyticsRepository.findByOrganizationId(eq(orgId), any(Pageable.class)))
+        stubOrgName();
+        when(eventAnalyticsRepository.findByOrganizationName(eq(orgName), any(Pageable.class)))
                 .thenReturn(Page.empty());
 
-        service.getEventComparison(orgId, "30d", "unknown-sort", 1, 20);
+        service.getEventComparison(userId, "30d", "unknown-sort", 1, 20);
 
         ArgumentCaptor<Pageable> captor = ArgumentCaptor.captor();
-        verify(eventAnalyticsRepository).findByOrganizationId(eq(orgId), captor.capture());
+        verify(eventAnalyticsRepository).findByOrganizationName(eq(orgName), captor.capture());
         Sort.Order order = captor.getValue().getSort().iterator().next();
         assertEquals("totalRevenue", order.getProperty());
         assertTrue(order.isDescending());
@@ -150,25 +166,27 @@ class AnalyticsServiceImplTest {
 
     @Test
     void getEventComparison_shouldSortByTicketsDesc() {
-        when(eventAnalyticsRepository.findByOrganizationId(eq(orgId), any(Pageable.class)))
+        stubOrgName();
+        when(eventAnalyticsRepository.findByOrganizationName(eq(orgName), any(Pageable.class)))
                 .thenReturn(Page.empty());
 
-        service.getEventComparison(orgId, "30d", "tickets", 1, 20);
+        service.getEventComparison(userId, "30d", "tickets", 1, 20);
 
         ArgumentCaptor<Pageable> captor = ArgumentCaptor.captor();
-        verify(eventAnalyticsRepository).findByOrganizationId(eq(orgId), captor.capture());
+        verify(eventAnalyticsRepository).findByOrganizationName(eq(orgName), captor.capture());
         assertEquals("totalTicketsSold", captor.getValue().getSort().iterator().next().getProperty());
     }
 
     @Test
     void getEventComparison_shouldSortByNameAsc() {
-        when(eventAnalyticsRepository.findByOrganizationId(eq(orgId), any(Pageable.class)))
+        stubOrgName();
+        when(eventAnalyticsRepository.findByOrganizationName(eq(orgName), any(Pageable.class)))
                 .thenReturn(Page.empty());
 
-        service.getEventComparison(orgId, "30d", "name", 1, 20);
+        service.getEventComparison(userId, "30d", "name", 1, 20);
 
         ArgumentCaptor<Pageable> captor = ArgumentCaptor.captor();
-        verify(eventAnalyticsRepository).findByOrganizationId(eq(orgId), captor.capture());
+        verify(eventAnalyticsRepository).findByOrganizationName(eq(orgName), captor.capture());
         Sort.Order order = captor.getValue().getSort().iterator().next();
         assertEquals("title", order.getProperty());
         assertTrue(order.isAscending());
@@ -176,19 +194,21 @@ class AnalyticsServiceImplTest {
 
     @Test
     void getEventComparison_shouldUseCorrectPagination() {
-        when(eventAnalyticsRepository.findByOrganizationId(eq(orgId), any(Pageable.class)))
+        stubOrgName();
+        when(eventAnalyticsRepository.findByOrganizationName(eq(orgName), any(Pageable.class)))
                 .thenReturn(Page.empty());
 
-        service.getEventComparison(orgId, "30d", "revenue", 3, 15);
+        service.getEventComparison(userId, "30d", "revenue", 3, 15);
 
         ArgumentCaptor<Pageable> captor = ArgumentCaptor.captor();
-        verify(eventAnalyticsRepository).findByOrganizationId(eq(orgId), captor.capture());
+        verify(eventAnalyticsRepository).findByOrganizationName(eq(orgName), captor.capture());
         assertEquals(2, captor.getValue().getPageNumber());
         assertEquals(15, captor.getValue().getPageSize());
     }
 
     @Test
     void getEventComparison_shouldMapRowFromEntity() {
+        stubOrgName();
         EventAnalytics entity = EventAnalytics.builder()
                 .eventId("evt-1")
                 .title("Summer Festival")
@@ -197,10 +217,10 @@ class AnalyticsServiceImplTest {
                 .capacity(100)
                 .totalRevenue(BigDecimal.valueOf(2500))
                 .build();
-        when(eventAnalyticsRepository.findByOrganizationId(eq(orgId), any(Pageable.class)))
+        when(eventAnalyticsRepository.findByOrganizationName(eq(orgName), any(Pageable.class)))
                 .thenReturn(new PageImpl<>(List.of(entity)));
 
-        EventComparisonResponse response = service.getEventComparison(orgId, "30d", "revenue", 1, 20);
+        EventComparisonResponse response = service.getEventComparison(userId, "30d", "revenue", 1, 20);
 
         assertEquals(1, response.events().size());
         EventComparisonResponse.EventRow row = response.events().get(0);
@@ -230,7 +250,7 @@ class AnalyticsServiceImplTest {
         EventAnalytics entity = EventAnalytics.builder()
                 .eventId("evt-1")
                 .title("Summer Festival")
-                .organizationId(orgId)
+                .organizationName(orgName)
                 .startDateTime(Instant.parse("2026-08-15T16:00:00Z"))
                 .totalTicketsSold(50)
                 .capacity(100)

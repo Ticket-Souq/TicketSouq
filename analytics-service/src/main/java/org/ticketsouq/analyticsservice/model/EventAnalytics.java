@@ -15,8 +15,8 @@ public class EventAnalytics {
     @Column(name = "event_id", nullable = false, length = 36)
     private String eventId;
 
-    @Column(name = "organization_id", length = 36)
-    private String organizationId;
+    @Column(name = "organization_name", length = 150)
+    private String organizationName;
 
     @Column(name = "created_by", length = 36)
     private String createdBy;

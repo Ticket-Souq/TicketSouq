@@ -16,7 +16,7 @@ public interface SalesRecordRepository extends JpaRepository<SalesRecord, Long> 
 
     List<SalesRecord> findByEventIdAndSaleDateBetweenOrderBySaleDateAsc(String eventId, LocalDate from, LocalDate to);
 
-    List<SalesRecord> findByOrganizationIdAndSaleDateBetweenOrderBySaleDateAsc(String orgId, LocalDate from, LocalDate to);
+    List<SalesRecord> findByOrganizationNameAndSaleDateBetweenOrderBySaleDateAsc(String orgName, LocalDate from, LocalDate to);
 
     List<SalesRecord> findBySaleDateBetweenOrderBySaleDateAsc(LocalDate from, LocalDate to);
 }
