@@ -2,7 +2,6 @@ package org.ticketsouq.apigateway.service;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -17,6 +16,7 @@ import org.ticketsouq.apigateway.model.AuthCredential;
 import org.ticketsouq.apigateway.model.RefreshToken;
 import org.ticketsouq.apigateway.model.Role;
 import org.ticketsouq.apigateway.repository.AuthCredentialRepository;
+import org.ticketsouq.outbox.service.OutboxWriter;
 import org.ticketsouq.sharedmodule.ApiGateway.dto.CreateUserRequest;
 import org.ticketsouq.sharedmodule.ApiGateway.dto.GenerateAccountRequest;
 import org.ticketsouq.sharedmodule.ApiGateway.dto.GenerateMembersRequest;
@@ -28,6 +28,11 @@ import org.ticketsouq.sharedmodule.ApiGateway.exception.EmailAlreadyExistsExcept
 import org.ticketsouq.sharedmodule.AuditService.events.AuditEvent;
 import org.ticketsouq.sharedmodule.GeneralExceptions.BusinessException;
 import org.ticketsouq.sharedmodule.utils.UUIDUtils;
+
+import static org.ticketsouq.sharedmodule.Constants.TOPIC_NAMES.ACCOUNTS_GENERATED;
+import static org.ticketsouq.sharedmodule.Constants.TOPIC_NAMES.AUDIT_EVENT;
+import static org.ticketsouq.sharedmodule.Constants.TOPIC_NAMES.USER_EMAIL_VERIFICATION;
+import static org.ticketsouq.sharedmodule.Constants.TOPIC_NAMES.USER_PASSWORD_RESET;
 
 import java.security.SecureRandom;
 import java.time.*;
@@ -45,7 +50,7 @@ public class AuthService {
     private final PasswordEncoder passwordEncoder;
     private final UserServiceClient userServiceClient;
     private final AuthCredentialRepository credentialRepository;
-    private final ApplicationEventPublisher applicationEventPublisher;
+    private final OutboxWriter outboxWriter;
     private final PlatformTransactionManager transactionManager;
 
     // ── REGISTER ──────────────────────────────────────────────────────────────
@@ -181,7 +186,8 @@ public class AuthService {
     public void triggerPasswordReset(String email) {
         AuthCredential credential = getCredentialByEmail(email);
         String otp = authTokenService.generatePasswordResetOtp(credential.getUserId());
-        applicationEventPublisher.publishEvent(new PasswordResetEvent(UUID.randomUUID(),credential.getUserId(), email, otp));
+        outboxWriter.save(new PasswordResetEvent(UUID.randomUUID(), credential.getUserId(), email, otp),
+            USER_PASSWORD_RESET, credential.getUserId().toString());
     }
 
     /*
@@ -298,8 +304,9 @@ public class AuthService {
         for (int i = 0; i < req.consumerCount(); i++) addMember(accounts,members,Role.ORG_Consumer);
 
         userServiceClient.generateMembers(new GenerateMembersRequest(orgHeadUserId, members));
-        applicationEventPublisher.publishEvent(new AccountsGeneratedEvent(UUID.randomUUID(),orgHeadUserId,
-            accounts.stream().map(a -> new AccountsGeneratedEvent.AccountInfo(UUIDUtils.parse(a.userId()), a.email(), a.password(), a.role())).toList()));
+        outboxWriter.save(new AccountsGeneratedEvent(UUID.randomUUID(), orgHeadUserId,
+            accounts.stream().map(a -> new AccountsGeneratedEvent.AccountInfo(UUIDUtils.parse(a.userId()), a.email(), a.password(), a.role())).toList()),
+            ACCOUNTS_GENERATED, orgHeadUserId.toString());
 
         return accounts;
     }
@@ -411,20 +418,20 @@ public class AuthService {
     }
 
     private void sendVarificationNotification(AuthCredential credential) {
-        applicationEventPublisher.publishEvent(new EmailVerificationEvent(
+        outboxWriter.save(new EmailVerificationEvent(
             UUID.randomUUID(),
             credential.getUserId(),
             credential.getEmail(),
             authTokenService.generateEmailVerificationOtp(credential.getUserId())
-        ));
+        ), USER_EMAIL_VERIFICATION, credential.getUserId().toString());
     }
 
     private void sendAuditEvent(String action, UUID madeById, String reason) {
-        applicationEventPublisher.publishEvent(new AuditEvent(action, madeById, reason, Instant.now()));
+        outboxWriter.save(new AuditEvent(action, madeById, reason, Instant.now()), AUDIT_EVENT, madeById.toString());
     }
 
     private void sendAuditEventWithNoReason(String action, UUID madeById) {
-        applicationEventPublisher.publishEvent(new AuditEvent(action, madeById, "", Instant.now()));
+        outboxWriter.save(new AuditEvent(action, madeById, "", Instant.now()), AUDIT_EVENT, madeById.toString());
     }
 
     private String generateRandomString(int length) {
