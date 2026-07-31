@@ -2,10 +2,8 @@ package org.ticketsouq.eventservice.service;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.ticketsouq.sharedmodule.EventService.dto.ReservationRequest;
 import org.ticketsouq.eventservice.dto.ZoneStatusResponse;
 import org.ticketsouq.eventservice.Client.UserServiceClient;
 import org.ticketsouq.eventservice.model.*;
@@ -13,6 +11,7 @@ import org.ticketsouq.eventservice.model.enums.BookingModel;
 import org.ticketsouq.eventservice.model.enums.EventStatus;
 import org.ticketsouq.eventservice.model.enums.SeatStatus;
 import org.ticketsouq.eventservice.repository.*;
+import org.ticketsouq.outbox.service.OutboxWriter;
 import org.ticketsouq.sharedmodule.EventService.dto.*;
 import org.ticketsouq.sharedmodule.EventService.events.BeginReservationEvent;
 import org.ticketsouq.sharedmodule.EventService.exception.*;
@@ -20,6 +19,8 @@ import org.ticketsouq.sharedmodule.GeneralExceptions.ConflictException;
 import org.ticketsouq.sharedmodule.GeneralExceptions.ResourceNotFoundException;
 import org.ticketsouq.sharedmodule.ReservationService.dto.ConfirmResponse;
 import org.ticketsouq.sharedmodule.ReservationService.dto.ReleaseResponse;
+
+import static org.ticketsouq.sharedmodule.Constants.TOPIC_NAMES.RESERVATION_BEGIN;
 
 import java.time.LocalDateTime;
 import java.util.*;
@@ -34,7 +35,7 @@ public class LockService {
     private final SectionRepository sectionRepository;
     private final SeatLockRepository seatLockRepository;
     private final ZoneLockRepository zoneLockRepository;
-    private final ApplicationEventPublisher eventPublisher;
+    private final OutboxWriter outboxWriter;
     private final UserServiceClient userServiceClient;
 
     @Value("${app.lock.ttl:10}")
@@ -259,7 +260,7 @@ public class LockService {
                     : accountHolderName;
                 tickets.add(new TicketReservationDto(section.getPrice(), null, section.getName(), holderName));
             }
-            eventPublisher.publishEvent(event);
+            outboxWriter.save(event, RESERVATION_BEGIN, event.reservationId().toString());
             return;
         }
 
@@ -287,7 +288,7 @@ public class LockService {
                 if (label == null || label.isBlank()) label = seat.getLable();
                 tickets.add(new TicketReservationDto(seat.getSection().getPrice(), label, seat.getSection().getName(), holderName));
             }
-            eventPublisher.publishEvent(event);
+            outboxWriter.save(event, RESERVATION_BEGIN, event.reservationId().toString());
             return;
         }
 
