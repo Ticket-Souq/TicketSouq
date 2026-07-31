@@ -50,4 +50,9 @@ public class KafkaTopicConfig {
         return createTopic(PAYMENT_SUCCESS);
     }
 
+    @Bean
+    public NewTopic orgStatusChangedTopic() {
+        return createTopic(ORG_STATUS_CHANGED);
+    }
+
 }

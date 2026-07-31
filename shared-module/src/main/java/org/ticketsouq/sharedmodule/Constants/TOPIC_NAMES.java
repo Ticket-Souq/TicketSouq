@@ -44,4 +44,7 @@ public final class TOPIC_NAMES {
     // ─── Audit Service ────────────────────────────────────────
     public static final String AUDIT_EVENT = "audit.event";
 
+    // ─── User Service ─────────────────────────────────────────
+    public static final String ORG_STATUS_CHANGED = "org.status.changed";
+
 }

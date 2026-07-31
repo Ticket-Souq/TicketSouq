@@ -52,6 +52,30 @@ public enum NotificationTemplate {
         null,
         "Your Ticketaty Account",
         "email/account-generated"
+    ),
+
+    ORG_APPROVED(
+        NotificationType.ORG_APPROVED,
+        "Organization Approved",
+        "Your organization has been approved.",
+        "Your organization has been approved",
+        "email/org-approved"
+    ),
+
+    ORG_BANNED(
+        NotificationType.ORG_BANNED,
+        "Organization Banned",
+        "Your organization has been banned.",
+        "Your organization has been banned",
+        "email/org-banned"
+    ),
+
+    ORG_REJECTED(
+        NotificationType.ORG_REJECTED,
+        "Organization Rejected",
+        "Your organization request has been rejected.",
+        "Your organization request has been rejected",
+        "email/org-rejected"
     )
     ;
 
