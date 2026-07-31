@@ -3,20 +3,20 @@ package org.ticketsouq.outbox.relay;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionTemplate;
 import org.ticketsouq.outbox.entity.OutboxEvent;
 import org.ticketsouq.outbox.entity.OutboxStatus;
+import org.ticketsouq.outbox.kafka.KafkaSender;
+import org.ticketsouq.outbox.kafka.OutboxKafkaException;
 import org.ticketsouq.outbox.repository.OutboxEventRepository;
 
 import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
-import java.util.concurrent.TimeUnit;
 
 @Slf4j
 @Component
@@ -24,7 +24,7 @@ import java.util.concurrent.TimeUnit;
 public class OutboxRelay {
 
     private final OutboxEventRepository repository;
-    private final KafkaTemplate<String, Object> kafkaTemplate;
+    private final KafkaSender kafkaSender;
     private final ObjectMapper objectMapper;
     private final TransactionTemplate transactionTemplate;
     private final OutboxProperties properties;
@@ -44,16 +44,13 @@ public class OutboxRelay {
 
                 try {
                     Object payload = deserialize(event);
-                    kafkaTemplate.send(event.getTopic(), event.getAggregateId(), payload)
-                        .get(10, TimeUnit.SECONDS);
-                    markPublished(event.getId());
-                } catch (InterruptedException e) {
-                    Thread.currentThread().interrupt();
-                    repository.findById(event.getId()).ifPresent(e2 -> {
-                        e2.setStatus(OutboxStatus.PENDING);
-                        repository.save(e2);
-                    });
-                    break;
+                    if (kafkaSender.send(event.getTopic(), event.getAggregateId(), payload)) {
+                        markPublished(event.getId());
+                    } else {
+                        requeue(event);
+                    }
+                } catch (OutboxKafkaException e) {
+                    requeue(event);
                 } catch (Exception e) {
                     handleFailure(event, e);
                 }
@@ -81,6 +78,13 @@ public class OutboxRelay {
         repository.findById(id).ifPresent(e -> {
             e.setStatus(OutboxStatus.PUBLISHED);
             e.setPublishedAt(Instant.now());
+            repository.save(e);
+        });
+    }
+
+    private void requeue(OutboxEvent event) {
+        repository.findById(event.getId()).ifPresent(e -> {
+            e.setStatus(OutboxStatus.PENDING);
             repository.save(e);
         });
     }
