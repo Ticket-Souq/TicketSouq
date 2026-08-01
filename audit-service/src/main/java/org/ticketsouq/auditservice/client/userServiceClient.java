@@ -9,7 +9,7 @@ import org.ticketsouq.sharedmodule.UserService.dto.UserEmail;
 import java.util.List;
 import java.util.UUID;
 
-@FeignClient(name = "user-service", path = "/api/v1/user")
+@FeignClient(name = "user-service", path = "/api/v1/user", fallbackFactory = UserServiceClientFallbackFactory.class)
 public interface userServiceClient {
 
     @PostMapping("/emails")
