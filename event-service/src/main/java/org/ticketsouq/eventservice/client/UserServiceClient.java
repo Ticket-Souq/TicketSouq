@@ -8,7 +8,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
-@FeignClient(name = "user-service", path = "/api/v1/private/user")
+@FeignClient(name = "user-service", path = "/api/v1/private/user", fallbackFactory = UserServiceClientFallbackFactory.class)
 public interface UserServiceClient {
 
     @GetMapping("/organization")
