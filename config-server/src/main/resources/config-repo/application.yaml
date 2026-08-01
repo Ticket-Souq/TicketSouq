@@ -118,3 +118,30 @@ eureka:
     instance-id: ${spring.application.name}:${spring.application.instance_id:${random.value}}
     lease-renewal-interval-in-seconds: 5
     lease-expiration-duration-in-seconds: 15
+
+# ── Feign + Circuit Breaker (Resilience4j) for all services ──────────
+feign:
+  circuitbreaker:
+    enabled: true
+
+resilience4j:
+  circuitbreaker:
+    configs:
+      default:
+        sliding-window-size: 10
+        minimum-number-of-calls: 5
+        failure-rate-threshold: 50
+        wait-duration-in-open-state: 30s
+        permitted-number-of-calls-in-half-open-state: 3
+        sliding-window-type: COUNT_BASED
+    instances:
+      user-service:
+        base-config: default
+      event-service:
+        base-config: default
+      api-gateway:
+        base-config: default
+  timelimiter:
+    configs:
+      default:
+        timeout-duration: 5s
