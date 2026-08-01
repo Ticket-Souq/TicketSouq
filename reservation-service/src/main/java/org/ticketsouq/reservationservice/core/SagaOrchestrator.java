@@ -6,12 +6,11 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Component;
-import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionTemplate;
 import org.ticketsouq.reservationservice.dto.ReservationContext;
 import org.ticketsouq.reservationservice.model.SagaInstance;
 import org.ticketsouq.reservationservice.model.enums.SagaStatus;
-import org.ticketsouq.reservationservice.event.OutboxPublisher;
+import org.ticketsouq.outbox.service.OutboxWriter;
 import org.ticketsouq.reservationservice.repository.ReservationRepository;
 import org.ticketsouq.reservationservice.repository.SagaInstanceRepository;
 import org.ticketsouq.sharedmodule.EventService.dto.TicketReservationDto;
@@ -27,7 +26,6 @@ import org.ticketsouq.sharedmodule.ReservationService.events.SagaTicketCompensat
 import org.ticketsouq.sharedmodule.ReservationService.events.SagaTicketReplyEvent;
 
 import java.time.Instant;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -46,7 +44,7 @@ public class SagaOrchestrator {
 
     private final SagaInstanceRepository sagaInstanceRepository;
     private final ReservationRepository reservationRepository;
-    private final OutboxPublisher outboxPublisher;
+    private final OutboxWriter outboxWriter;
     private final TransactionTemplate transactionTemplate;
     private final ObjectMapper objectMapper;
 
@@ -179,7 +177,7 @@ public class SagaOrchestrator {
                     saga.getEventId(),
                     saga.getTotalAmount()
                 );
-                outboxPublisher.publish(saga.getReservationId().toString(), SAGA_PAYMENT_COMMAND, cmd);
+                outboxWriter.save(cmd, SAGA_PAYMENT_COMMAND, saga.getReservationId().toString());
                 log.info("Published SagaPaymentCommand for saga {}", saga.getId());
             }
             case PAYMENT -> {
@@ -189,14 +187,14 @@ public class SagaOrchestrator {
                     saga.getUserId(),
                     fromJson(saga.getTicketDetails())
                 );
-                outboxPublisher.publish(saga.getReservationId().toString(), SAGA_TICKET_COMMAND, cmd);
+                outboxWriter.save(cmd, SAGA_TICKET_COMMAND, saga.getReservationId().toString());
                 log.info("Published SagaTicketCommand for saga {}", saga.getId());
             }
             case TICKET_ISSUANCE -> {
                 SagaLockConfirmCommand cmd = new SagaLockConfirmCommand(
                     saga.getReservationId()
                 );
-                outboxPublisher.publish(saga.getReservationId().toString(), SAGA_LOCK_CONFIRM_COMMAND, cmd);
+                outboxWriter.save(cmd, SAGA_LOCK_CONFIRM_COMMAND, saga.getReservationId().toString());
                 log.info("Published SagaLockConfirmCommand for saga {}", saga.getId());
             }
             case LOCK_CONFIRMATION -> {
@@ -220,38 +218,23 @@ public class SagaOrchestrator {
     private void compensate(SagaInstance saga) {
         SagaStep lastConfirmed = saga.getCurrentStep();
 
-        // Collect all compensation commands first
-        List<OutboxCommand> compensationCommands = new ArrayList<>();
-        if (lastConfirmed.ordinal() >= SagaStep.TICKET_ISSUANCE.ordinal()) {
-            compensationCommands.add(new OutboxCommand(
-                saga.getReservationId().toString(),
-                SAGA_TICKET_COMPENSATE,
-                new SagaTicketCompensateCommand(saga.getReservationId())
-            ));
-        }
-
-        if (lastConfirmed.ordinal() >= SagaStep.PAYMENT.ordinal()) {
-            if (saga.getPaymentId() != null) {
-                compensationCommands.add(new OutboxCommand(
-                    saga.getReservationId().toString(),
-                    SAGA_PAYMENT_COMPENSATE,
-                    new SagaPaymentCompensateCommand(saga.getReservationId(), saga.getPaymentId())
-                ));
-            }
-        }
-        // release the locks
-        compensationCommands.add(new OutboxCommand(
-            saga.getReservationId().toString(),
-            SAGA_LOCK_CONFIRM_COMPENSATE,
-            new SagaLockConfirmCompensateCommand(saga.getReservationId())
-        ));
-
         // Publish all compensation commands in a single transaction, then mark FAILED
         transactionTemplate.executeWithoutResult(status -> {
-            for (OutboxCommand cmd : compensationCommands) {
-                outboxPublisher.publish(cmd.aggregateId(), cmd.topic(), cmd.event());
-                log.info("Published {} for saga {}", cmd.event().getClass().getSimpleName(), saga.getId());
+            if (lastConfirmed.ordinal() >= SagaStep.TICKET_ISSUANCE.ordinal()) {
+                outboxWriter.save(new SagaTicketCompensateCommand(saga.getReservationId()),
+                    SAGA_TICKET_COMPENSATE, saga.getReservationId().toString());
+                log.info("Published SagaTicketCompensateCommand for saga {}", saga.getId());
             }
+
+            if (lastConfirmed.ordinal() >= SagaStep.PAYMENT.ordinal() && saga.getPaymentId() != null) {
+                outboxWriter.save(new SagaPaymentCompensateCommand(saga.getReservationId(), saga.getPaymentId()),
+                    SAGA_PAYMENT_COMPENSATE, saga.getReservationId().toString());
+                log.info("Published SagaPaymentCompensateCommand for saga {}", saga.getId());
+            }
+
+            outboxWriter.save(new SagaLockConfirmCompensateCommand(saga.getReservationId()),
+                SAGA_LOCK_CONFIRM_COMPENSATE, saga.getReservationId().toString());
+            log.info("Published SagaLockConfirmCompensateCommand for saga {}", saga.getId());
 
             saga.setSagaStatus(SagaStatus.FAILED);
             saga.setCurrentStep(SagaStep.FAILED);
@@ -266,8 +249,6 @@ public class SagaOrchestrator {
         });
         log.info("Saga {} marked as FAILED after compensation", saga.getId());
     }
-
-    private record OutboxCommand(String aggregateId, String topic, Object event) {}
 
     public void recoverSaga(UUID reservationId) {
         try {

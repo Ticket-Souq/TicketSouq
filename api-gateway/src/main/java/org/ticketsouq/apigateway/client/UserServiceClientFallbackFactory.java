@@ -7,6 +7,7 @@ import org.springframework.stereotype.Component;
 import org.ticketsouq.apigateway.dto.OrgMemberResponse;
 import org.ticketsouq.sharedmodule.ApiGateway.dto.CreateUserRequest;
 import org.ticketsouq.sharedmodule.ApiGateway.dto.GenerateMembersRequest;
+import org.ticketsouq.sharedmodule.GeneralExceptions.RemoteServiceUnavailableException;
 
 import java.net.ConnectException;
 import java.util.List;
@@ -52,17 +53,17 @@ public class UserServiceClientFallbackFactory implements FallbackFactory<UserSer
         return new UserServiceClient() {
             @Override
             public void registerUser(CreateUserRequest request) {
-                throw new RuntimeException("user-service is unavailable (%s), registration cannot be completed".formatted(reason), cause);
+                throw new RemoteServiceUnavailableException("user-service", "registration");
             }
 
             @Override
             public boolean isBelongToBannedOrg(UUID userId) {
-                throw new RuntimeException("user-service is unavailable (%s), login cannot be completed".formatted(reason), cause);
+                throw new RemoteServiceUnavailableException("user-service", "login");
             }
 
             @Override
             public void generateMembers(GenerateMembersRequest request) {
-                throw new RuntimeException("user-service is unavailable (%s), member generation cannot be completed".formatted(reason), cause);
+                throw new RemoteServiceUnavailableException("user-service", "member generation");
             }
 
             @Override

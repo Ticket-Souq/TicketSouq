@@ -47,7 +47,7 @@ public class AnalyticsEventProcessingService {
         eventAnalyticsRepository.save(EventAnalytics.builder()
             .eventId(eventId)
             .organizationName(event.organization())
-            .createdBy(event.createdby().toString())
+            .createdBy(event.createdBy().toString())
             .title(event.title())
             .status(EventStatus.CREATED)
             .totalRevenue(BigDecimal.ZERO)

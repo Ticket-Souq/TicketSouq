@@ -90,7 +90,7 @@ class EventControllerTest {
         UUID eventId = UUID.randomUUID();
         EventFullResponse response = new EventFullResponse(
             eventId, "name", "desc", null, null, "cat", "org",
-            "url", EventStatus.PUBLISHED, null, Instant.now(), Instant.now(),
+            "url","url", EventStatus.PUBLISHED, null, Instant.now(), Instant.now(),
             List.of());
         when(eventService.getById(eventId)).thenReturn(response);
 

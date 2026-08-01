@@ -2,7 +2,6 @@ package org.ticketsouq.eventservice.service;
 
 import org.springframework.transaction.annotation.Transactional;
 import lombok.RequiredArgsConstructor;
-import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.ticketsouq.eventservice.dto.SeatResponse;
 import org.ticketsouq.eventservice.dto.UpdateSeatStatusRequest;
@@ -13,10 +12,13 @@ import org.ticketsouq.eventservice.model.enums.BookingModel;
 import org.ticketsouq.eventservice.model.enums.EventStatus;
 import org.ticketsouq.eventservice.model.enums.SeatStatus;
 import org.ticketsouq.eventservice.repository.SeatRepository;
+import org.ticketsouq.outbox.service.OutboxWriter;
 import org.ticketsouq.sharedmodule.AuditService.events.AuditEvent;
 import org.ticketsouq.sharedmodule.GeneralExceptions.BadRequestException;
 import org.ticketsouq.sharedmodule.GeneralExceptions.ConflictException;
 import org.ticketsouq.sharedmodule.GeneralExceptions.ResourceNotFoundException;
+
+import static org.ticketsouq.sharedmodule.Constants.TOPIC_NAMES.AUDIT_EVENT;
 
 import java.time.Instant;
 import java.util.UUID;
@@ -26,7 +28,7 @@ import java.util.UUID;
 public class SeatService {
 
     private final SeatRepository seatRepository;
-    private final ApplicationEventPublisher applicationEventPublisher;
+    private final OutboxWriter outboxWriter;
 
 
     @Transactional
@@ -40,7 +42,7 @@ public class SeatService {
         validateSeatStatusTransition(seat.getStatus(), request.status());
         updateRemainingCapacity(seat.getSection(), seat.getStatus(), request.status());
         seat.setStatus(request.status());
-        applicationEventPublisher.publishEvent(new AuditEvent("Seat Status updated by Org Member", userId, "", Instant.now()));
+        outboxWriter.save(new AuditEvent("Seat Status updated by Org Member", userId, "", Instant.now()), AUDIT_EVENT, userId.toString());
         return SeatResponse.from(seatRepository.save(seat));
     }
 
@@ -55,7 +57,7 @@ public class SeatService {
         validateSeatStatusTransition(seat.getStatus(), request.status());
         updateRemainingCapacity(seat.getSection(), seat.getStatus(), request.status());
         seat.setStatus(request.status());
-        applicationEventPublisher.publishEvent(new AuditEvent("Seat Status updated by Org Member", userId, "", Instant.now()));
+        outboxWriter.save(new AuditEvent("Seat Status updated by Org Member", userId, "", Instant.now()), AUDIT_EVENT, userId.toString());
         return SeatResponse.from(seatRepository.save(seat));
     }
 

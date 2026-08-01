@@ -10,12 +10,22 @@ spring:
     driver-class-name: org.postgresql.Driver
   jpa:
     hibernate:
-      ddl-auto: update
+      ddl-auto: validate
     show-sql: true
     properties:
       hibernate:
         dialect: org.hibernate.dialect.PostgreSQLDialect
         format_sql: true
+
+  # ── Flyway ─────────────────────────────────────────────────
+  # Schema is managed by versioned migrations in each service.
+  # baseline-on-migrate lets pre-existing (non-empty) DBs adopt Flyway
+  # without wiping data: they are baselined at V1; fresh DBs run V1+.
+  flyway:
+    enabled: true
+    baseline-on-migrate: true
+    baseline-version: 1
+    locations: classpath:db/migration
 
   # ── Kafka defaults (services override only what differs) ──────────
   kafka:
@@ -27,6 +37,7 @@ spring:
       value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
       properties:
         spring.json.add.type.headers: true
+        enable.idempotence: true
     consumer:
       group-id: ${kafka.group-id}
       auto-offset-reset: earliest
@@ -117,3 +128,30 @@ eureka:
     instance-id: ${spring.application.name}:${spring.application.instance_id:${random.value}}
     lease-renewal-interval-in-seconds: 5
     lease-expiration-duration-in-seconds: 15
+
+# ── Feign + Circuit Breaker (Resilience4j) for all services ──────────
+feign:
+  circuitbreaker:
+    enabled: true
+
+resilience4j:
+  circuitbreaker:
+    configs:
+      default:
+        sliding-window-size: 10
+        minimum-number-of-calls: 5
+        failure-rate-threshold: 50
+        wait-duration-in-open-state: 30s
+        permitted-number-of-calls-in-half-open-state: 3
+        sliding-window-type: COUNT_BASED
+    instances:
+      user-service:
+        base-config: default
+      event-service:
+        base-config: default
+      api-gateway:
+        base-config: default
+  timelimiter:
+    configs:
+      default:
+        timeout-duration: 5s

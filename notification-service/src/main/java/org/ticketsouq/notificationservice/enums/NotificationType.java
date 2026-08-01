@@ -11,5 +11,11 @@ public enum NotificationType {
 
     EVENT_CANCELLED,
 
-    ACCOUNT_GENERATED
+    ACCOUNT_GENERATED,
+
+    ORG_APPROVED,
+
+    ORG_BANNED,
+
+    ORG_REJECTED
 }

@@ -4,11 +4,8 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.ArgumentCaptor;
-import org.mockito.Captor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
@@ -25,7 +22,9 @@ import org.ticketsouq.eventservice.model.enums.EventStatus;
 import org.ticketsouq.eventservice.repository.EventRepository;
 import org.ticketsouq.eventservice.repository.SeatLockRepository;
 import org.ticketsouq.eventservice.repository.SeatRepository;
+import org.ticketsouq.eventservice.repository.ZoneLockRepository;
 import org.ticketsouq.eventservice.service.Search.SearchService;
+import org.ticketsouq.outbox.service.OutboxWriter;
 import org.ticketsouq.sharedmodule.AuditService.events.AuditEvent;
 import org.ticketsouq.sharedmodule.EventService.events.EventActivatedEvent;
 import org.ticketsouq.sharedmodule.EventService.events.EventCancelledEvent;
@@ -45,31 +44,33 @@ import java.util.UUID;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.ticketsouq.sharedmodule.Constants.TOPIC_NAMES.*;
 
 @ExtendWith(MockitoExtension.class)
 class EventServiceTest {
 
     @Mock private EventRepository eventRepository;
     @Mock private SearchService eventSearchService;
-    @Mock private ApplicationEventPublisher eventPublisher;
     @Mock private EventMapper eventMapper;
     @Mock private UserServiceClient userServiceClient;
     @Mock private SeatLockRepository seatLockRepository;
     @Mock private SeatRepository seatRepository;
     @Mock private PosterStorageService posterStorageService;
+    @Mock private  OutboxWriter outboxWriter;
+    @Mock private ZoneLockRepository zoneLockRepository;
 
-    @Captor private ArgumentCaptor<Object> eventCaptor;
 
     private EventService eventService;
 
     @BeforeEach
     void setUp() {
-        eventService = new EventService(eventRepository, eventSearchService, eventPublisher,
-            eventMapper, userServiceClient, seatLockRepository, seatRepository, posterStorageService);
+        eventService = new EventService(eventRepository, eventSearchService, outboxWriter,
+            eventMapper, userServiceClient, seatLockRepository, seatRepository, zoneLockRepository,posterStorageService);
     }
 
     @Test
@@ -90,8 +91,8 @@ class EventServiceTest {
 
         verify(eventRepository).save(event);
         verify(eventSearchService).indexEvent(event);
-        verify(eventPublisher).publishEvent(any(AuditEvent.class));
-        verify(eventPublisher).publishEvent(any(EventCreatedEvent.class));
+        verify(outboxWriter).save(any(AuditEvent.class), eq(AUDIT_EVENT), anyString());
+        verify(outboxWriter).save(any(EventCreatedEvent.class), eq(EVENT_CREATED), anyString());
     }
 
     @Test
@@ -136,7 +137,7 @@ class EventServiceTest {
         when(eventRepository.findEventById(id)).thenReturn(Optional.of(event));
         EventFullResponse expected = new EventFullResponse(
             id, "name", "desc", null, null, "cat", "org",
-            "url", EventStatus.PUBLISHED, BookingModel.SEAT, Instant.now(), Instant.now(),
+            "url","url", EventStatus.PUBLISHED, BookingModel.SEAT, Instant.now(), Instant.now(),
             List.of());
         when(eventMapper.toEventFullResponse(eq(event), eq(Set.of()))).thenReturn(expected);
 
@@ -153,7 +154,7 @@ class EventServiceTest {
         when(eventRepository.findEventById(id)).thenReturn(Optional.of(event));
         EventFullResponse expected = new EventFullResponse(
             id, "name", "desc", null, null, "cat", "org",
-            "url", EventStatus.PUBLISHED, BookingModel.ZONE, Instant.now(), Instant.now(),
+            "url","url", EventStatus.PUBLISHED, BookingModel.ZONE, Instant.now(), Instant.now(),
             List.of());
         when(eventMapper.toEventFullResponse(eq(event), eq(Set.of()))).thenReturn(expected);
 
@@ -198,8 +199,8 @@ class EventServiceTest {
         assertThat(event.getStatus()).isEqualTo(EventStatus.CANCELLED);
         verify(eventSearchService).deleteFromIndex(event);
         verify(eventRepository).save(event);
-        verify(eventPublisher).publishEvent(any(AuditEvent.class));
-        verify(eventPublisher).publishEvent(any(EventCancelledEvent.class));
+        verify(outboxWriter).save(any(AuditEvent.class), eq(AUDIT_EVENT), anyString());
+        verify(outboxWriter).save(any(EventCancelledEvent.class), eq(EVENT_CANCELLED), anyString());
     }
 
     @Test
@@ -278,7 +279,7 @@ class EventServiceTest {
 
         assertThat(event.getStatus()).isEqualTo(EventStatus.ACTIVE);
         verify(eventRepository).save(event);
-        verify(eventPublisher).publishEvent(any(EventActivatedEvent.class));
+        verify(outboxWriter).save(any(EventActivatedEvent.class), eq(EVENT_ACTIVATED), anyString());
     }
 
     @Test
@@ -291,7 +292,7 @@ class EventServiceTest {
         eventService.activateEvent(eventId);
 
         verify(eventRepository, never()).save(any());
-        verify(eventPublisher, never()).publishEvent(any(EventActivatedEvent.class));
+        verify(outboxWriter, never()).save(any(), any(), any());
     }
 
     @Test
@@ -303,7 +304,7 @@ class EventServiceTest {
         eventService.activateEvent(eventId);
 
         verify(eventRepository, never()).save(any());
-        verify(eventPublisher, never()).publishEvent(any(EventActivatedEvent.class));
+        verify(outboxWriter, never()).save(any(), any(), any());
     }
 
     @Test
@@ -317,8 +318,8 @@ class EventServiceTest {
 
         assertThat(event.getStatus()).isEqualTo(EventStatus.COMPLETED);
         verify(eventRepository).save(event);
-        verify(eventPublisher).publishEvent(any(EventCompletedEvent.class));
-        verify(eventPublisher).publishEvent(any(EventPayoutReleaseEvent.class));
+        verify(outboxWriter).save(any(EventCompletedEvent.class), eq(EVENT_COMPLETED), anyString());
+        verify(outboxWriter).save(any(EventPayoutReleaseEvent.class), eq(EVENT_PAYOUT_RELEASED), anyString());
     }
 
     @Test
@@ -355,7 +356,7 @@ class EventServiceTest {
 
         assertThat(event.getStatus()).isEqualTo(EventStatus.COMPLETED);
         verify(eventRepository).save(event);
-        verify(eventPublisher).publishEvent(any(EventPayoutReleaseEvent.class));
+        verify(outboxWriter).save(any(EventPayoutReleaseEvent.class), eq(EVENT_PAYOUT_RELEASED), anyString());
     }
 
     @Test

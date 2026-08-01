@@ -2,22 +2,20 @@ package org.ticketsouq.reservationservice.integration;
 
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import org.mockito.internal.verification.Only;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.transaction.annotation.Transactional;
 import org.ticketsouq.reservationservice.core.SagaOrchestrator;
 import org.ticketsouq.reservationservice.core.SagaStep;
 import org.ticketsouq.reservationservice.dto.ReservationContext;
-import org.ticketsouq.reservationservice.model.OutboxEvent;
+import org.ticketsouq.outbox.entity.OutboxEvent;
+import org.ticketsouq.outbox.entity.OutboxStatus;
+import org.ticketsouq.outbox.repository.OutboxEventRepository;
 import org.ticketsouq.reservationservice.model.Reservation;
 import org.ticketsouq.reservationservice.model.SagaInstance;
-import org.ticketsouq.reservationservice.model.enums.OutboxStatus;
 import org.ticketsouq.reservationservice.model.enums.SagaStatus;
-import org.ticketsouq.reservationservice.repository.OutboxEventRepository;
 import org.ticketsouq.reservationservice.repository.ReservationRepository;
 import org.ticketsouq.reservationservice.repository.SagaInstanceRepository;
 import org.ticketsouq.reservationservice.service.ReservationService;
@@ -32,9 +30,6 @@ import java.time.Instant;
 import java.util.*;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.*;
-
 //@Disabled
 class ReservationServiceIntegrationTest extends AbstractIntegrationTest {
 
@@ -67,8 +62,8 @@ class ReservationServiceIntegrationTest extends AbstractIntegrationTest {
         userId = UUID.randomUUID();
         eventId = UUID.randomUUID();
         tickets = List.of(
-            new TicketReservationDto(new BigDecimal("50.00"), 1, "A1", "VIP"),
-            new TicketReservationDto(new BigDecimal("75.00"), 2, "B3", "Standard")
+            new TicketReservationDto(new BigDecimal("50.00"),  "A1", "VIP",""),
+            new TicketReservationDto(new BigDecimal("75.00"),  "B3", "Standard","s")
         );
     }
 
@@ -222,6 +217,7 @@ class ReservationServiceIntegrationTest extends AbstractIntegrationTest {
             .payload("{}")
             .status(OutboxStatus.PENDING)
             .retryCount(0)
+            .createdAt(Instant.now())
             .build();
         outboxEventRepository.save(event);
 
@@ -255,6 +251,7 @@ class ReservationServiceIntegrationTest extends AbstractIntegrationTest {
             .status(OutboxStatus.IN_PROGRESS)
             .retryCount(0)
             .claimedAt(Instant.now().minus(Duration.ofMinutes(10)))
+            .createdAt(Instant.now().minus(Duration.ofMinutes(10)))
             .build();
         outboxEventRepository.saveAndFlush(stuckEvent);
 

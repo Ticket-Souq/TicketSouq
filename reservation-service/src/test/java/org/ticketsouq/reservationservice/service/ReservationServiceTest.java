@@ -6,7 +6,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.ticketsouq.reservationservice.dto.ReservationContext;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.ticketsouq.reservationservice.dto.ReservationResponse;
 import org.ticketsouq.reservationservice.mapper.ReservationMapper;
 import org.ticketsouq.reservationservice.model.Reservation;
@@ -18,6 +18,7 @@ import org.ticketsouq.sharedmodule.ReservationService.enums.ReservationStatus;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -37,7 +38,7 @@ class ReservationServiceTest {
     private ReservationService reservationService;
 
     @Test
-    @DisplayName("New reservation: saves and returns when not a duplicate")
+    @DisplayName("New reservation: saves and returns")
     void createReservation_newReservation_savesAndReturns() {
         UUID reservationId = UUID.randomUUID();
         BeginReservationEvent event = buildEvent(reservationId);
@@ -50,41 +51,50 @@ class ReservationServiceTest {
             .createdAt(Instant.now())
             .build();
 
-        when(reservationRepository.existsById(reservationId)).thenReturn(false);
-        when(reservationMapper.createReservation(event)).thenReturn(expectedReservation);
-        when(reservationRepository.save(any(Reservation.class))).thenReturn(expectedReservation);
+        when(reservationMapper.createReservation(event))
+            .thenReturn(expectedReservation);
+
+        when(reservationRepository.save(expectedReservation))
+            .thenReturn(expectedReservation);
 
         Reservation result = reservationService.createReservation(event);
 
-        assertThat(result).isNotNull();
-        assertThat(result.getId()).isEqualTo(reservationId);
-        assertThat(result.getStatus()).isEqualTo(ReservationStatus.PENDING);
-        verify(reservationRepository).existsById(reservationId);
+        assertThat(result).isSameAs(expectedReservation);
+
         verify(reservationMapper).createReservation(event);
         verify(reservationRepository).save(expectedReservation);
+        verify(reservationRepository, never()).findById(any());
     }
 
     @Test
-    @DisplayName("Duplicate reservation: returns null, does not save")
-    void createReservation_duplicateReservation_returnsNull() {
+    @DisplayName("Duplicate reservation returns existing reservation")
+    void createReservation_duplicateReservation_returnsExistingReservation() {
         UUID reservationId = UUID.randomUUID();
         BeginReservationEvent event = buildEvent(reservationId);
 
-        when(reservationRepository.existsById(reservationId)).thenReturn(true);
+        Reservation reservation = new Reservation();
+
+        when(reservationMapper.createReservation(event)).thenReturn(reservation);
+
+        when(reservationRepository.save(reservation))
+            .thenThrow(new DataIntegrityViolationException("duplicate"));
+
+        when(reservationRepository.findById(reservationId))
+            .thenReturn(Optional.of(reservation));
 
         Reservation result = reservationService.createReservation(event);
 
-        assertThat(result).isNull();
-        verify(reservationRepository).existsById(reservationId);
-        verify(reservationMapper, never()).createReservation(any());
-        verify(reservationRepository, never()).save(any());
+        assertThat(result).isSameAs(reservation);
+
+        verify(reservationRepository).save(reservation);
+        verify(reservationRepository).findById(reservationId);
     }
 
     @Test
     @DisplayName("Get reservations by user with no results: returns empty list")
     void getReservationsByUser_emptyList_returnsEmpty() {
         UUID userId = UUID.randomUUID();
-        when(reservationRepository.findByUserId(userId)).thenReturn(List.of());
+        when(reservationRepository.findByUserIdOrderByCreatedAtDesc(userId)).thenReturn(List.of());
 
         List<ReservationResponse> results = reservationService.getReservationsByUser(userId);
 
@@ -93,8 +103,8 @@ class ReservationServiceTest {
 
     private BeginReservationEvent buildEvent(UUID reservationId) {
         List<TicketReservationDto> tickets = List.of(
-            new TicketReservationDto(new BigDecimal("50.00"), 1, "A1", "VIP"),
-            new TicketReservationDto(new BigDecimal("50.00"), 2, "A2", "VIP")
+            new TicketReservationDto(new BigDecimal("50.00"), "A1", "VIP", ""),
+            new TicketReservationDto(new BigDecimal("50.00"), "A2", "VIP", "")
         );
         return new BeginReservationEvent(UUID.randomUUID(), reservationId, UUID.randomUUID(), tickets);
     }

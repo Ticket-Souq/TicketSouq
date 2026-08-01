@@ -6,7 +6,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 
 import java.util.UUID;
 
-@FeignClient(name = "user-service", path = "/api/v1/private/user")
+@FeignClient(name = "user-service", path = "/api/v1/private/user", fallbackFactory = UserServiceClientFallbackFactory.class)
 public interface UserServiceClient {
 
     @GetMapping("/organization")

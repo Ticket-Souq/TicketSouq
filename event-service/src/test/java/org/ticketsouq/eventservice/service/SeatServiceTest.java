@@ -6,8 +6,8 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.context.ApplicationEventPublisher;
 import org.ticketsouq.eventservice.dto.SeatResponse;
+import org.ticketsouq.outbox.service.OutboxWriter;
 import org.ticketsouq.eventservice.dto.UpdateSeatStatusRequest;
 import org.ticketsouq.eventservice.model.Event;
 import org.ticketsouq.eventservice.model.Seat;
@@ -27,20 +27,23 @@ import java.util.UUID;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.ticketsouq.sharedmodule.Constants.TOPIC_NAMES.AUDIT_EVENT;
 
 @ExtendWith(MockitoExtension.class)
 class SeatServiceTest {
 
     @Mock private SeatRepository seatRepository;
-    @Mock private ApplicationEventPublisher applicationEventPublisher;
+    @Mock private OutboxWriter outboxWriter;
 
     private SeatService seatService;
 
     @BeforeEach
     void setUp() {
-        seatService = new SeatService(seatRepository, applicationEventPublisher);
+        seatService = new SeatService(seatRepository, outboxWriter);
     }
 
     @Test
@@ -74,7 +77,7 @@ class SeatServiceTest {
 
         assertThat(response.status()).isEqualTo(SeatStatus.BOOKED_ORGANIZER);
         assertThat(section.getRemainingCapacity()).isEqualTo(99);
-        verify(applicationEventPublisher).publishEvent(any(AuditEvent.class));
+        verify(outboxWriter).save(any(AuditEvent.class), eq(AUDIT_EVENT), anyString());
     }
 
     @Test

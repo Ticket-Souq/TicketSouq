@@ -3,8 +3,8 @@ package org.ticketsouq.ticketservice.listener;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.kafka.annotation.KafkaListener;
-import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Component;
+import org.ticketsouq.outbox.service.OutboxWriter;
 import org.ticketsouq.sharedmodule.Constants.TOPIC_NAMES;
 import org.ticketsouq.sharedmodule.EventService.dto.TicketReservationDto;
 import org.ticketsouq.sharedmodule.ReservationService.events.SagaTicketCommand;
@@ -21,7 +21,7 @@ import java.util.UUID;
 public class SagaTicketCommandConsumer {
 
     private final TicketService ticketService;
-    private final KafkaTemplate<String, Object> kafkaTemplate;
+    private final OutboxWriter outboxWriter;
 
     @KafkaListener(topics = TOPIC_NAMES.SAGA_TICKET_COMMAND, groupId = "ticket-service")
     public void handleSagaTicketCommand(SagaTicketCommand command) {
@@ -48,7 +48,7 @@ public class SagaTicketCommandConsumer {
 
     private void sendReply(UUID reservationId, boolean success, String failReason) {
         SagaTicketReplyEvent reply = new SagaTicketReplyEvent(reservationId, success, failReason);
-        kafkaTemplate.send(TOPIC_NAMES.SAGA_TICKET_REPLY, reservationId.toString(), reply);
+        outboxWriter.save(reply, TOPIC_NAMES.SAGA_TICKET_REPLY, reservationId.toString());
         log.info("Sent SagaTicketReplyEvent for reservationId={}, success={}", reservationId, success);
     }
 }

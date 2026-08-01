@@ -3,12 +3,11 @@ package org.ticketsouq.paymentservice.service;
 import com.stripe.model.*;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.context.ApplicationEventPublisher;
-import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.TransactionDefinition;
 import org.springframework.transaction.support.TransactionTemplate;
+import org.ticketsouq.outbox.service.OutboxWriter;
 import org.ticketsouq.paymentservice.enums.PaymentStatus;
 import org.ticketsouq.paymentservice.model.PaymentModel;
 import org.ticketsouq.paymentservice.paymentProviders.PaymentProvider;
@@ -21,6 +20,9 @@ import org.ticketsouq.sharedmodule.ReservationService.events.SagaPaymentReplyEve
 
 import java.util.UUID;
 
+import static org.ticketsouq.sharedmodule.Constants.TOPIC_NAMES.PAYMENT_FAILED;
+import static org.ticketsouq.sharedmodule.Constants.TOPIC_NAMES.PAYMENT_REFUNDED;
+import static org.ticketsouq.sharedmodule.Constants.TOPIC_NAMES.PAYMENT_SUCCESS;
 import static org.ticketsouq.sharedmodule.Constants.TOPIC_NAMES.SAGA_PAYMENT_REPLY;
 
 @Slf4j
@@ -29,10 +31,9 @@ import static org.ticketsouq.sharedmodule.Constants.TOPIC_NAMES.SAGA_PAYMENT_REP
 public class PaymentService {
 
     private final PaymentRepository paymentRepository;
-    private final ApplicationEventPublisher applicationEventPublisher;
+    private final OutboxWriter outboxWriter;
     private final PlatformTransactionManager transactionManager;
     private final PaymentProvider paymentProvider;
-    private final KafkaTemplate<String, Object> kafkaTemplate;
 
     public void handleWebhookEvent(Event event) {
         EventDataObjectDeserializer dataObjectDeserializer = event.getDataObjectDeserializer();
@@ -83,7 +84,7 @@ public class PaymentService {
                 currentPayment.getReservationID(),
                 currentPayment.getAmount()
             );
-            applicationEventPublisher.publishEvent(event);
+            outboxWriter.save(event, PAYMENT_SUCCESS, currentPayment.getCustomerID().toString());
             return currentPayment;
         });
         if (updatedPayment != null) {
@@ -108,7 +109,7 @@ public class PaymentService {
                 currentPayment.getReservationID(),
                 currentPayment.getAmount()
             );
-            applicationEventPublisher.publishEvent(event);
+            outboxWriter.save(event, PAYMENT_FAILED, currentPayment.getCustomerID().toString());
             return currentPayment;
         });
         if (updatedPayment != null) {
@@ -133,7 +134,7 @@ public class PaymentService {
                 payment.getReservationID(),
                 payment.getAmount()
             );
-            applicationEventPublisher.publishEvent(event);
+            outboxWriter.save(event, PAYMENT_REFUNDED, payment.getCustomerID().toString());
             return null;
         });
     }
@@ -155,7 +156,7 @@ public class PaymentService {
             success,
             failReason
         );
-        kafkaTemplate.send(SAGA_PAYMENT_REPLY, payment.getReservationID().toString(), reply);
+        outboxWriter.save(reply, SAGA_PAYMENT_REPLY, payment.getReservationID().toString());
         log.info("Sent SagaPaymentReplyEvent for reservationId={}, paymentId={}, success={}",
             payment.getReservationID(), payment.getId(), success);
     }

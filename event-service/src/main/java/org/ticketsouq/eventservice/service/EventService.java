@@ -24,6 +24,7 @@ import org.ticketsouq.eventservice.repository.SeatLockRepository;
 import org.ticketsouq.eventservice.repository.SeatRepository;
 import org.ticketsouq.eventservice.repository.ZoneLockRepository;
 import org.ticketsouq.eventservice.service.Search.SearchService;
+import org.ticketsouq.outbox.service.OutboxWriter;
 import org.ticketsouq.sharedmodule.AuditService.events.AuditEvent;
 import org.ticketsouq.sharedmodule.EventService.events.EventActivatedEvent;
 import org.ticketsouq.sharedmodule.EventService.events.EventCancelledEvent;
@@ -35,6 +36,8 @@ import org.ticketsouq.sharedmodule.EventService.events.OrganizerReservationCreat
 import org.ticketsouq.sharedmodule.EventService.dto.TicketReservationDto;
 import org.ticketsouq.sharedmodule.GeneralExceptions.ConflictException;
 import org.ticketsouq.sharedmodule.GeneralExceptions.ResourceNotFoundException;
+
+import static org.ticketsouq.sharedmodule.Constants.TOPIC_NAMES.*;
 
 import java.time.Duration;
 import java.time.Instant;
@@ -54,7 +57,8 @@ public class EventService {
 
     private final EventRepository eventRepository;
     private final SearchService SearchProvider;
-    private final ApplicationEventPublisher eventPublisher;
+    private final ApplicationEventPublisher applicationObserver;
+    private final OutboxWriter outboxWriter;
     private final EventMapper eventMapper;
     private final UserServiceClient userServiceClient;
     private final SeatLockRepository seatLockRepository;
@@ -70,8 +74,9 @@ public class EventService {
         Event event = eventMapper.buildEvent(userId, request, posterUrl, bannerUrl);
         eventRepository.save(event);
         SearchProvider.indexEvent(event);
-        eventPublisher.publishEvent(new AuditEvent("Event Created", userId, "", Instant.now()));
-        eventPublisher.publishEvent(toCreateMessage(event));
+        applicationObserver.publishEvent(toCreateMessage(event));
+        outboxWriter.save(new AuditEvent("Event Created", userId, "", Instant.now()), AUDIT_EVENT, userId.toString());
+        outboxWriter.save(toCreateMessage(event), EVENT_CREATED, event.getId().toString());
 
         if (request.reservations() != null && !request.reservations().isEmpty()) {
             List<UUID> unresolvedIds = request.reservations().stream()
@@ -93,8 +98,8 @@ public class EventService {
                     return r;
                 })
                 .toList();
-            eventPublisher.publishEvent(new OrganizerReservationCreatedEvent(
-                event.getId(), userId, resolved));
+            outboxWriter.save(new OrganizerReservationCreatedEvent(
+                event.getId(), userId, resolved), ORGANIZER_RESERVATION_CREATED, event.getId().toString());
         }
     }
 
@@ -175,7 +180,7 @@ public class EventService {
             if (event.getStatus() == EventStatus.PUBLISHED) {
                 event.setStatus(EventStatus.ACTIVE);
                 eventRepository.save(event);
-                eventPublisher.publishEvent(new EventActivatedEvent(eventId, Instant.now()));
+                outboxWriter.save(new EventActivatedEvent(eventId, Instant.now()), EVENT_ACTIVATED, eventId.toString());
             }
         });
     }
@@ -186,8 +191,8 @@ public class EventService {
             if (event.getStatus() == EventStatus.ACTIVE) {
                 event.setStatus(EventStatus.COMPLETED);
                 eventRepository.save(event);
-                eventPublisher.publishEvent(new EventCompletedEvent(eventId, Instant.now()));
-                eventPublisher.publishEvent(new EventPayoutReleaseEvent(eventId,event.getOrganization(), Instant.now()));
+                outboxWriter.save(new EventCompletedEvent(eventId, Instant.now()), EVENT_COMPLETED, eventId.toString());
+                outboxWriter.save(new EventPayoutReleaseEvent(eventId,event.getOrganization(), Instant.now()), EVENT_PAYOUT_RELEASED, eventId.toString());
             }
         });
     }
@@ -198,7 +203,7 @@ public class EventService {
             if (event.getStatus() == EventStatus.PUBLISHED) {
                 event.setStatus(EventStatus.COMPLETED);
                 eventRepository.save(event);
-                eventPublisher.publishEvent(new EventPayoutReleaseEvent(eventId,event.getOrganization(), Instant.now()));
+                outboxWriter.save(new EventPayoutReleaseEvent(eventId,event.getOrganization(), Instant.now()), EVENT_PAYOUT_RELEASED, eventId.toString());
             }
         });
     }
@@ -216,9 +221,10 @@ public class EventService {
         SearchProvider.deleteFromIndex(event);
         eventRepository.save(event);
 
-        eventPublisher.publishEvent(new AuditEvent("Event Canceled", userId, "", Instant.now()));
-        eventPublisher.publishEvent(new EventCancelledEvent(UUID.randomUUID(), event.getId(), Instant.now()));
-        eventPublisher.publishEvent(new OrganizerReservationCancelledEvent(event.getId()));
+        outboxWriter.save(new AuditEvent("Event Canceled", userId, "", Instant.now()), AUDIT_EVENT, userId.toString());
+        applicationObserver.publishEvent(new EventCancelledEvent(UUID.randomUUID(), event.getId(), Instant.now()));
+        outboxWriter.save(new EventCancelledEvent(UUID.randomUUID(), event.getId(), Instant.now()), EVENT_CANCELLED, event.getId().toString());
+        outboxWriter.save(new OrganizerReservationCancelledEvent(event.getId()), ORGANIZER_RESERVATION_CANCELLED, event.getId().toString());
     }
 
     private void validateEventCanBeCancelled(Event event) {

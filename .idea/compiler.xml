@@ -27,6 +27,7 @@
         <module name="discovery-server" />
         <module name="payment-service" />
         <module name="event-service" />
+        <module name="ticketsouq-outbox" />
         <module name="reservation-service" />
         <module name="analytics-service" />
         <module name="api-gateway" />
@@ -57,6 +58,7 @@
       <module name="reservation-service" options="-parameters --enable-preview" />
       <module name="shared-module" options="-parameters --enable-preview" />
       <module name="ticket-service" options="-parameters --enable-preview" />
+      <module name="ticketsouq-outbox" options="-parameters --enable-preview" />
       <module name="user-service" options="-parameters --enable-preview" />
       <module name="venue-service" options="-parameters --enable-preview" />
     </option>

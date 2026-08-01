@@ -12,10 +12,6 @@ search:
   engine: ${SEARCH_ENGINE:ES}
 
 spring:
-  sql:
-    init:
-      schema-locations: classpath:pg_trgm.sql
-
   elasticsearch:
     uris: http://${elasticsearch.host}:${elasticsearch.port}
     connection-timeout: 5s

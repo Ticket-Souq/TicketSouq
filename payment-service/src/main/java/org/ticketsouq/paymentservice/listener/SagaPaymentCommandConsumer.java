@@ -4,9 +4,9 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.kafka.annotation.KafkaListener;
-import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
+import org.ticketsouq.outbox.service.OutboxWriter;
 import org.ticketsouq.paymentservice.dto.PaymentRequest;
 import org.ticketsouq.paymentservice.dto.PaymentResponse;
 import org.ticketsouq.paymentservice.enums.PaymentStatus;
@@ -29,7 +29,7 @@ public class SagaPaymentCommandConsumer {
 
     private final PaymentRepository paymentRepository;
     private final PaymentProvider paymentProvider;
-    private final KafkaTemplate<String, Object> kafkaTemplate;
+    private final OutboxWriter outboxWriter;
 
     @KafkaListener(topics = SAGA_PAYMENT_COMMAND)
     @Transactional
@@ -96,6 +96,6 @@ public class SagaPaymentCommandConsumer {
 
     private void sendReply(UUID reservationId, UUID paymentId, boolean success, String failReason) {
         SagaPaymentReplyEvent reply = new SagaPaymentReplyEvent(reservationId, paymentId, success, failReason);
-        kafkaTemplate.send(SAGA_PAYMENT_REPLY, reservationId.toString(), reply);
+        outboxWriter.save(reply, SAGA_PAYMENT_REPLY, reservationId.toString());
     }
 }

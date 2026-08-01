@@ -11,7 +11,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.transaction.support.TransactionCallback;
 import org.springframework.transaction.support.TransactionTemplate;
 import org.ticketsouq.reservationservice.dto.ReservationContext;
-import org.ticketsouq.reservationservice.event.OutboxPublisher;
 import org.ticketsouq.reservationservice.model.SagaInstance;
 import org.ticketsouq.reservationservice.model.enums.SagaStatus;
 import org.ticketsouq.reservationservice.repository.ReservationRepository;
@@ -32,15 +31,24 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 import static org.ticketsouq.sharedmodule.Constants.TOPIC_NAMES.*;
 
+import org.ticketsouq.outbox.service.OutboxWriter;
+
 @ExtendWith(MockitoExtension.class)
 class SagaOrchestratorTest {
 
-    @Mock private SagaInstanceRepository sagaInstanceRepository;
-    @Mock private ReservationRepository reservationRepository;
-    @Mock private OutboxPublisher outboxPublisher;
-    @Mock private TransactionTemplate transactionTemplate;
-    @Mock private ObjectMapper objectMapper;
-    @InjectMocks private SagaOrchestrator sagaOrchestrator;
+    @Mock
+    private SagaInstanceRepository sagaInstanceRepository;
+    @Mock
+    private ReservationRepository reservationRepository;
+    @Mock
+    private OutboxWriter outboxWriter;
+
+    @Mock
+    private TransactionTemplate transactionTemplate;
+    @Mock
+    private ObjectMapper objectMapper;
+    @InjectMocks
+    private SagaOrchestrator sagaOrchestrator;
 
     private UUID reservationId;
     private UUID userId;
@@ -54,8 +62,8 @@ class SagaOrchestratorTest {
         eventId = UUID.randomUUID();
 
         List<TicketReservationDto> tickets = List.of(
-            new TicketReservationDto(new BigDecimal("50.00"), 1, "A1", "VIP"),
-            new TicketReservationDto(new BigDecimal("50.00"), 2, "A2", "VIP")
+            new TicketReservationDto(new BigDecimal("50.00"),  "A1", "VIP",""),
+            new TicketReservationDto(new BigDecimal("50.00"),  "A2", "VIP","")
         );
 
         context = ReservationContext.builder()
@@ -88,7 +96,7 @@ class SagaOrchestratorTest {
 
         sagaOrchestrator.startSaga(context);
 
-        verify(outboxPublisher).publish(eq(reservationId.toString()), eq(SAGA_PAYMENT_COMMAND), any(SagaPaymentCommand.class));
+        verify(outboxWriter).save(any(SagaPaymentCommand.class), eq(SAGA_PAYMENT_COMMAND), eq(reservationId.toString()));
     }
 
     @Test
@@ -104,7 +112,7 @@ class SagaOrchestratorTest {
 
         sagaOrchestrator.startSaga(context);
 
-        verify(outboxPublisher, never()).publish(any(), any(), any());
+        verify(outboxWriter, never()).save(any(), any(), any());
     }
 
     @Test
@@ -120,7 +128,7 @@ class SagaOrchestratorTest {
 
         sagaOrchestrator.startSaga(context);
 
-        verify(outboxPublisher).publish(eq(reservationId.toString()), eq(SAGA_PAYMENT_COMMAND), any(SagaPaymentCommand.class));
+        verify(outboxWriter).save(any(SagaPaymentCommand.class), eq(SAGA_PAYMENT_COMMAND), eq(reservationId.toString()));
     }
 
     @Test
@@ -138,7 +146,7 @@ class SagaOrchestratorTest {
 
         assertThat(saga.getPaymentId()).isEqualTo(paymentId);
         assertThat(saga.getCurrentStep()).isEqualTo(SagaStep.PAYMENT);
-        verify(outboxPublisher).publish(eq(reservationId.toString()), eq(SAGA_TICKET_COMMAND), any(SagaTicketCommand.class));
+        verify(outboxWriter).save(any(SagaTicketCommand.class), eq(SAGA_TICKET_COMMAND), eq(reservationId.toString()));
     }
 
     @Test
@@ -156,7 +164,7 @@ class SagaOrchestratorTest {
 
         assertThat(saga.getSagaStatus()).isEqualTo(SagaStatus.FAILED);
         assertThat(saga.getCurrentStep()).isEqualTo(SagaStep.FAILED);
-        verify(outboxPublisher).publish(eq(reservationId.toString()), eq(SAGA_LOCK_CONFIRM_COMPENSATE), any(SagaLockConfirmCompensateCommand.class));
+        verify(outboxWriter).save(any(SagaLockConfirmCompensateCommand.class), eq(SAGA_LOCK_CONFIRM_COMPENSATE), eq(reservationId.toString()));
     }
 
     @Test
@@ -171,7 +179,7 @@ class SagaOrchestratorTest {
 
         sagaOrchestrator.handlePaymentReply(event);
 
-        verify(outboxPublisher, never()).publish(any(), any(), any());
+        verify(outboxWriter, never()).save(any(), any(), any());
     }
 
     @Test
@@ -188,7 +196,7 @@ class SagaOrchestratorTest {
         sagaOrchestrator.handleTicketReply(event);
 
         assertThat(saga.getCurrentStep()).isEqualTo(SagaStep.TICKET_ISSUANCE);
-        verify(outboxPublisher).publish(eq(reservationId.toString()), eq(SAGA_LOCK_CONFIRM_COMMAND), any(SagaLockConfirmCommand.class));
+        verify(outboxWriter).save(any(SagaLockConfirmCommand.class), eq(SAGA_LOCK_CONFIRM_COMMAND), eq(reservationId.toString()));
     }
 
     @Test
@@ -207,9 +215,9 @@ class SagaOrchestratorTest {
 
         assertThat(saga.getSagaStatus()).isEqualTo(SagaStatus.FAILED);
         assertThat(saga.getCurrentStep()).isEqualTo(SagaStep.FAILED);
-        verify(outboxPublisher, never()).publish(eq(reservationId.toString()), eq(SAGA_TICKET_COMPENSATE), any());
-        verify(outboxPublisher).publish(eq(reservationId.toString()), eq(SAGA_PAYMENT_COMPENSATE), any(SagaPaymentCompensateCommand.class));
-        verify(outboxPublisher).publish(eq(reservationId.toString()), eq(SAGA_LOCK_CONFIRM_COMPENSATE), any(SagaLockConfirmCompensateCommand.class));
+        verify(outboxWriter, never()).save(any(), eq(SAGA_TICKET_COMPENSATE), eq(reservationId.toString()));
+        verify(outboxWriter).save(any(SagaPaymentCompensateCommand.class), eq(SAGA_PAYMENT_COMPENSATE), eq(reservationId.toString()));
+        verify(outboxWriter).save(any(SagaLockConfirmCompensateCommand.class), eq(SAGA_LOCK_CONFIRM_COMPENSATE), eq(reservationId.toString()));
     }
 
     @Test
@@ -224,7 +232,7 @@ class SagaOrchestratorTest {
 
         sagaOrchestrator.handleTicketReply(event);
 
-        verify(outboxPublisher, never()).publish(any(), any(), any());
+        verify(outboxWriter, never()).save(any(), any(), any());
     }
 
     @Test
@@ -259,7 +267,7 @@ class SagaOrchestratorTest {
         sagaOrchestrator.handleLockConfirmReply(event);
 
         assertThat(saga.getSagaStatus()).isEqualTo(SagaStatus.FAILED);
-        verify(outboxPublisher).publish(eq(reservationId.toString()), eq(SAGA_LOCK_CONFIRM_COMPENSATE), any(SagaLockConfirmCompensateCommand.class));
+        verify(outboxWriter).save(any(SagaLockConfirmCompensateCommand.class), eq(SAGA_LOCK_CONFIRM_COMPENSATE), eq(reservationId.toString()));
     }
 
     @Test
@@ -272,7 +280,7 @@ class SagaOrchestratorTest {
 
         sagaOrchestrator.handlePaymentReply(event);
 
-        verify(outboxPublisher, never()).publish(any(), any(), any());
+        verify(outboxWriter, never()).save(any(), any(), any());
     }
 
     @Test
@@ -289,9 +297,9 @@ class SagaOrchestratorTest {
         assertThat(saga.getSagaStatus()).isEqualTo(SagaStatus.FAILED);
         assertThat(saga.getCurrentStep()).isEqualTo(SagaStep.FAILED);
         assertThat(saga.getFailReason()).isEqualTo("test reason");
-        verify(outboxPublisher).publish(eq(reservationId.toString()), eq(SAGA_TICKET_COMPENSATE), any(SagaTicketCompensateCommand.class));
-        verify(outboxPublisher).publish(eq(reservationId.toString()), eq(SAGA_PAYMENT_COMPENSATE), any(SagaPaymentCompensateCommand.class));
-        verify(outboxPublisher).publish(eq(reservationId.toString()), eq(SAGA_LOCK_CONFIRM_COMPENSATE), any(SagaLockConfirmCompensateCommand.class));
+        verify(outboxWriter).save(any(SagaTicketCompensateCommand.class), eq(SAGA_TICKET_COMPENSATE), eq(reservationId.toString()));
+        verify(outboxWriter).save(any(SagaPaymentCompensateCommand.class), eq(SAGA_PAYMENT_COMPENSATE), eq(reservationId.toString()));
+        verify(outboxWriter).save(any(SagaLockConfirmCompensateCommand.class), eq(SAGA_LOCK_CONFIRM_COMPENSATE), eq(reservationId.toString()));
     }
 
     @Test
@@ -305,9 +313,9 @@ class SagaOrchestratorTest {
 
         sagaOrchestrator.startCompensation(saga, "payment failed");
 
-        verify(outboxPublisher, never()).publish(eq(reservationId.toString()), eq(SAGA_TICKET_COMPENSATE), any());
-        verify(outboxPublisher).publish(eq(reservationId.toString()), eq(SAGA_PAYMENT_COMPENSATE), any(SagaPaymentCompensateCommand.class));
-        verify(outboxPublisher).publish(eq(reservationId.toString()), eq(SAGA_LOCK_CONFIRM_COMPENSATE), any(SagaLockConfirmCompensateCommand.class));
+        verify(outboxWriter, never()).save(any(), eq(SAGA_TICKET_COMPENSATE), eq(reservationId.toString()));
+        verify(outboxWriter).save(any(SagaPaymentCompensateCommand.class), eq(SAGA_PAYMENT_COMPENSATE), eq(reservationId.toString()));
+        verify(outboxWriter).save(any(SagaLockConfirmCompensateCommand.class), eq(SAGA_LOCK_CONFIRM_COMPENSATE), eq(reservationId.toString()));
     }
 
     @Test
@@ -320,9 +328,9 @@ class SagaOrchestratorTest {
 
         sagaOrchestrator.startCompensation(saga, "initiated failed");
 
-        verify(outboxPublisher, never()).publish(eq(reservationId.toString()), eq(SAGA_TICKET_COMPENSATE), any());
-        verify(outboxPublisher, never()).publish(eq(reservationId.toString()), eq(SAGA_PAYMENT_COMPENSATE), any());
-        verify(outboxPublisher).publish(eq(reservationId.toString()), eq(SAGA_LOCK_CONFIRM_COMPENSATE), any(SagaLockConfirmCompensateCommand.class));
+        verify(outboxWriter, never()).save(any(), eq(SAGA_TICKET_COMPENSATE), eq(reservationId.toString()));
+        verify(outboxWriter, never()).save(any(), eq(SAGA_PAYMENT_COMPENSATE), eq(reservationId.toString()));
+        verify(outboxWriter).save(any(SagaLockConfirmCompensateCommand.class), eq(SAGA_LOCK_CONFIRM_COMPENSATE), eq(reservationId.toString()));
     }
 
     private SagaInstance buildSaga(SagaStatus status, SagaStep step) {

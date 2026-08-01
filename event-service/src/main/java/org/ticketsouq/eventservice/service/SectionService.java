@@ -2,7 +2,6 @@ package org.ticketsouq.eventservice.service;
 
 
 import lombok.RequiredArgsConstructor;
-import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.ticketsouq.eventservice.dto.CreateSectionRequest;
@@ -14,10 +13,13 @@ import org.ticketsouq.eventservice.model.enums.BookingModel;
 import org.ticketsouq.eventservice.model.enums.EventStatus;
 import org.ticketsouq.eventservice.repository.EventRepository;
 import org.ticketsouq.eventservice.repository.SectionRepository;
+import org.ticketsouq.outbox.service.OutboxWriter;
 import org.ticketsouq.sharedmodule.AuditService.events.AuditEvent;
 import org.ticketsouq.sharedmodule.GeneralExceptions.BadRequestException;
 import org.ticketsouq.sharedmodule.GeneralExceptions.ConflictException;
 import org.ticketsouq.sharedmodule.GeneralExceptions.ResourceNotFoundException;
+
+import static org.ticketsouq.sharedmodule.Constants.TOPIC_NAMES.AUDIT_EVENT;
 
 import java.time.Instant;
 import java.util.UUID;
@@ -28,7 +30,7 @@ public class SectionService {
 
     private final SectionRepository sectionRepository;
     private final EventRepository eventRepository;
-    private final ApplicationEventPublisher applicationEventPublisher;
+    private final OutboxWriter outboxWriter;
 
     @Transactional
     public SectionResponse organizerReserve(UUID sectionId, UUID userId) {
@@ -42,7 +44,7 @@ public class SectionService {
             throw new ConflictException("No remaining capacity in this section.");
         }
         section.setRemainingCapacity(section.getRemainingCapacity() - 1);
-        applicationEventPublisher.publishEvent(new AuditEvent("Organizer reserved 1 ticket in section", userId, "", Instant.now()));
+        outboxWriter.save(new AuditEvent("Organizer reserved 1 ticket in section", userId, "", Instant.now()), AUDIT_EVENT, userId.toString());
         return SectionResponse.from(sectionRepository.save(section));
     }
 
@@ -54,7 +56,7 @@ public class SectionService {
             throw new BadRequestException("Organizer release is only available for zone-based events.");
         }
         section.setRemainingCapacity(section.getRemainingCapacity() + 1);
-        applicationEventPublisher.publishEvent(new AuditEvent("Organizer released 1 ticket in section", userId, "", Instant.now()));
+        outboxWriter.save(new AuditEvent("Organizer released 1 ticket in section", userId, "", Instant.now()), AUDIT_EVENT, userId.toString());
         return SectionResponse.from(sectionRepository.save(section));
     }
 
@@ -75,7 +77,7 @@ public class SectionService {
         } else {
             updateSeatSection(section, request);
         }
-        applicationEventPublisher.publishEvent(new AuditEvent("Section Status updated by Org Member", userId, "", Instant.now()));
+        outboxWriter.save(new AuditEvent("Section Status updated by Org Member", userId, "", Instant.now()), AUDIT_EVENT, userId.toString());
 
         return SectionResponse.from(sectionRepository.save(section));
     }
