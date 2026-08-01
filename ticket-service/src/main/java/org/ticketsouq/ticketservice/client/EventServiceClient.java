@@ -7,7 +7,7 @@ import org.ticketsouq.ticketservice.dto.EventSnapshotResponse;
 
 import java.util.UUID;
 
-@FeignClient(name = "event-service", path = "/api/v1/events")
+@FeignClient(name = "event-service", path = "/api/v1/events", fallbackFactory = EventServiceClientFallbackFactory.class)
 public interface EventServiceClient {
 
     @GetMapping("/{id}")
