@@ -21,8 +21,8 @@ public interface OutboxEventRepository extends JpaRepository<OutboxEvent, UUID> 
     List<OutboxEvent> findByStatusOrderByCreatedAt(OutboxStatus status);
 
     @Modifying(clearAutomatically = true)
-    @Query("UPDATE OutboxEvent e SET e.status = 'IN_PROGRESS', e.claimedAt = CURRENT_TIMESTAMP WHERE e.id = :id AND e.status = 'PENDING'")
-    int markInProgress(UUID id);
+    @Query("UPDATE OutboxEvent e SET e.status = 'IN_PROGRESS', e.claimedAt = :claimedAt WHERE e.id = :id AND e.status = 'PENDING'")
+    int markInProgress(UUID id, Instant claimedAt);
 
     @Modifying(flushAutomatically = true, clearAutomatically = true)
     @Query("UPDATE OutboxEvent e SET e.status = 'PENDING' WHERE e.status = 'IN_PROGRESS' AND e.retryCount < :maxRetries AND e.claimedAt < :staleThreshold")

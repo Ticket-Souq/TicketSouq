@@ -39,7 +39,7 @@ public class OutboxRelay {
         transactionTemplate.executeWithoutResult(status -> {
             List<OutboxEvent> pending = repository.findByStatusOrderByCreatedAt(OutboxStatus.PENDING);
             for (OutboxEvent event : pending) {
-                int claimed = repository.markInProgress(event.getId());
+                int claimed = repository.markInProgress(event.getId(), Instant.now());
                 if (claimed == 0) continue;
 
                 try {
