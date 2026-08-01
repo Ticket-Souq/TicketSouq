@@ -1,6 +1,7 @@
 package org.ticketsouq.eventservice.service;
 
 import lombok.RequiredArgsConstructor;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -56,6 +57,7 @@ public class EventService {
 
     private final EventRepository eventRepository;
     private final SearchService SearchProvider;
+    private final ApplicationEventPublisher applicationObserver;
     private final OutboxWriter outboxWriter;
     private final EventMapper eventMapper;
     private final UserServiceClient userServiceClient;
@@ -72,6 +74,7 @@ public class EventService {
         Event event = eventMapper.buildEvent(userId, request, posterUrl, bannerUrl);
         eventRepository.save(event);
         SearchProvider.indexEvent(event);
+        applicationObserver.publishEvent(toCreateMessage(event));
         outboxWriter.save(new AuditEvent("Event Created", userId, "", Instant.now()), AUDIT_EVENT, userId.toString());
         outboxWriter.save(toCreateMessage(event), EVENT_CREATED, event.getId().toString());
 
@@ -219,6 +222,7 @@ public class EventService {
         eventRepository.save(event);
 
         outboxWriter.save(new AuditEvent("Event Canceled", userId, "", Instant.now()), AUDIT_EVENT, userId.toString());
+        applicationObserver.publishEvent(new EventCancelledEvent(UUID.randomUUID(), event.getId(), Instant.now()));
         outboxWriter.save(new EventCancelledEvent(UUID.randomUUID(), event.getId(), Instant.now()), EVENT_CANCELLED, event.getId().toString());
         outboxWriter.save(new OrganizerReservationCancelledEvent(event.getId()), ORGANIZER_RESERVATION_CANCELLED, event.getId().toString());
     }

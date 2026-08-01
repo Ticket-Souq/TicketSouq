@@ -22,6 +22,7 @@ import org.ticketsouq.eventservice.model.enums.EventStatus;
 import org.ticketsouq.eventservice.repository.EventRepository;
 import org.ticketsouq.eventservice.repository.SeatLockRepository;
 import org.ticketsouq.eventservice.repository.SeatRepository;
+import org.ticketsouq.eventservice.repository.ZoneLockRepository;
 import org.ticketsouq.eventservice.service.Search.SearchService;
 import org.ticketsouq.outbox.service.OutboxWriter;
 import org.ticketsouq.sharedmodule.AuditService.events.AuditEvent;
@@ -61,6 +62,7 @@ class EventServiceTest {
     @Mock private SeatRepository seatRepository;
     @Mock private PosterStorageService posterStorageService;
     @Mock private  OutboxWriter outboxWriter;
+    @Mock private ZoneLockRepository zoneLockRepository;
 
 
     private EventService eventService;
@@ -68,7 +70,7 @@ class EventServiceTest {
     @BeforeEach
     void setUp() {
         eventService = new EventService(eventRepository, eventSearchService, outboxWriter,
-            eventMapper, userServiceClient, seatLockRepository, seatRepository, posterStorageService);
+            eventMapper, userServiceClient, seatLockRepository, seatRepository, zoneLockRepository,posterStorageService);
     }
 
     @Test
@@ -135,7 +137,7 @@ class EventServiceTest {
         when(eventRepository.findEventById(id)).thenReturn(Optional.of(event));
         EventFullResponse expected = new EventFullResponse(
             id, "name", "desc", null, null, "cat", "org",
-            "url", EventStatus.PUBLISHED, BookingModel.SEAT, Instant.now(), Instant.now(),
+            "url","url", EventStatus.PUBLISHED, BookingModel.SEAT, Instant.now(), Instant.now(),
             List.of());
         when(eventMapper.toEventFullResponse(eq(event), eq(Set.of()))).thenReturn(expected);
 
@@ -152,7 +154,7 @@ class EventServiceTest {
         when(eventRepository.findEventById(id)).thenReturn(Optional.of(event));
         EventFullResponse expected = new EventFullResponse(
             id, "name", "desc", null, null, "cat", "org",
-            "url", EventStatus.PUBLISHED, BookingModel.ZONE, Instant.now(), Instant.now(),
+            "url","url", EventStatus.PUBLISHED, BookingModel.ZONE, Instant.now(), Instant.now(),
             List.of());
         when(eventMapper.toEventFullResponse(eq(event), eq(Set.of()))).thenReturn(expected);
 

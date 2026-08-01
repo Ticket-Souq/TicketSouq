@@ -94,7 +94,7 @@ class ReservationServiceTest {
     @DisplayName("Get reservations by user with no results: returns empty list")
     void getReservationsByUser_emptyList_returnsEmpty() {
         UUID userId = UUID.randomUUID();
-        when(reservationRepository.findByUserId(userId)).thenReturn(List.of());
+        when(reservationRepository.findByUserIdOrderByCreatedAtDesc(userId)).thenReturn(List.of());
 
         List<ReservationResponse> results = reservationService.getReservationsByUser(userId);
 

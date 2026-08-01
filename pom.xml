@@ -29,7 +29,7 @@
         <module>config-server</module>
         <module>discovery-server</module>
         <module>api-gateway</module>
-<!--        <module>analytics-service</module>-->
+        <module>analytics-service</module>
         <module>audit-service</module>
         <module>event-service</module>
         <module>notification-service</module>
