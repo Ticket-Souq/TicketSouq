@@ -21,8 +21,8 @@ import org.ticketsouq.sharedmodule.ApiGateway.event.PasswordChangedEvent;
 import org.ticketsouq.sharedmodule.ApiGateway.event.PasswordResetEvent;
 import org.ticketsouq.sharedmodule.NotificationService.exception.NotificationNotFoundException;
 import org.ticketsouq.sharedmodule.NotificationService.exception.UserEmailProjectionNotFoundException;
-import org.ticketsouq.sharedmodule.PaymentService.events.PaymentSuccessEvent;
 import org.ticketsouq.sharedmodule.PaymentService.events.RefundCompletedEvent;
+import org.ticketsouq.sharedmodule.ReservationService.events.ReservationCompletedEvent;
 import org.ticketsouq.sharedmodule.UserService.events.OrganizationStatusChangedEvent;
 
 
@@ -136,7 +136,9 @@ public class NotificationServiceImpl implements NotificationService {
 
     @Override
     @Transactional
-    public void handlePaymentSuccess(PaymentSuccessEvent event) {
+    public void handleReservationCompleted(ReservationCompletedEvent event) {
+        if (!event.success()) return;
+
         NotificationTemplate template = NotificationTemplate.PAYMENT_SUCCESS;
 
         UserEmailProjection user = userEmailProjectionRepository
@@ -158,14 +160,13 @@ public class NotificationServiceImpl implements NotificationService {
         variables.put("eventName", eventDetailsResponse.name());
         variables.put("location", eventDetailsResponse.location());
         variables.put("date", eventDetailsResponse.startDate());
-        variables.put("amount", event.amount());
+        variables.put("amount", event.totalAmount());
         emailJobService.createEmailJob(
             event.messageId(),
             user.getEmail(),
             template,
             variables
         );
-
     }
 
     @Override

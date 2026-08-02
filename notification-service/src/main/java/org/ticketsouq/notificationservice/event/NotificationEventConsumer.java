@@ -9,8 +9,8 @@ import org.ticketsouq.sharedmodule.ApiGateway.event.AccountsGeneratedEvent;
 import org.ticketsouq.sharedmodule.ApiGateway.event.EmailVerificationEvent;
 import org.ticketsouq.sharedmodule.ApiGateway.event.PasswordChangedEvent;
 import org.ticketsouq.sharedmodule.ApiGateway.event.PasswordResetEvent;
-import org.ticketsouq.sharedmodule.PaymentService.events.PaymentSuccessEvent;
 import org.ticketsouq.sharedmodule.PaymentService.events.RefundCompletedEvent;
+import org.ticketsouq.sharedmodule.ReservationService.events.ReservationCompletedEvent;
 import org.ticketsouq.sharedmodule.UserService.events.OrganizationStatusChangedEvent;
 
 import static org.ticketsouq.sharedmodule.Constants.TOPIC_NAMES.*;
@@ -28,9 +28,9 @@ public class NotificationEventConsumer {
     }
 
 
-    @KafkaListener(topics = PAYMENT_SUCCESS)
-    public void PaymentSuccessConsumer(PaymentSuccessEvent event) {
-        notificationService.handlePaymentSuccess(event);
+    @KafkaListener(topics = RESERVATION_COMPLETED)
+    public void ReservationCompletedConsumer(ReservationCompletedEvent event) {
+        notificationService.handleReservationCompleted(event);
     }
 
 

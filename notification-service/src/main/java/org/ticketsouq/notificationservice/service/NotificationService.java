@@ -6,8 +6,8 @@ import org.ticketsouq.sharedmodule.ApiGateway.event.AccountsGeneratedEvent;
 import org.ticketsouq.sharedmodule.ApiGateway.event.EmailVerificationEvent;
 import org.ticketsouq.sharedmodule.ApiGateway.event.PasswordChangedEvent;
 import org.ticketsouq.sharedmodule.ApiGateway.event.PasswordResetEvent;
-import org.ticketsouq.sharedmodule.PaymentService.events.PaymentSuccessEvent;
 import org.ticketsouq.sharedmodule.PaymentService.events.RefundCompletedEvent;
+import org.ticketsouq.sharedmodule.ReservationService.events.ReservationCompletedEvent;
 import org.ticketsouq.sharedmodule.UserService.events.OrganizationStatusChangedEvent;
 
 import java.util.List;
@@ -27,7 +27,7 @@ public interface NotificationService {
 
     void handlePasswordReset(PasswordResetEvent event);
     void handlePasswordChanged(PasswordChangedEvent event);
-    void handlePaymentSuccess(PaymentSuccessEvent event);
+    void handleReservationCompleted(ReservationCompletedEvent event);
 
     void handleAccountGenerated(AccountsGeneratedEvent event);
 

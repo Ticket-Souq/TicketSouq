@@ -55,4 +55,9 @@ public class KafkaTopicConfig {
         return createTopic(ORG_STATUS_CHANGED);
     }
 
+    @Bean
+    public NewTopic reservationCompletedTopic() {
+        return createTopic(RESERVATION_COMPLETED);
+    }
+
 }
