@@ -21,8 +21,9 @@ public class HttpRequestLoggingFilter extends OncePerRequestFilter {
 
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain chain) throws ServletException, IOException {
-        long start = System.currentTimeMillis();
+        if (request.getRequestURI().equals("/actuator/prometheus")) return;
 
+        long start = System.currentTimeMillis();
         try {
             chain.doFilter(request, response);
         } finally {

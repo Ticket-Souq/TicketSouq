@@ -2,27 +2,23 @@ package org.ticketsouq.analyticsservice.service.impl;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.ticketsouq.analyticsservice.model.EventAnalytics;
 import org.ticketsouq.analyticsservice.model.EventStatus;
-import org.ticketsouq.analyticsservice.model.ProcessedEvent;
 import org.ticketsouq.analyticsservice.model.SalesRecord;
 import org.ticketsouq.analyticsservice.repository.EventAnalyticsRepository;
-import org.ticketsouq.analyticsservice.repository.ProcessedEventRepository;
 import org.ticketsouq.analyticsservice.repository.SalesRecordRepository;
-import org.ticketsouq.sharedmodule.EventService.events.*;
-import org.ticketsouq.sharedmodule.PaymentService.events.PaymentFailedEvent;
-import org.ticketsouq.sharedmodule.PaymentService.events.PaymentSuccessEvent;
-import org.ticketsouq.sharedmodule.PaymentService.events.RefundCompletedEvent;
+import org.ticketsouq.sharedmodule.EventService.events.EventActivatedEvent;
+import org.ticketsouq.sharedmodule.EventService.events.EventCancelledEvent;
+import org.ticketsouq.sharedmodule.EventService.events.EventCompletedEvent;
+import org.ticketsouq.sharedmodule.EventService.events.EventCreatedEvent;
+import org.ticketsouq.sharedmodule.ReservationService.events.ReservationCompletedEvent;
 
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneId;
-
-import static org.ticketsouq.sharedmodule.Constants.TOPIC_NAMES.*;
 
 @Slf4j
 @Service
@@ -31,7 +27,6 @@ public class AnalyticsEventProcessingService {
 
     private final EventAnalyticsRepository eventAnalyticsRepository;
     private final SalesRecordRepository salesRecordRepository;
-    private final ProcessedEventRepository processedEventRepository;
 
     // ──────────────────────────────────────────────
     //  Event lifecycle handlers
@@ -91,8 +86,6 @@ public class AnalyticsEventProcessingService {
 
     @Transactional
     public void handleEventCancelled(EventCancelledEvent event) {
-        if (!tryClaimEvent(EVENT_CANCELLED, event.messageId().toString())) return;
-
         String eventId = event.eventId().toString();
         EventAnalytics analytics = eventAnalyticsRepository.findById(eventId).orElse(null);
         if (analytics == null) {
@@ -107,66 +100,29 @@ public class AnalyticsEventProcessingService {
     }
 
     // ──────────────────────────────────────────────
-    //  Payment event handlers
+    //  Reservation / payment event handlers
     // ──────────────────────────────────────────────
 
     @Transactional
-    public void handlePaymentSuccess(PaymentSuccessEvent event) {
-        if (!tryClaimEvent(PAYMENT_SUCCESS, event.messageId().toString())) return;
-
+    public void handleReservationCompleted(ReservationCompletedEvent event) {
+        if (!event.success()) {
+            log.info("Ignoring ReservationCompletedEvent with success=false for eventId={}", event.eventId());
+            return;
+        }
         String eventId = event.eventId().toString();
+        int ticketsSold = event.tickets() == null ? 0 : event.tickets().size();
         eventAnalyticsRepository.findById(eventId).ifPresent(analytics -> {
-            analytics.setTotalRevenue(analytics.getTotalRevenue().add(event.amount()));
-            analytics.setTotalTicketsSold(analytics.getTotalTicketsSold() + 1);
+            analytics.setTotalRevenue(analytics.getTotalRevenue().add(event.totalAmount()));
+            analytics.setTotalTicketsSold(analytics.getTotalTicketsSold() + ticketsSold);
             eventAnalyticsRepository.save(analytics);
-            upsertSalesRecord(eventId, analytics.getOrganizationName(), event.amount(), 1);
+            upsertSalesRecord(eventId, analytics.getOrganizationName(), event.totalAmount(), ticketsSold);
         });
-        log.info("Processed PaymentSuccess for event {}, amount={}", eventId, event.amount());
+        log.info("Processed ReservationCompleted for event {}, amount={}, tickets={}", eventId, event.totalAmount(), ticketsSold);
     }
-
-    @Transactional
-    public void handlePaymentFailed(PaymentFailedEvent event) {
-        if (!tryClaimEvent(PAYMENT_FAILED, event.messageId().toString())) return;
-
-        String eventId = event.eventId().toString();
-        eventAnalyticsRepository.findById(eventId).ifPresent(analytics -> {
-            analytics.setTotalFailedPayments(analytics.getTotalFailedPayments() + 1);
-            eventAnalyticsRepository.save(analytics);
-        });
-        log.info("Recorded PaymentFailed for event {}, amount={}", eventId, event.amount());
-    }
-
-//    @Transactional
-//    public void handleRefundCompleted(RefundCompletedEvent event) {
-//        if (!tryClaimEvent(PAYMENT_REFUNDED, event.messageId().toString())) return;
-//
-//        String eventId = event.eventId().toString();
-//        eventAnalyticsRepository.findById(eventId).ifPresent(analytics -> {
-//            analytics.setTotalRevenue(analytics.getTotalRevenue().subtract(event.amount()));
-//            analytics.setTotalTicketsSold(Math.max(0, analytics.getTotalTicketsSold() - 1));
-//            eventAnalyticsRepository.save(analytics);
-//            upsertSalesRecord(eventId, analytics.getOrganizationName(), event.amount().negate(), -1);
-//        });
-//        log.info("Processed RefundCompleted for event {}, amount={}", eventId, event.amount());
-//    }
 
     // ──────────────────────────────────────────────
     //  Internal helpers
     // ──────────────────────────────────────────────
-
-    private boolean tryClaimEvent(String topic, String messageId) {
-        try {
-            processedEventRepository.saveAndFlush(ProcessedEvent.builder()
-                .topic(topic)
-                .messageId(messageId)
-                .processedAt(Instant.now())
-                .build());
-            return true;
-        } catch (DataIntegrityViolationException e) {
-            log.debug("Duplicate event {}/{} already processed", topic, messageId);
-            return false;
-        }
-    }
 
     private boolean isNewerThanLast(EventAnalytics analytics, Instant eventTimestamp) {
         if (analytics.getLastEventTimestamp() != null

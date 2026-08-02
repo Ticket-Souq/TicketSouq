@@ -1,7 +1,6 @@
 package org.ticketsouq.analyticsservice.repository;
 
 import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.data.jpa.repository.Query;
 import org.ticketsouq.analyticsservice.model.SalesRecord;
 
 import java.time.LocalDate;
@@ -14,9 +13,5 @@ public interface SalesRecordRepository extends JpaRepository<SalesRecord, Long> 
 
     List<SalesRecord> findByEventIdOrderBySaleDateAsc(String eventId);
 
-    List<SalesRecord> findByEventIdAndSaleDateBetweenOrderBySaleDateAsc(String eventId, LocalDate from, LocalDate to);
-
-    List<SalesRecord> findByOrganizationNameAndSaleDateBetweenOrderBySaleDateAsc(String orgName, LocalDate from, LocalDate to);
-
-    List<SalesRecord> findBySaleDateBetweenOrderBySaleDateAsc(LocalDate from, LocalDate to);
+    List<SalesRecord> findByOrganizationNameOrderBySaleDateAsc(String orgName);
 }

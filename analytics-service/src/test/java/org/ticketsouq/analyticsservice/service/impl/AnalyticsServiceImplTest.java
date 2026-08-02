@@ -8,6 +8,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.ticketsouq.analyticsservice.Client.UserServiceClient;
@@ -59,10 +60,10 @@ class AnalyticsServiceImplTest {
         when(eventAnalyticsRepository.sumTotalTicketsSoldByOrgName(orgName)).thenReturn(100);
         when(eventAnalyticsRepository.sumTotalCapacityByOrgName(orgName)).thenReturn(200);
 
-        OverviewKpiResponse response = service.getOverviewKpis(userId, "30d");
+        OverviewKpiResponse response = service.getOverviewKpis(userId);
 
         assertEquals(5000.0, response.revenue().value());
-        assertEquals("USD", response.revenue().currency());
+        assertEquals("EGP", response.revenue().currency());
         assertEquals(100, response.ticketsSold().value());
         assertEquals(200, response.ticketsSold().capacity());
         assertEquals(50.0, response.avgTicketPrice().value());
@@ -77,7 +78,7 @@ class AnalyticsServiceImplTest {
         when(eventAnalyticsRepository.sumTotalTicketsSoldByOrgName(orgName)).thenReturn(0);
         when(eventAnalyticsRepository.sumTotalCapacityByOrgName(orgName)).thenReturn(0);
 
-        OverviewKpiResponse response = service.getOverviewKpis(userId, "30d");
+        OverviewKpiResponse response = service.getOverviewKpis(userId);
 
         assertEquals(0.0, response.avgTicketPrice().value());
     }
@@ -85,30 +86,25 @@ class AnalyticsServiceImplTest {
     // ──── getSalesPace ────
 
     @Test
-    void getSalesPace_withEventId_shouldQueryByEventAndDate() {
-        when(salesRecordRepository.findByEventIdAndSaleDateBetweenOrderBySaleDateAsc(
-                anyString(), any(LocalDate.class), any(LocalDate.class)))
+    void getSalesPace_withEventId_shouldQueryByEvent() {
+        when(salesRecordRepository.findByEventIdOrderBySaleDateAsc("evt-1"))
                 .thenReturn(List.of());
 
-        service.getSalesPace(userId, "30d", Optional.of("evt-1"));
+        service.getSalesPace(userId, Optional.of("evt-1"));
 
-        verify(salesRecordRepository).findByEventIdAndSaleDateBetweenOrderBySaleDateAsc(
-                eq("evt-1"), any(LocalDate.class), any(LocalDate.class));
-        verify(salesRecordRepository, never()).findByOrganizationNameAndSaleDateBetweenOrderBySaleDateAsc(
-                anyString(), any(LocalDate.class), any(LocalDate.class));
+        verify(salesRecordRepository).findByEventIdOrderBySaleDateAsc("evt-1");
+        verify(salesRecordRepository, never()).findByOrganizationNameOrderBySaleDateAsc(anyString());
     }
 
     @Test
-    void getSalesPace_withoutEventId_shouldQueryByOrgAndDate() {
+    void getSalesPace_withoutEventId_shouldQueryByOrg() {
         stubOrgName();
-        when(salesRecordRepository.findByOrganizationNameAndSaleDateBetweenOrderBySaleDateAsc(
-                anyString(), any(LocalDate.class), any(LocalDate.class)))
+        when(salesRecordRepository.findByOrganizationNameOrderBySaleDateAsc(orgName))
                 .thenReturn(List.of());
 
-        service.getSalesPace(userId, "30d", Optional.empty());
+        service.getSalesPace(userId, Optional.empty());
 
-        verify(salesRecordRepository).findByOrganizationNameAndSaleDateBetweenOrderBySaleDateAsc(
-                eq(orgName), any(LocalDate.class), any(LocalDate.class));
+        verify(salesRecordRepository).findByOrganizationNameOrderBySaleDateAsc(orgName);
     }
 
     @Test
@@ -119,11 +115,10 @@ class AnalyticsServiceImplTest {
                 .ticketsSold(null)
                 .revenue(BigDecimal.valueOf(100))
                 .build();
-        when(salesRecordRepository.findByOrganizationNameAndSaleDateBetweenOrderBySaleDateAsc(
-                anyString(), any(LocalDate.class), any(LocalDate.class)))
+        when(salesRecordRepository.findByOrganizationNameOrderBySaleDateAsc(orgName))
                 .thenReturn(List.of(record));
 
-        SalesPaceResponse response = service.getSalesPace(userId, "30d", Optional.empty());
+        SalesPaceResponse response = service.getSalesPace(userId, Optional.empty());
 
         assertEquals(1, response.series().size());
         assertEquals(0, response.series().get(0).ticketsCumulative());
@@ -137,11 +132,10 @@ class AnalyticsServiceImplTest {
                 .ticketsSold(15)
                 .revenue(BigDecimal.valueOf(300))
                 .build();
-        when(salesRecordRepository.findByOrganizationNameAndSaleDateBetweenOrderBySaleDateAsc(
-                anyString(), any(LocalDate.class), any(LocalDate.class)))
+        when(salesRecordRepository.findByOrganizationNameOrderBySaleDateAsc(orgName))
                 .thenReturn(List.of(record));
 
-        SalesPaceResponse response = service.getSalesPace(userId, "30d", Optional.empty());
+        SalesPaceResponse response = service.getSalesPace(userId, Optional.empty());
 
         assertEquals("2026-07-21", response.series().get(0).date());
         assertEquals(15, response.series().get(0).ticketsCumulative());
@@ -150,12 +144,12 @@ class AnalyticsServiceImplTest {
     // ──── getEventComparison ────
 
     @Test
-    void getEventComparison_shouldSortByRevenueDescAsDefault() {
+    void getEventComparison_shouldForwardRevenueDescSort() {
         stubOrgName();
         when(eventAnalyticsRepository.findByOrganizationName(eq(orgName), any(Pageable.class)))
                 .thenReturn(Page.empty());
 
-        service.getEventComparison(userId, "30d", "unknown-sort", 1, 20);
+        service.getEventComparison(userId, PageRequest.of(0, 20, Sort.by(Sort.Direction.DESC, "totalRevenue")));
 
         ArgumentCaptor<Pageable> captor = ArgumentCaptor.captor();
         verify(eventAnalyticsRepository).findByOrganizationName(eq(orgName), captor.capture());
@@ -165,12 +159,12 @@ class AnalyticsServiceImplTest {
     }
 
     @Test
-    void getEventComparison_shouldSortByTicketsDesc() {
+    void getEventComparison_shouldForwardTicketsDescSort() {
         stubOrgName();
         when(eventAnalyticsRepository.findByOrganizationName(eq(orgName), any(Pageable.class)))
                 .thenReturn(Page.empty());
 
-        service.getEventComparison(userId, "30d", "tickets", 1, 20);
+        service.getEventComparison(userId, PageRequest.of(0, 20, Sort.by(Sort.Direction.DESC, "totalTicketsSold")));
 
         ArgumentCaptor<Pageable> captor = ArgumentCaptor.captor();
         verify(eventAnalyticsRepository).findByOrganizationName(eq(orgName), captor.capture());
@@ -178,12 +172,12 @@ class AnalyticsServiceImplTest {
     }
 
     @Test
-    void getEventComparison_shouldSortByNameAsc() {
+    void getEventComparison_shouldForwardNameAscSort() {
         stubOrgName();
         when(eventAnalyticsRepository.findByOrganizationName(eq(orgName), any(Pageable.class)))
                 .thenReturn(Page.empty());
 
-        service.getEventComparison(userId, "30d", "name", 1, 20);
+        service.getEventComparison(userId, PageRequest.of(0, 20, Sort.by(Sort.Direction.ASC, "title")));
 
         ArgumentCaptor<Pageable> captor = ArgumentCaptor.captor();
         verify(eventAnalyticsRepository).findByOrganizationName(eq(orgName), captor.capture());
@@ -193,12 +187,12 @@ class AnalyticsServiceImplTest {
     }
 
     @Test
-    void getEventComparison_shouldUseCorrectPagination() {
+    void getEventComparison_shouldUseProvidedPagination() {
         stubOrgName();
         when(eventAnalyticsRepository.findByOrganizationName(eq(orgName), any(Pageable.class)))
                 .thenReturn(Page.empty());
 
-        service.getEventComparison(userId, "30d", "revenue", 3, 15);
+        service.getEventComparison(userId, PageRequest.of(2, 15));
 
         ArgumentCaptor<Pageable> captor = ArgumentCaptor.captor();
         verify(eventAnalyticsRepository).findByOrganizationName(eq(orgName), captor.capture());
@@ -220,7 +214,7 @@ class AnalyticsServiceImplTest {
         when(eventAnalyticsRepository.findByOrganizationName(eq(orgName), any(Pageable.class)))
                 .thenReturn(new PageImpl<>(List.of(entity)));
 
-        EventComparisonResponse response = service.getEventComparison(userId, "30d", "revenue", 1, 20);
+        EventComparisonResponse response = service.getEventComparison(userId, PageRequest.of(0, 20));
 
         assertEquals(1, response.events().size());
         EventComparisonResponse.EventRow row = response.events().get(0);

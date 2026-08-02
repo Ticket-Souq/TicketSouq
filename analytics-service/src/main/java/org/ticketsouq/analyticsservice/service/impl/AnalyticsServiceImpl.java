@@ -2,9 +2,7 @@ package org.ticketsouq.analyticsservice.service.impl;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.ticketsouq.analyticsservice.Client.UserServiceClient;
 import org.ticketsouq.analyticsservice.dto.*;
@@ -14,8 +12,6 @@ import org.ticketsouq.analyticsservice.repository.EventAnalyticsRepository;
 import org.ticketsouq.analyticsservice.repository.SalesRecordRepository;
 import org.ticketsouq.analyticsservice.service.AnalyticsService;
 
-import java.math.BigDecimal;
-import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -29,29 +25,27 @@ public class AnalyticsServiceImpl implements AnalyticsService {
     private final UserServiceClient userServiceClient;
 
     @Override
-    public OverviewKpiResponse getOverviewKpis(String userId, String range) {
+    public OverviewKpiResponse getOverviewKpis(String userId) {
         String orgName = resolveOrgName(userId);
         double revenue = eventAnalyticsRepository.sumTotalRevenueByOrgName(orgName);
         int ticketsSold = eventAnalyticsRepository.sumTotalTicketsSoldByOrgName(orgName);
         int totalCapacity = eventAnalyticsRepository.sumTotalCapacityByOrgName(orgName);
 
         return new OverviewKpiResponse(
-            new OverviewKpiResponse.RevenueKpi(revenue, "USD", 0),
+            new OverviewKpiResponse.RevenueKpi(revenue, "EGP", 0),
             new OverviewKpiResponse.TicketsSoldKpi(ticketsSold, totalCapacity),
             new OverviewKpiResponse.CheckInRateKpi(null, null),
-            new OverviewKpiResponse.AvgTicketPriceKpi(ticketsSold > 0 ? revenue / ticketsSold : 0, "USD")
+            new OverviewKpiResponse.AvgTicketPriceKpi(ticketsSold > 0 ? revenue / ticketsSold : 0, "EGP")
         );
     }
 
     @Override
-    public SalesPaceResponse getSalesPace(String userId, String range, Optional<String> eventId) {
-        LocalDate from = parseRange(range);
-        LocalDate to = LocalDate.now();
+    public SalesPaceResponse getSalesPace(String userId, Optional<String> eventId) {
         List<SalesRecord> records;
         if (eventId.isPresent()) {
-            records = salesRecordRepository.findByEventIdAndSaleDateBetweenOrderBySaleDateAsc(eventId.get(), from, to);
+            records = salesRecordRepository.findByEventIdOrderBySaleDateAsc(eventId.get());
         } else {
-            records = salesRecordRepository.findByOrganizationNameAndSaleDateBetweenOrderBySaleDateAsc(resolveOrgName(userId), from, to);
+            records = salesRecordRepository.findByOrganizationNameOrderBySaleDateAsc(resolveOrgName(userId));
         }
 
         List<SalesPaceResponse.DataPoint> series = records.stream()
@@ -63,14 +57,7 @@ public class AnalyticsServiceImpl implements AnalyticsService {
     }
 
     @Override
-    public EventComparisonResponse getEventComparison(String userId, String range, String sort, int page, int pageSize) {
-        Sort sorting = switch (sort) {
-            case "revenue" -> Sort.by(Sort.Direction.DESC, "totalRevenue");
-            case "tickets" -> Sort.by(Sort.Direction.DESC, "totalTicketsSold");
-            case "name" -> Sort.by(Sort.Direction.ASC, "title");
-            default -> Sort.by(Sort.Direction.DESC, "totalRevenue");
-        };
-        Pageable pageable = PageRequest.of(page - 1, pageSize, sorting);
+    public EventComparisonResponse getEventComparison(String userId, Pageable pageable) {
         Page<EventAnalytics> eventsPage = eventAnalyticsRepository.findByOrganizationName(resolveOrgName(userId), pageable);
 
         List<EventComparisonResponse.EventRow> rows = eventsPage.getContent().stream()
@@ -85,7 +72,7 @@ public class AnalyticsServiceImpl implements AnalyticsService {
             ))
             .toList();
 
-        return new EventComparisonResponse(rows, page, eventsPage.getTotalPages());
+        return new EventComparisonResponse(rows, eventsPage.getNumber(), eventsPage.getTotalPages());
     }
 
     @Override
@@ -135,14 +122,5 @@ public class AnalyticsServiceImpl implements AnalyticsService {
         } catch (IllegalArgumentException e) {
             return null;
         }
-    }
-
-    private LocalDate parseRange(String range) {
-        return switch (range) {
-            case "7d" -> LocalDate.now().minusDays(7);
-            case "90d" -> LocalDate.now().minusDays(90);
-            case "12m" -> LocalDate.now().minusMonths(12);
-            default -> LocalDate.now().minusDays(30);
-        };
     }
 }
