@@ -8,7 +8,7 @@ import org.ticketsouq.notificationservice.dto.EventDetailsResponse;
 
 import java.util.UUID;
 
-@FeignClient(name = "event-service", path = "/api/v1/events/", fallbackFactory = EventClientFallbackFactory.class)
+@FeignClient(name = "event-service", path = "/api/v1/event/", fallbackFactory = EventClientFallbackFactory.class)
 @Retry(name = "event-service")
 public interface EventClient {
 
