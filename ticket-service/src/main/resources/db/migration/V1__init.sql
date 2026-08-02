@@ -24,12 +24,7 @@ CREATE TABLE tickets (
 CREATE TABLE event_snapshots (
     event_id          uuid NOT NULL,
     title             varchar(255),
-    description       varchar(255),
-    venue_template_id uuid,
-    organization      varchar(255),
     status            varchar(255),
-    category_name     varchar(255),
-    poster_url        varchar(255),
     start_date        timestamp with time zone,
     finish_date       timestamp with time zone,
     CONSTRAINT pk_event_snapshots PRIMARY KEY (event_id)

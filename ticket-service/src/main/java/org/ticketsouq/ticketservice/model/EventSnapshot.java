@@ -27,12 +27,7 @@ public class EventSnapshot {
     private UUID eventId;
 
     private String title;
-    private String description;
-    private UUID venueTemplateId;
-    private String organization;
     private String status;
-    private String categoryName;
-    private String posterUrl;
     private Instant startDate;
     private Instant finishDate;
 }

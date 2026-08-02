@@ -47,7 +47,7 @@ public class OrganizerReservationConsumer {
     public void handleOrganizerReservationCancelled(OrganizerReservationCancelledEvent event) {
         log.info("Received OrganizerReservationCancelledEvent for eventId={}", event.eventId());
 
-        List<Ticket> tickets = ticketRepository.findByEventIdAndReservationStatus(event.eventId(), "ACTIVE");
+        List<Ticket> tickets = ticketRepository.findOrganizerReserved(event.eventId(), "ACTIVE");
         if (tickets.isEmpty()) {
             log.info("No active organizer tickets found for eventId={}", event.eventId());
             return;

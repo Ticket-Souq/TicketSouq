@@ -73,7 +73,7 @@ public class TicketService {
 
     @Transactional(readOnly = true)
     public List<TicketResponse> getOrganizerTickets(UUID eventId) {
-        return toResponses(ticketRepository.findByEventIdAndReservationStatus(eventId, "ACTIVE"));
+        return toResponses(ticketRepository.findOrganizerReserved(eventId, "ACTIVE"));
     }
 
     @Transactional
@@ -212,7 +212,6 @@ public class TicketService {
             .eventTitle(eventSnapshot.getTitle())
             .eventStartDate(eventSnapshot.getStartDate())
             .eventFinishDate(eventSnapshot.getFinishDate())
-            .eventPosterUrl(eventSnapshot.getPosterUrl())
             .eventStatus(eventSnapshot.getStatus())
             .price(ticket.getPrice())
             .reservationStatus(ticket.getReservationStatus())

@@ -49,7 +49,6 @@ public class EventSnapshotService {
             .orElseGet(() -> EventSnapshot.builder().eventId(event.eventId()).build());
 
         snapshot.setTitle(event.title());
-        snapshot.setOrganization(event.organization());
         snapshot.setStartDate(event.startDateTime());
         snapshot.setFinishDate(event.endDateTime());
         if (snapshot.getStatus() == null) {
@@ -82,8 +81,7 @@ public class EventSnapshotService {
     }
 
     private boolean isHydrated(EventSnapshot snapshot) {
-        return snapshot.getPosterUrl() != null
-            && snapshot.getTitle() != null
+        return snapshot.getTitle() != null
             && snapshot.getStartDate() != null
             && snapshot.getFinishDate() != null
             && snapshot.getStatus() != null;
@@ -92,12 +90,7 @@ public class EventSnapshotService {
     private EventSnapshot merge(EventSnapshot existing, EventSnapshotResponse remote) {
         EventSnapshot snapshot = existing != null ? existing : EventSnapshot.builder().eventId(remote.id()).build();
         snapshot.setTitle(remote.title());
-        snapshot.setDescription(remote.description());
-        snapshot.setVenueTemplateId(remote.venueTemplateId());
-        snapshot.setOrganization(remote.organization());
         snapshot.setStatus(remote.status());
-        snapshot.setCategoryName(remote.categoryName());
-        snapshot.setPosterUrl(remote.posterUrl());
         snapshot.setStartDate(remote.startDate());
         snapshot.setFinishDate(remote.finishDate());
         return snapshot;

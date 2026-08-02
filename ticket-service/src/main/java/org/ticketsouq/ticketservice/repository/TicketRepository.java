@@ -24,6 +24,9 @@ public interface TicketRepository extends JpaRepository<Ticket, UUID> {
 
     List<Ticket> findByEventIdAndReservationStatus(UUID eventId, String reservationStatus);
 
+    @Query("SELECT t FROM Ticket t WHERE t.eventId = :eventId AND t.reservationStatus = :status AND t.reservationId IS NULL")
+    List<Ticket> findOrganizerReserved(@Param("eventId") UUID eventId, @Param("status") String status);
+
     List<Ticket> findByReservationStatus(String reservationStatus);
 
     List<Ticket> findByUserIdAndConsumed(UUID userId, boolean consumed);
