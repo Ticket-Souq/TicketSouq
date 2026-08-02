@@ -1,4 +1,4 @@
-package org.ticketsouq.analyticsservice.config.kafka;
+package org.ticketsouq.analyticsservice.config;
 
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.springframework.context.annotation.Bean;

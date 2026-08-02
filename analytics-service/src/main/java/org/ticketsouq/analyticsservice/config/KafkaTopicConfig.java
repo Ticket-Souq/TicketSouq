@@ -1,4 +1,4 @@
-package org.ticketsouq.analyticsservice.config.kafka;
+package org.ticketsouq.analyticsservice.config;
 
 import org.apache.kafka.clients.admin.NewTopic;
 import org.springframework.context.annotation.Bean;
@@ -46,12 +46,7 @@ public class KafkaTopicConfig {
     }
 
     @Bean
-    public NewTopic paymentFailedTopic() {
-        return createTopic(PAYMENT_FAILED);
-    }
-
-    @Bean
-    public NewTopic refundCompletedTopic() {
-        return createTopic(PAYMENT_REFUNDED);
+    public NewTopic reservationCompletedTopic() {
+        return createTopic(RESERVATION_COMPLETED);
     }
 }
