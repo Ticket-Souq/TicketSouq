@@ -70,7 +70,7 @@ class OutboxLockStressTest extends AbstractIntegrationTest {
                 try {
                     startLatch.await();
                     int claimed = transactionTemplate.execute(_ ->
-                        outboxEventRepository.markInProgress(outboxEventId)
+                        outboxEventRepository.markInProgress(outboxEventId, Instant.now())
                     );
                     if (claimed == 1) {
                         winCount.incrementAndGet();
@@ -133,7 +133,7 @@ class OutboxLockStressTest extends AbstractIntegrationTest {
                     startLatch.await();
                     for (UUID eventId : eventIds) {
                         int claimed = transactionTemplate.execute(status ->
-                            outboxEventRepository.markInProgress(eventId)
+                            outboxEventRepository.markInProgress(eventId, Instant.now())
                         );
                         if (claimed == 1) {
                             totalClaimed.incrementAndGet();
@@ -204,7 +204,7 @@ class OutboxLockStressTest extends AbstractIntegrationTest {
                 startLatch.await();
                 Thread.sleep(50);
                 claimResult.set(transactionTemplate.execute(status ->
-                    outboxEventRepository.markInProgress(stuckEventId)
+                    outboxEventRepository.markInProgress(stuckEventId, Instant.now())
                 ));
             } catch (Exception e) {
                 // ignore

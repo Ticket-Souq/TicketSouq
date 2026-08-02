@@ -6,6 +6,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
@@ -56,6 +57,7 @@ class EventServiceTest {
 
     @Mock private EventRepository eventRepository;
     @Mock private SearchService eventSearchService;
+    @Mock private ApplicationEventPublisher applicationEventPublisher;
     @Mock private EventMapper eventMapper;
     @Mock private UserServiceClient userServiceClient;
     @Mock private SeatLockRepository seatLockRepository;
@@ -69,7 +71,7 @@ class EventServiceTest {
 
     @BeforeEach
     void setUp() {
-        eventService = new EventService(eventRepository, eventSearchService, outboxWriter,
+        eventService = new EventService(eventRepository, eventSearchService, applicationEventPublisher, outboxWriter,
             eventMapper, userServiceClient, seatLockRepository, seatRepository, zoneLockRepository,posterStorageService);
     }
 
