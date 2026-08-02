@@ -18,6 +18,7 @@ import org.ticketsouq.sharedmodule.ReservationService.enums.ReservationStatus;
 import org.ticketsouq.sharedmodule.ReservationService.events.SagaLockConfirmCommand;
 import org.ticketsouq.sharedmodule.ReservationService.events.SagaLockConfirmCompensateCommand;
 import org.ticketsouq.sharedmodule.ReservationService.events.SagaLockConfirmReplyEvent;
+import org.ticketsouq.sharedmodule.ReservationService.events.ReservationCompletedEvent;
 import org.ticketsouq.sharedmodule.ReservationService.events.SagaPaymentCommand;
 import org.ticketsouq.sharedmodule.ReservationService.events.SagaPaymentCompensateCommand;
 import org.ticketsouq.sharedmodule.ReservationService.events.SagaPaymentReplyEvent;
@@ -30,6 +31,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
+import static org.ticketsouq.sharedmodule.Constants.TOPIC_NAMES.RESERVATION_COMPLETED;
 import static org.ticketsouq.sharedmodule.Constants.TOPIC_NAMES.SAGA_LOCK_CONFIRM_COMMAND;
 import static org.ticketsouq.sharedmodule.Constants.TOPIC_NAMES.SAGA_LOCK_CONFIRM_COMPENSATE;
 import static org.ticketsouq.sharedmodule.Constants.TOPIC_NAMES.SAGA_PAYMENT_COMMAND;
@@ -286,6 +288,19 @@ public class SagaOrchestrator {
                 r.setCompletedAt(Instant.now());
                 reservationRepository.save(r);
             });
+
+            outboxWriter.save(new ReservationCompletedEvent(
+                UUID.randomUUID(),
+                saga.getReservationId(),
+                saga.getUserId(),
+                saga.getEventId(),
+                saga.getPaymentId(),
+                saga.getTotalAmount(),
+                fromJson(saga.getTicketDetails()),
+                true,
+                Instant.now()
+            ), RESERVATION_COMPLETED, saga.getReservationId().toString());
+            log.info("Published ReservationCompletedEvent for saga {}", saga.getId());
         });
         log.info("Saga {} completed successfully", saga.getId());
     }

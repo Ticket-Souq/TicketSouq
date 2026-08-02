@@ -50,4 +50,9 @@ public class KafkaTopicConfig {
         return createTopic(SAGA_LOCK_CONFIRM_COMPENSATE);
     }
 
+    @Bean
+    public NewTopic reservationCompletedTopic() {
+        return createTopic(RESERVATION_COMPLETED);
+    }
+
 }

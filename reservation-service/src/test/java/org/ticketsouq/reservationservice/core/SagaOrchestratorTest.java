@@ -236,9 +236,10 @@ class SagaOrchestratorTest {
     }
 
     @Test
-    @DisplayName("Lock confirm success: advances to COMPLETED step, marks saga and reservation done")
+    @DisplayName("Lock confirm success: advances to COMPLETED step, marks saga and reservation done, publishes ReservationCompletedEvent")
     void handleLockConfirmReply_success_completesSaga() throws Exception {
         SagaInstance saga = buildSaga(SagaStatus.ACTIVE, SagaStep.TICKET_ISSUANCE);
+        saga.setPaymentId(UUID.randomUUID());
 
         SagaLockConfirmReplyEvent event = new SagaLockConfirmReplyEvent(reservationId, true, null);
 
@@ -251,6 +252,7 @@ class SagaOrchestratorTest {
         assertThat(saga.getCurrentStep()).isEqualTo(SagaStep.COMPLETED);
         assertThat(saga.getSagaStatus()).isEqualTo(SagaStatus.COMPLETED);
         assertThat(saga.getCompletedAt()).isNotNull();
+        verify(outboxWriter).save(any(ReservationCompletedEvent.class), eq(RESERVATION_COMPLETED), eq(reservationId.toString()));
     }
 
     @Test
