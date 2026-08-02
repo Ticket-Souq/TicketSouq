@@ -25,6 +25,7 @@ public final class TOPIC_NAMES {
 
     // ─── Saga (Reservation Service) ───────────────────────────
     public static final String RESERVATION_BEGIN = "reservation.begin";
+    public static final String RESERVATION_COMPLETED = "reservation.completed";
     public static final String SAGA_PAYMENT_COMMAND = "saga.payment.command";
     public static final String SAGA_PAYMENT_REPLY = "saga.payment.reply";
     public static final String SAGA_PAYMENT_COMPENSATE = "saga.payment.compensate";
