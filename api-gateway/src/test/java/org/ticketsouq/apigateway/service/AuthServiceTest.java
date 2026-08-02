@@ -21,6 +21,7 @@ import org.ticketsouq.sharedmodule.ApiGateway.dto.GenerateMembersRequest;
 import org.ticketsouq.sharedmodule.ApiGateway.dto.GeneratedAccount;
 import org.ticketsouq.sharedmodule.ApiGateway.event.AccountsGeneratedEvent;
 import org.ticketsouq.sharedmodule.ApiGateway.event.EmailVerificationEvent;
+import org.ticketsouq.sharedmodule.ApiGateway.event.PasswordChangedEvent;
 import org.ticketsouq.sharedmodule.ApiGateway.event.PasswordResetEvent;
 import org.ticketsouq.sharedmodule.ApiGateway.exception.EmailAlreadyExistsException;
 import org.ticketsouq.sharedmodule.AuditService.events.AuditEvent;
@@ -39,6 +40,7 @@ import static org.mockito.Mockito.*;
 import static org.ticketsouq.sharedmodule.Constants.TOPIC_NAMES.ACCOUNTS_GENERATED;
 import static org.ticketsouq.sharedmodule.Constants.TOPIC_NAMES.AUDIT_EVENT;
 import static org.ticketsouq.sharedmodule.Constants.TOPIC_NAMES.USER_EMAIL_VERIFICATION;
+import static org.ticketsouq.sharedmodule.Constants.TOPIC_NAMES.USER_PASSWORD_CHANGE;
 import static org.ticketsouq.sharedmodule.Constants.TOPIC_NAMES.USER_PASSWORD_RESET;
 
 @ExtendWith(MockitoExtension.class)
@@ -391,6 +393,7 @@ class AuthServiceTest {
 
         assertThat(customerCredential.getPasswordHash()).isEqualTo("newEncoded");
         verify(authTokenService).invalidateAllSession(USER_ID);
+        verify(outboxWriter).save(any(PasswordChangedEvent.class), eq(USER_PASSWORD_CHANGE), anyString());
     }
 
     @Test

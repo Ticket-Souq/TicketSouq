@@ -23,6 +23,7 @@ import org.ticketsouq.sharedmodule.ApiGateway.dto.GenerateMembersRequest;
 import org.ticketsouq.sharedmodule.ApiGateway.dto.GeneratedAccount;
 import org.ticketsouq.sharedmodule.ApiGateway.event.AccountsGeneratedEvent;
 import org.ticketsouq.sharedmodule.ApiGateway.event.EmailVerificationEvent;
+import org.ticketsouq.sharedmodule.ApiGateway.event.PasswordChangedEvent;
 import org.ticketsouq.sharedmodule.ApiGateway.event.PasswordResetEvent;
 import org.ticketsouq.sharedmodule.ApiGateway.exception.EmailAlreadyExistsException;
 import org.ticketsouq.sharedmodule.AuditService.events.AuditEvent;
@@ -32,6 +33,7 @@ import org.ticketsouq.sharedmodule.utils.UUIDUtils;
 import static org.ticketsouq.sharedmodule.Constants.TOPIC_NAMES.ACCOUNTS_GENERATED;
 import static org.ticketsouq.sharedmodule.Constants.TOPIC_NAMES.AUDIT_EVENT;
 import static org.ticketsouq.sharedmodule.Constants.TOPIC_NAMES.USER_EMAIL_VERIFICATION;
+import static org.ticketsouq.sharedmodule.Constants.TOPIC_NAMES.USER_PASSWORD_CHANGE;
 import static org.ticketsouq.sharedmodule.Constants.TOPIC_NAMES.USER_PASSWORD_RESET;
 
 import java.security.SecureRandom;
@@ -233,6 +235,8 @@ public class AuthService {
         credential.setPasswordHash(passwordEncoder.encode(req.newPassword()));
         credentialRepository.save(credential);
         logoutFromAllDevices(userId);
+        outboxWriter.save(new PasswordChangedEvent(UUID.randomUUID(), userId),
+            USER_PASSWORD_CHANGE, userId.toString());
     }
 
     // ── DEACTIVATE ACCOUNT ────────────────────────────────────────────────────
