@@ -50,6 +50,8 @@
     <logger name="org.hibernate.SQL"                     level="DEBUG"/>
     <logger name="org.hibernate.type.descriptor.sql"     level="WARN"/>
 
+    <turboFilter class="org.ticketsouq.sharedmodule.logging.OutboxSqlTurboFilter"/>
+
     <!-- ── Root ─────────────────────────────────────────────────── -->
     <root level="INFO">
         <appender-ref ref="CONSOLE"/>

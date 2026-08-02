@@ -19,4 +19,4 @@ spring:
 
 app:
   lock:
-    ttl: 10
+    ttl: 12
