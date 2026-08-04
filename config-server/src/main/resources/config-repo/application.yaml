@@ -144,13 +144,6 @@ resilience4j:
         wait-duration-in-open-state: 30s
         permitted-number-of-calls-in-half-open-state: 3
         sliding-window-type: COUNT_BASED
-    instances:
-      user-service:
-        base-config: default
-      event-service:
-        base-config: default
-      api-gateway:
-        base-config: default
   timelimiter:
     configs:
       default:
