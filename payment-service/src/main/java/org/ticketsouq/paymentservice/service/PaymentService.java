@@ -20,6 +20,8 @@ import org.ticketsouq.sharedmodule.ReservationService.events.SagaPaymentReplyEve
 
 import java.util.UUID;
 
+import org.ticketsouq.paymentservice.metrics.PaymentMetrics;
+
 import static org.ticketsouq.sharedmodule.Constants.TOPIC_NAMES.PAYMENT_FAILED;
 import static org.ticketsouq.sharedmodule.Constants.TOPIC_NAMES.PAYMENT_REFUNDED;
 import static org.ticketsouq.sharedmodule.Constants.TOPIC_NAMES.PAYMENT_SUCCESS;
@@ -34,6 +36,7 @@ public class PaymentService {
     private final OutboxWriter outboxWriter;
     private final PlatformTransactionManager transactionManager;
     private final PaymentProvider paymentProvider;
+    private final PaymentMetrics paymentMetrics;
 
     public void handleWebhookEvent(Event event) {
         EventDataObjectDeserializer dataObjectDeserializer = event.getDataObjectDeserializer();
@@ -68,6 +71,7 @@ public class PaymentService {
     }
 
     public void handlePaymentSucceeded(String stripePaymentIntentId) {
+        long start = System.currentTimeMillis();
         TransactionTemplate tx = new TransactionTemplate(transactionManager);
         tx.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
         PaymentModel updatedPayment = tx.execute(status -> {
@@ -87,12 +91,15 @@ public class PaymentService {
             outboxWriter.save(event, PAYMENT_SUCCESS, currentPayment.getCustomerID().toString());
             return currentPayment;
         });
+        paymentMetrics.recordPaymentProcessing(System.currentTimeMillis() - start);
         if (updatedPayment != null) {
+            paymentMetrics.recordPaymentSuccess(updatedPayment.getAmount().doubleValue());
             publishSagaReply(updatedPayment, true, null);
         }
     }
 
     public void handlePaymentFailed(String stripePaymentIntentId) {
+        long start = System.currentTimeMillis();
         TransactionTemplate tx = new TransactionTemplate(transactionManager);
         tx.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
         PaymentModel updatedPayment = tx.execute(status -> {
@@ -112,7 +119,9 @@ public class PaymentService {
             outboxWriter.save(event, PAYMENT_FAILED, currentPayment.getCustomerID().toString());
             return currentPayment;
         });
+        paymentMetrics.recordPaymentProcessing(System.currentTimeMillis() - start);
         if (updatedPayment != null) {
+            paymentMetrics.recordPaymentFailed(updatedPayment.getAmount().doubleValue());
             publishSagaReply(updatedPayment, false, "Payment failed");
         }
     }
@@ -128,6 +137,7 @@ public class PaymentService {
             }
             payment.setPaymentStatus(PaymentStatus.REFUNDED);
             paymentRepository.save(payment);
+            paymentMetrics.recordPaymentRefund(payment.getAmount().doubleValue());
             RefundCompletedEvent event = new RefundCompletedEvent(
                 UUID.randomUUID(),
                 payment.getCustomerID(),

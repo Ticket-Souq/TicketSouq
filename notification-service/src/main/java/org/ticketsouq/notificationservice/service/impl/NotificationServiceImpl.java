@@ -10,6 +10,7 @@ import org.ticketsouq.notificationservice.entity.Notification;
 import org.ticketsouq.notificationservice.entity.UserEmailProjection;
 import org.ticketsouq.notificationservice.enums.NotificationTemplate;
 import org.ticketsouq.notificationservice.mapper.NotificationMapper;
+import org.ticketsouq.notificationservice.metrics.NotificationMetrics;
 import org.ticketsouq.notificationservice.repository.NotificationRepository;
 import org.ticketsouq.notificationservice.repository.UserEmailProjectionRepository;
 import org.ticketsouq.notificationservice.service.EmailJobService;
@@ -37,6 +38,7 @@ public class NotificationServiceImpl implements NotificationService {
     private final UserEmailProjectionRepository userEmailProjectionRepository;
     private final NotificationMapper notificationMapper;
     private final EventDetailsService eventDetailsService;
+    private final NotificationMetrics notificationMetrics;
 
 
     @Override
@@ -125,6 +127,7 @@ public class NotificationServiceImpl implements NotificationService {
                 template.getNotificationType()
             )
         );
+        notificationMetrics.recordInAppNotification(template.getNotificationType().name());
 
         emailJobService.createEmailJob(
             event.messageId(),
@@ -156,6 +159,7 @@ public class NotificationServiceImpl implements NotificationService {
                 template.getNotificationType()
             )
         );
+        notificationMetrics.recordInAppNotification(template.getNotificationType().name());
         Map<String, Object> variables = new HashMap<>();
         variables.put("eventName", eventDetailsResponse.name());
         variables.put("location", eventDetailsResponse.location());
@@ -212,6 +216,7 @@ public class NotificationServiceImpl implements NotificationService {
                 template.getNotificationType()
             )
         );
+        notificationMetrics.recordInAppNotification(template.getNotificationType().name());
         Map<String, Object> variables = new HashMap<>();
         variables.put("eventName", eventDetailsResponse.name());
         variables.put("location", eventDetailsResponse.location());

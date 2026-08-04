@@ -17,6 +17,8 @@ import java.time.Instant;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import org.ticketsouq.reservationservice.metrics.SagaMetrics;
+
 @Slf4j
 @Component
 @RequiredArgsConstructor
@@ -26,6 +28,7 @@ public class SagaRecoveryJob {
     private static final int BATCH_SIZE = 100;
     private final SagaInstanceRepository sagaInstanceRepository;
     private final SagaOrchestrator sagaOrchestrator;
+    private final SagaMetrics sagaMetrics;
     private final AtomicBoolean recoverRunning = new AtomicBoolean();
     private final AtomicBoolean compensationRunning = new AtomicBoolean();
 
@@ -55,6 +58,7 @@ public class SagaRecoveryJob {
             for (SagaInstance saga : timedOutSagas) {
                 try {
                     log.warn("Saga {} timed out at step {}, starting compensation", saga.getId(), saga.getCurrentStep());
+                    sagaMetrics.timeoutRecovered();
                     sagaOrchestrator.startCompensation(saga, "Saga timeout: no progress for " + STEP_TIMEOUT.toMinutes() + " minutes at step " + saga.getCurrentStep());
                 } catch (Exception e) {
                     log.error("Failed to start compensation for timed-out saga {}: {}", saga.getId(), e.getMessage(), e);

@@ -23,12 +23,15 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
+import org.ticketsouq.ticketservice.metrics.TicketMetrics;
+
 @Service
 @RequiredArgsConstructor
 public class TicketService {
 
     private final TicketRepository ticketRepository;
     private final EventSnapshotService eventSnapshotService;
+    private final TicketMetrics ticketMetrics;
 
 //    @Transactional
 //    public List<TicketResponse> createTickets(CreateTicketsRequest request) {
@@ -92,9 +95,10 @@ public class TicketService {
         if (ticket.isConsumed()) {
             throw new IllegalStateException("Ticket already consumed");
         }
-        ticket.setConsumed(true);
-        ticketRepository.save(ticket);
-        return toResponse(ticket);
+            ticket.setConsumed(true);
+            ticketRepository.save(ticket);
+            ticketMetrics.recordTicketConsumed();
+            return toResponse(ticket);
     }
 
     @Transactional
@@ -106,6 +110,7 @@ public class TicketService {
 
         tickets.forEach(ticket -> ticket.setReservationStatus("CANCELLED"));
         ticketRepository.saveAll(tickets);
+        ticketMetrics.recordTicketCancelled();
     }
 
     @Transactional
@@ -127,6 +132,7 @@ public class TicketService {
         }
 
         ticketRepository.save(ticket);
+        ticketMetrics.recordTicketSold();
         return toResponse(ticket);
     }
 
@@ -148,6 +154,7 @@ public class TicketService {
             ticket.setConsumed(false);
 
             ticketRepository.save(ticket);
+            ticketMetrics.recordTicketSold();
             return toResponse(ticket, eventSnapshot);
         }).toList();
     }

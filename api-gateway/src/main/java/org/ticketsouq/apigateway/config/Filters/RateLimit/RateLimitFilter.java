@@ -17,6 +17,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.util.AntPathMatcher;
 import org.springframework.util.PathMatcher;
 import org.springframework.web.filter.OncePerRequestFilter;
+import org.ticketsouq.apigateway.metrics.GatewayMetrics;
 import org.ticketsouq.sharedmodule.GeneralExceptions.ErrorResponse;
 
 import java.io.IOException;
@@ -32,6 +33,7 @@ public class RateLimitFilter extends OncePerRequestFilter {
 
     private final ObjectMapper objectMapper;
     private final RateLimitProperties rateLimitProperties;
+    private final GatewayMetrics gatewayMetrics;
     private final PathMatcher pathMatcher = new AntPathMatcher();
 
     // Per-IP token buckets, evicted after 2min of inactivity, max 100k entries
@@ -117,6 +119,7 @@ public class RateLimitFilter extends OncePerRequestFilter {
             // If no tokens left, reject with 429 + rate-limit headers
             if (!bucket.tryConsume(1)) {
                 log.warn("Rate limit exceeded for IP: {}", ip);
+                gatewayMetrics.recordRateLimitExceeded();
                 writeRateLimitHeaders(res, bucket);
                 ErrorResponse body = ErrorResponse.of(429, "Too Many Requests", "Rate limit exceeded. Retry after " + rateLimitProperties.getRefillPeriod().toSeconds() + " seconds");
                 res.setStatus(429);

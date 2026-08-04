@@ -9,6 +9,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.ticketsouq.notificationservice.entity.EmailJob;
 import org.ticketsouq.notificationservice.enums.EmailJobStatus;
+import org.ticketsouq.notificationservice.metrics.NotificationMetrics;
 import org.ticketsouq.notificationservice.repository.EmailJobRepository;
 
 import java.time.LocalDateTime;
@@ -24,10 +25,12 @@ public class EmailJobProcessor {
     private final EmailService emailService;
     private final ObjectMapper objectMapper;
     private final EmailJobRepository emailJobRepository;
+    private final NotificationMetrics notificationMetrics;
 
 
     @Transactional
     public void process(UUID jobId) {
+        long start = System.currentTimeMillis();
         EmailJob job = emailJobRepository.findById(jobId).orElseThrow(() -> new IllegalStateException("EmailJob not found"));
         try {
             Map<String, Object> variables = objectMapper.readValue(
@@ -44,10 +47,13 @@ public class EmailJobProcessor {
             log.info("Email sent");
 
             markAsSent(job);
+            notificationMetrics.recordEmailDeliveryTime(System.currentTimeMillis() - start);
+            notificationMetrics.recordEmailSent(job.getTemplate().name());
 
             log.info("Email job {} processed successfully", job.getId());
         } catch (Exception ex) {
             markAsFailed(job);
+            notificationMetrics.recordEmailFailed(job.getTemplate().name(), "send_failure");
             log.error("Failed to process email job {}", job.getId(), ex);
         }
     }

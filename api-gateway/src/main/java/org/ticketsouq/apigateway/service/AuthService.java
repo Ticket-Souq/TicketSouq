@@ -12,6 +12,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionTemplate;
 import org.ticketsouq.apigateway.client.UserServiceClient;
 import org.ticketsouq.apigateway.dto.*;
+import org.ticketsouq.apigateway.metrics.GatewayMetrics;
 import org.ticketsouq.apigateway.model.AuthCredential;
 import org.ticketsouq.apigateway.model.RefreshToken;
 import org.ticketsouq.apigateway.model.Role;
@@ -54,6 +55,7 @@ public class AuthService {
     private final AuthCredentialRepository credentialRepository;
     private final OutboxWriter outboxWriter;
     private final PlatformTransactionManager transactionManager;
+    private final GatewayMetrics gatewayMetrics;
 
     // ── REGISTER ──────────────────────────────────────────────────────────────
 
@@ -342,11 +344,15 @@ public class AuthService {
      * Rejects if: not verified, not active, or locked (with reason: bad attempts vs. org approval)
      */
     private void assertLoginAllowed(AuthCredential c) {
-        if (!c.getIsVerified())
+        if (!c.getIsVerified()) {
+            gatewayMetrics.recordAuthFailure("not_verified");
             throw new BusinessException("Account is not verified", HttpStatus.UNAUTHORIZED);
+        }
 
-        if (!c.getIsActive())
+        if (!c.getIsActive()) {
+            gatewayMetrics.recordAuthFailure("not_active");
             throw new BusinessException("Account is not active. Contact support.", HttpStatus.UNAUTHORIZED);
+        }
 
         if (c.getLocked()) {
             boolean  lockedDueToFailedAttempts = c.getLockedUntil() != null && c.getLockedUntil().isAfter(Instant.now())
@@ -357,12 +363,15 @@ public class AuthService {
                 String failedLoginMessage = "Account is locked until " +
                     time.getHour() +":"+ time.getMinute()+
                     ". Because of multiple failed login attempt.";
+                gatewayMetrics.recordAuthFailure("account_locked");
                 throw new BusinessException(failedLoginMessage, HttpStatus.UNAUTHORIZED);
             }
+            gatewayMetrics.recordAuthFailure("pending_org_approval");
             throw new BusinessException("Waiting for Admin Approval for your Organization", HttpStatus.UNAUTHORIZED);
         }
         if (!(c.getRole().name().equals("ADMIN") || c.getRole().name().equals("CUSTOMER"))) {
             if (userServiceClient.isBelongToBannedOrg(c.getUserId())) {
+                gatewayMetrics.recordAuthFailure("banned_org");
                 throw new BusinessException("you belong to a banned organization you are not allowed to login", HttpStatus.UNAUTHORIZED);
             }
         }
@@ -370,6 +379,7 @@ public class AuthService {
 
 
     private void handleFailedAttempt(AuthCredential c) {
+        gatewayMetrics.recordAuthFailure("wrong_password");
         TransactionTemplate tx = new TransactionTemplate(transactionManager);
         tx.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
         tx.execute(status -> {
