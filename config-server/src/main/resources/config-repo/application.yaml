@@ -155,3 +155,7 @@ resilience4j:
     configs:
       default:
         timeout-duration: 5s
+
+# ── Continuous Profiling → Pyroscope ──────────
+pyroscope:
+  agent-enabled: true

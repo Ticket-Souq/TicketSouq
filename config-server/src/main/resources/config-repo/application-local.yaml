@@ -19,3 +19,6 @@ logging:
   level:
     org.springframework.cloud.gateway: DEBUG
     org.springframework.cloud.loadbalancer: DEBUG
+
+pyroscope:
+  server-address: http://localhost:4040

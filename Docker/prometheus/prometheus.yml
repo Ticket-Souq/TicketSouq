@@ -36,3 +36,23 @@ scrape_configs:
       # Instance label
       - source_labels: [__meta_eureka_app_instance_instance_id]
         target_label: instance
+
+  - job_name: 'cadvisor'
+    scrape_interval: 15s
+    static_configs:
+      - targets: ['cadvisor:8080']
+
+  - job_name: 'kafka-exporter'
+    scrape_interval: 15s
+    static_configs:
+      - targets: ['kafka-exporter:9308']
+
+  - job_name: 'redis-exporter'
+    scrape_interval: 15s
+    static_configs:
+      - targets: ['redis-exporter:9121']
+
+  - job_name: 'telegraf'
+    scrape_interval: 10s
+    static_configs:
+      - targets: ['telegraf:9273']

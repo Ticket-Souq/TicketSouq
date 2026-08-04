@@ -17,3 +17,6 @@ logging:
   level:
     org.springframework.cloud.gateway: INFO
     org.springframework.cloud.loadbalancer: INFO
+
+pyroscope:
+  server-address: http://pyroscope:4040

@@ -41,3 +41,4 @@ data/*
 .env.local
 
 /uploads
+/Docker/grafana/plugins

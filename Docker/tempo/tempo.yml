@@ -12,6 +12,18 @@ distributor:
 #        http:
 #          endpoint: 0.0.0.0:4318
 
+metrics_generator:
+  storage:
+    path: /tmp/tempo/metrics-generator
+    remote_write:
+      - url: http://prometheus:9090/api/v1/write
+  processor:
+    service_graphs: {}
+    span_metrics: {}
+
+overrides:
+  metrics_generator_processors: [service-graphs, span-metrics]
+
 storage:
   trace:
     backend: local
