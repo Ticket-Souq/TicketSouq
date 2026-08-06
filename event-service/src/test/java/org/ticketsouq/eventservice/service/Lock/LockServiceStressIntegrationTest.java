@@ -87,11 +87,10 @@ class LockServiceStressIntegrationTest extends LockServiceIntegrationTestBase {
     @DisplayName("Load test: concurrent seat lock requests on the same seat")
     void givenHighConcurrency_whenAcquireSeatLocks_thenOnlyFirstSucceeds() throws Exception {
         int requestCount = 50 * SF;
-        UUID seatId = UUID.randomUUID();
 
         Event event = createPublishedSeatEvent();
         Section section = createSection(event, Math.max(100, requestCount));
-        createSeat(section, seatId, SeatStatus.AVAILABLE);
+        UUID seatId = createSeat(section, SeatStatus.AVAILABLE).getId();
 
         CountDownLatch startLatch = new CountDownLatch(1);
         CountDownLatch finishLatch = new CountDownLatch(requestCount);
@@ -196,11 +195,10 @@ class LockServiceStressIntegrationTest extends LockServiceIntegrationTestBase {
     @DisplayName("Load test: concurrent seat lock+confirm cycles on 1 seat — exactly 1 books, rest rejected")
     void givenConcurrentRequests_whenSeatLockAndConfirmRace_thenNoDoubleBooking() throws Exception {
         int requestCount = Math.max(10, 20 * SF);
-        UUID seatId = UUID.randomUUID();
 
         Event event = createPublishedSeatEvent();
         Section section = createSection(event, requestCount);
-        createSeat(section, seatId, SeatStatus.AVAILABLE);
+        UUID seatId = createSeat(section, SeatStatus.AVAILABLE).getId();
 
         CountDownLatch startLatch = new CountDownLatch(1);
         CountDownLatch finishLatch = new CountDownLatch(requestCount);
@@ -261,9 +259,7 @@ class LockServiceStressIntegrationTest extends LockServiceIntegrationTestBase {
         Section section = createSection(event, seatCount);
         List<UUID> seatIds = new ArrayList<>();
         for (int i = 0; i < seatCount; i++) {
-            UUID seatId = UUID.randomUUID();
-            seatIds.add(seatId);
-            createSeat(section, seatId, SeatStatus.AVAILABLE);
+            seatIds.add(createSeat(section, SeatStatus.AVAILABLE).getId());
         }
 
         CountDownLatch startLatch = new CountDownLatch(1);
@@ -372,9 +368,7 @@ class LockServiceStressIntegrationTest extends LockServiceIntegrationTestBase {
         Section section = createSection(event, count);
         List<UUID> allSeatIds = new ArrayList<>();
         for (int i = 0; i < count; i++) {
-            UUID sid = UUID.randomUUID();
-            allSeatIds.add(sid);
-            createSeat(section, sid, SeatStatus.AVAILABLE);
+            allSeatIds.add(createSeat(section, SeatStatus.AVAILABLE).getId());
         }
 
         CountDownLatch startLatch = new CountDownLatch(1);
@@ -478,9 +472,7 @@ class LockServiceStressIntegrationTest extends LockServiceIntegrationTestBase {
         Section section = createSection(event, seatCount);
         List<UUID> seatIds = new ArrayList<>();
         for (int i = 0; i < seatCount; i++) {
-            UUID sid = UUID.randomUUID();
-            seatIds.add(sid);
-            createSeat(section, sid, SeatStatus.AVAILABLE);
+            seatIds.add(createSeat(section, SeatStatus.AVAILABLE).getId());
         }
 
         int poolSize = threads(20);

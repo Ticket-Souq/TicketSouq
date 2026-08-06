@@ -105,7 +105,8 @@ class SearchServicePGIntegrationTest extends RepositoryTestBase {
     }
 
     private Event createEvent(String title, String organization, EventCategory category) {
-        return eventRepository.save(Event.builder().title(title).organization(organization)
+        return eventRepository.save(Event.builder().title(title).location("Test Location")
+            .organization(organization)
             .eventCategory(category).PosterUrl("http://example.com/poster.jpg")
             .status(EventStatus.PUBLISHED).bookingModel(BookingModel.SEAT)
             .startDate(Instant.now().plusSeconds(86400))

@@ -10,6 +10,7 @@ import org.springframework.data.elasticsearch.client.elc.NativeQuery;
 import org.springframework.data.elasticsearch.core.ElasticsearchOperations;
 import org.springframework.data.elasticsearch.core.SearchHit;
 import org.springframework.data.elasticsearch.core.SearchHits;
+import org.springframework.transaction.annotation.Transactional;
 import org.ticketsouq.eventservice.dto.EventSearchRequest;
 import org.ticketsouq.eventservice.dto.EventCardResponse;
 import org.ticketsouq.eventservice.model.Event;
@@ -27,7 +28,12 @@ public class ESSearchService implements SearchService {
     private final ElasticsearchEventRepository elasticsearchEventRepository;
     private final EventRepository eventRepository;
 
+    @Transactional(readOnly = true)
     public Page<EventCardResponse> searchBy(EventSearchRequest request, Pageable pageable) {
+        if (request.title() == null && request.organization() == null && request.category() == null) {
+            return Page.empty();
+        }
+
         BoolQuery.Builder boolQuery = new BoolQuery.Builder();
 
         if (request.title() != null) addFilterLayer(boolQuery,"title",request.title());

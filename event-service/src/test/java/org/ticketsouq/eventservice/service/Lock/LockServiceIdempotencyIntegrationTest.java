@@ -21,8 +21,7 @@ class LockServiceIdempotencyIntegrationTest extends LockServiceIntegrationTestBa
     void givenSeatReservation_whenConfirmTwice_thenStatePreserved() {
         Event event = createPublishedSeatEvent();
         Section section = createSection(event, 10);
-        UUID seatId = UUID.randomUUID();
-        createSeat(section, seatId, SeatStatus.AVAILABLE);
+        UUID seatId = createSeat(section, SeatStatus.AVAILABLE).getId();
 
         LockSeatsResponse lockRes = lockService.acquireSeatLocks(event.getId(), new LockSeatsRequest(List.of(seatId)));
         String reservationId = lockRes.reservationId().toString();
@@ -63,8 +62,7 @@ class LockServiceIdempotencyIntegrationTest extends LockServiceIntegrationTestBa
     void givenReservation_whenReleaseTwice_thenStatePreserved() {
         Event seatEvent = createPublishedSeatEvent();
         Section seatSection = createSection(seatEvent, 10);
-        UUID seatId = UUID.randomUUID();
-        createSeat(seatSection, seatId, SeatStatus.AVAILABLE);
+        UUID seatId = createSeat(seatSection, SeatStatus.AVAILABLE).getId();
 
         LockSeatsResponse seatLockRes = lockService.acquireSeatLocks(seatEvent.getId(), new LockSeatsRequest(List.of(seatId)));
         String seatResId = seatLockRes.reservationId().toString();
@@ -99,8 +97,7 @@ class LockServiceIdempotencyIntegrationTest extends LockServiceIntegrationTestBa
     void givenUnknownReservation_whenConfirmCalled_thenNoSideEffects() {
         Event seatEvent = createPublishedSeatEvent();
         Section seatSection = createSection(seatEvent, 10);
-        UUID seatId = UUID.randomUUID();
-        createSeat(seatSection, seatId, SeatStatus.AVAILABLE);
+        UUID seatId = createSeat(seatSection, SeatStatus.AVAILABLE).getId();
 
         lockService.confirm("confirm-without-acquire-seat");
 
@@ -123,8 +120,7 @@ class LockServiceIdempotencyIntegrationTest extends LockServiceIntegrationTestBa
     void givenUnknownReservation_whenReleaseCalled_thenNoSideEffects() {
         Event seatEvent = createPublishedSeatEvent();
         Section seatSection = createSection(seatEvent, 10);
-        UUID seatId = UUID.randomUUID();
-        createSeat(seatSection, seatId, SeatStatus.AVAILABLE);
+        UUID seatId = createSeat(seatSection, SeatStatus.AVAILABLE).getId();
 
         lockService.release("release-without-acquire-seat");
 
@@ -147,8 +143,7 @@ class LockServiceIdempotencyIntegrationTest extends LockServiceIntegrationTestBa
     void givenSeatReservation_whenConfirmThenRelease_thenBookingPreserved() {
         Event event = createPublishedSeatEvent();
         Section section = createSection(event, 10);
-        UUID seatId = UUID.randomUUID();
-        createSeat(section, seatId, SeatStatus.AVAILABLE);
+        UUID seatId = createSeat(section, SeatStatus.AVAILABLE).getId();
 
         LockSeatsResponse lockRes = lockService.acquireSeatLocks(event.getId(), new LockSeatsRequest(List.of(seatId)));
         String reservationId = lockRes.reservationId().toString();
@@ -193,8 +188,7 @@ class LockServiceIdempotencyIntegrationTest extends LockServiceIntegrationTestBa
     void givenSeatReservation_whenReleaseThenConfirm_thenSeatStaysAvailable() {
         Event event = createPublishedSeatEvent();
         Section section = createSection(event, 10);
-        UUID seatId = UUID.randomUUID();
-        createSeat(section, seatId, SeatStatus.AVAILABLE);
+        UUID seatId = createSeat(section, SeatStatus.AVAILABLE).getId();
 
         LockSeatsResponse lockRes = lockService.acquireSeatLocks(event.getId(), new LockSeatsRequest(List.of(seatId)));
         String reservationId = lockRes.reservationId().toString();

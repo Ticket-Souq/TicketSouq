@@ -45,6 +45,7 @@ import java.util.UUID;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyMap;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
@@ -112,7 +113,9 @@ class EventServiceTest {
     void givenSeatModelWithLocks_whenGetById_thenIncludeLockedSeatIds() {
         UUID id = UUID.randomUUID();
         Section section = Section.builder()
-            .id(UUID.randomUUID()).build();
+            .id(UUID.randomUUID())
+            .remainingCapacity(0)
+            .build();
         section.setSeats(new java.util.LinkedHashSet<>(List.of(
             Seat.builder().id(UUID.randomUUID()).build()
         )));
@@ -128,7 +131,7 @@ class EventServiceTest {
         eventService.getById(id);
 
         verify(seatLockRepository).findBySeatIdInAndExpiresAtAfter(any(), any());
-        verify(eventMapper).toEventFullResponse(eq(event), any(Set.class));
+        verify(eventMapper).toEventFullResponse(eq(event), any(Set.class), anyMap());
     }
 
     @Test
@@ -141,7 +144,7 @@ class EventServiceTest {
             id, "name", "desc", null, null, "cat", "org",
             "url","url", EventStatus.PUBLISHED, BookingModel.SEAT, Instant.now(), Instant.now(),
             List.of());
-        when(eventMapper.toEventFullResponse(eq(event), eq(Set.of()))).thenReturn(expected);
+        when(eventMapper.toEventFullResponse(eq(event), eq(Set.of()), anyMap())).thenReturn(expected);
 
         EventFullResponse result = eventService.getById(id);
 
@@ -158,7 +161,7 @@ class EventServiceTest {
             id, "name", "desc", null, null, "cat", "org",
             "url","url", EventStatus.PUBLISHED, BookingModel.ZONE, Instant.now(), Instant.now(),
             List.of());
-        when(eventMapper.toEventFullResponse(eq(event), eq(Set.of()))).thenReturn(expected);
+        when(eventMapper.toEventFullResponse(eq(event), eq(Set.of()), anyMap())).thenReturn(expected);
 
         EventFullResponse result = eventService.getById(id);
 
@@ -248,6 +251,7 @@ class EventServiceTest {
         UUID seatId = UUID.randomUUID();
         Section section = Section.builder()
             .id(UUID.randomUUID())
+            .remainingCapacity(0)
             .build();
         section.setSeats(new java.util.LinkedHashSet<>(List.of(
             Seat.builder().id(seatId).build()
@@ -267,7 +271,7 @@ class EventServiceTest {
         eventService.getById(id);
 
         verify(seatLockRepository).findBySeatIdInAndExpiresAtAfter(eq(List.of(seatId)), any());
-        verify(eventMapper).toEventFullResponse(eq(event), eq(Set.of()));
+        verify(eventMapper).toEventFullResponse(eq(event), eq(Set.of()), anyMap());
     }
 
     @Test

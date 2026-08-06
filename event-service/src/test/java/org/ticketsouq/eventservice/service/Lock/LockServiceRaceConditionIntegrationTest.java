@@ -31,8 +31,7 @@ class LockServiceRaceConditionIntegrationTest extends LockServiceIntegrationTest
         ExecutorService executor = Executors.newFixedThreadPool(20);
 
         for (int i = 0; i < pairCount; i++) {
-            UUID seatId = UUID.randomUUID();
-            createSeat(section, seatId, SeatStatus.AVAILABLE);
+            UUID seatId = createSeat(section, SeatStatus.AVAILABLE).getId();
             var lockResp = lockService.acquireSeatLocks(event.getId(), new LockSeatsRequest(List.of(seatId)));
             String reservationId = lockResp.reservationId().toString();
 
@@ -164,8 +163,7 @@ class LockServiceRaceConditionIntegrationTest extends LockServiceIntegrationTest
         ExecutorService executor = Executors.newFixedThreadPool(20);
 
         for (int i = 0; i < count; i++) {
-            UUID seatId = UUID.randomUUID();
-            createSeat(section, seatId, SeatStatus.AVAILABLE);
+            UUID seatId = createSeat(section, SeatStatus.AVAILABLE).getId();
             var lockResp = lockService.acquireSeatLocks(event.getId(), new LockSeatsRequest(List.of(seatId)));
             String reservationId = lockResp.reservationId().toString();
 
@@ -312,8 +310,7 @@ class LockServiceRaceConditionIntegrationTest extends LockServiceIntegrationTest
         ExecutorService executor = Executors.newFixedThreadPool(20);
 
         for (int i = 0; i < count; i++) {
-            UUID seatId = UUID.randomUUID();
-            createSeat(section, seatId, SeatStatus.AVAILABLE);
+            UUID seatId = createSeat(section, SeatStatus.AVAILABLE).getId();
             var lockResp = lockService.acquireSeatLocks(event.getId(), new LockSeatsRequest(List.of(seatId)));
             String reservationId = lockResp.reservationId().toString();
             SeatLock lock = seatLockRepository.findByReservationId(reservationId).get(0);
@@ -454,8 +451,7 @@ class LockServiceRaceConditionIntegrationTest extends LockServiceIntegrationTest
         ExecutorService executor = Executors.newFixedThreadPool(20);
 
         for (int i = 0; i < pairCount; i++) {
-            UUID seatId = UUID.randomUUID();
-            createSeat(section, seatId, SeatStatus.AVAILABLE);
+            UUID seatId = createSeat(section, SeatStatus.AVAILABLE).getId();
             var existingResp = lockService.acquireSeatLocks(event.getId(), new LockSeatsRequest(List.of(seatId)));
             String existingReservationId = existingResp.reservationId().toString();
             String newReservationId = "acquire-release-new-" + i;
@@ -591,8 +587,7 @@ class LockServiceRaceConditionIntegrationTest extends LockServiceIntegrationTest
         ExecutorService executor = Executors.newFixedThreadPool(20);
 
         for (int i = 0; i < pairCount; i++) {
-            UUID seatId = UUID.randomUUID();
-            createSeat(section, seatId, SeatStatus.AVAILABLE);
+            UUID seatId = createSeat(section, SeatStatus.AVAILABLE).getId();
             var existingResp = lockService.acquireSeatLocks(event.getId(), new LockSeatsRequest(List.of(seatId)));
             String existingReservationId = existingResp.reservationId().toString();
             String newReservationId = "acquire-confirm-new-" + i;
@@ -723,8 +718,7 @@ class LockServiceRaceConditionIntegrationTest extends LockServiceIntegrationTest
         int threadCount = 10;
         Event event = createPublishedSeatEvent();
         Section section = createSection(event, threadCount);
-        UUID seatId = UUID.randomUUID();
-        createSeat(section, seatId, SeatStatus.AVAILABLE);
+        UUID seatId = createSeat(section, SeatStatus.AVAILABLE).getId();
         var lockResp = lockService.acquireSeatLocks(event.getId(), new LockSeatsRequest(List.of(seatId)));
         String reservationId = lockResp.reservationId().toString();
 
@@ -848,8 +842,7 @@ class LockServiceRaceConditionIntegrationTest extends LockServiceIntegrationTest
         ExecutorService executor = Executors.newFixedThreadPool(20);
 
         for (int i = 0; i < pairCount; i++) {
-            UUID seatId = UUID.randomUUID();
-            createSeat(section, seatId, SeatStatus.AVAILABLE);
+            UUID seatId = createSeat(section, SeatStatus.AVAILABLE).getId();
             var lockResp = lockService.acquireSeatLocks(event.getId(), new LockSeatsRequest(List.of(seatId)));
             String reservationId = lockResp.reservationId().toString();
 

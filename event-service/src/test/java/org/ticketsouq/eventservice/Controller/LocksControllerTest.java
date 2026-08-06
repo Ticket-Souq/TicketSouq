@@ -42,7 +42,7 @@ class LocksControllerTest {
         LockSeatsResponse response = new LockSeatsResponse(UUID.randomUUID(), "LOCKED", LocalDateTime.now().plusMinutes(10), request.seatIds());
         when(lockService.acquireSeatLocks(eq(eventId), any(LockSeatsRequest.class))).thenReturn(response);
 
-        mockMvc.perform(post("/api/v1/events/locks/{eventId}/seats", eventId)
+        mockMvc.perform(post("/api/v1/event/locks/{eventId}/seats", eventId)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(request)))
             .andExpect(status().isOk())
@@ -58,7 +58,7 @@ class LocksControllerTest {
         LockZoneResponse response = new LockZoneResponse(UUID.randomUUID(), "LOCKED", LocalDateTime.now().plusMinutes(10), request.zoneId(), request.quantity());
         when(lockService.acquireZoneLock(eq(eventId), any(LockZoneRequest.class))).thenReturn(response);
 
-        mockMvc.perform(post("/api/v1/events/locks/{eventId}/zones", eventId)
+        mockMvc.perform(post("/api/v1/event/locks/{eventId}/zones", eventId)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(request)))
             .andExpect(status().isOk())
@@ -72,7 +72,7 @@ class LocksControllerTest {
         ConfirmRequest request = new ConfirmRequest("res-1");
         when(lockService.confirm("res-1")).thenReturn(ConfirmResponse.CONFIRMED);
 
-        mockMvc.perform(post("/api/v1/events/locks/confirm")
+        mockMvc.perform(post("/api/v1/event/locks/confirm")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(request)))
             .andExpect(status().isOk())
@@ -85,7 +85,7 @@ class LocksControllerTest {
         ReleaseRequest request = new ReleaseRequest("res-1");
         when(lockService.release("res-1")).thenReturn(ReleaseResponse.RELEASED);
 
-        mockMvc.perform(post("/api/v1/events/locks/release")
+        mockMvc.perform(post("/api/v1/event/locks/release")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(request)))
             .andExpect(status().isOk())

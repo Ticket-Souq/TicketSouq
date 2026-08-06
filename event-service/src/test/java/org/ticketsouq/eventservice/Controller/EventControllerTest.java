@@ -53,7 +53,7 @@ class EventControllerTest {
     void givenValidRequest_whenCreateEvent_thenReturn201() throws Exception {
         UUID userId = UUID.randomUUID();
         CreateEventRequest request = new CreateEventRequest(
-            "Event", "Desc", null, UUID.randomUUID(), "Concert",
+            "Event", "Desc", "Test Location", UUID.randomUUID(), "Concert",
             null, Instant.now(), Instant.now().plusSeconds(7200),
             List.of(), List.of());
 
@@ -65,7 +65,7 @@ class EventControllerTest {
             "poster", "poster.jpg", MediaType.IMAGE_JPEG_VALUE,
             "fake-image-content".getBytes());
 
-        mockMvc.perform(multipart("/api/v1/events")
+        mockMvc.perform(multipart("/api/v1/event")
                 .file(eventPart)
                 .file(posterPart)
                 .header("X-User-Id", userId.toString()))
@@ -79,7 +79,7 @@ class EventControllerTest {
         Page<EventCardResponse> page = new PageImpl<>(List.of());
         when(eventService.getEvents(eq(userId), any(Pageable.class))).thenReturn(page);
 
-        mockMvc.perform(get("/api/v1/events")
+        mockMvc.perform(get("/api/v1/event")
                 .header("X-User-Id", userId.toString()))
             .andExpect(status().isOk());
     }
@@ -94,7 +94,7 @@ class EventControllerTest {
             List.of());
         when(eventService.getById(eventId)).thenReturn(response);
 
-        mockMvc.perform(get("/api/v1/events/{id}", eventId))
+        mockMvc.perform(get("/api/v1/event/{id}", eventId))
             .andExpect(status().isOk())
             .andExpect(jsonPath("$.id").value(eventId.toString()));
     }
@@ -108,7 +108,7 @@ class EventControllerTest {
             UUID.randomUUID(), eventId, "VIP", 100, 100, null, BigDecimal.valueOf(50), null);
         when(sectionService.createSection(eq(eventId), any(CreateSectionRequest.class))).thenReturn(response);
 
-        mockMvc.perform(post("/api/v1/events/{eventId}/sections", eventId)
+        mockMvc.perform(post("/api/v1/event/{eventId}/sections", eventId)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(request)))
             .andExpect(status().isCreated())
@@ -128,7 +128,7 @@ class EventControllerTest {
         when(sectionService.updateSection(eq(sectionId), any(UpdateSectionRequest.class), eq(userId)))
             .thenReturn(response);
 
-        mockMvc.perform(patch("/api/v1/events/sections/{sectionId}", sectionId)
+        mockMvc.perform(patch("/api/v1/event/sections/{sectionId}", sectionId)
                 .header("X-User-Id", userId.toString())
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(request)))
@@ -142,7 +142,7 @@ class EventControllerTest {
         UUID eventId = UUID.randomUUID();
         UUID userId = UUID.randomUUID();
 
-        mockMvc.perform(delete("/api/v1/events/{eventId}", eventId)
+        mockMvc.perform(delete("/api/v1/event/{eventId}", eventId)
                 .header("X-User-Id", userId.toString()))
             .andExpect(status().isNoContent());
     }
@@ -154,7 +154,7 @@ class EventControllerTest {
         when(eventSearchService.searchBy(any(EventSearchRequest.class), any(Pageable.class)))
             .thenReturn(page);
 
-        mockMvc.perform(get("/api/v1/events/search")
+        mockMvc.perform(get("/api/v1/event/search")
                 .param("title", "test"))
             .andExpect(status().isOk());
     }
@@ -169,7 +169,7 @@ class EventControllerTest {
         when(seatService.updateOrganizerSeatStatus(eq(seatId), any(UpdateSeatStatusRequest.class), eq(userId)))
             .thenReturn(response);
 
-        mockMvc.perform(patch("/api/v1/events/seats/{seatId}/status", seatId)
+        mockMvc.perform(patch("/api/v1/event/seats/{seatId}/status", seatId)
                 .header("X-User-Id", userId.toString())
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(request)))
@@ -185,7 +185,7 @@ class EventControllerTest {
             new ZoneStatusResponse(UUID.randomUUID(), "VIP", 100, 20, 5, 75));
         when(lockService.getZoneStatuses(eventId)).thenReturn(zones);
 
-        mockMvc.perform(get("/api/v1/events/{eventId}/zones", eventId))
+        mockMvc.perform(get("/api/v1/event/{eventId}/zones", eventId))
             .andExpect(status().isOk())
             .andExpect(jsonPath("$[0].name").value("VIP"));
     }

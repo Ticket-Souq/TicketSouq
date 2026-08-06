@@ -236,7 +236,7 @@ class LockServiceTest {
     void givenNoLocks_whenConfirm_thenReturnConfirmed() {
         String reservationId = "res-1";
         when(seatLockRepository.findByReservationIdWithLock(reservationId)).thenReturn(List.of());
-        when(zoneLockRepository.findByReservationIdWithLock(reservationId)).thenReturn(Optional.empty());
+        when(zoneLockRepository.findAllByReservationIdWithLock(reservationId)).thenReturn(List.of());
 
         ConfirmResponse response = lockService.confirm(reservationId);
 
@@ -248,12 +248,13 @@ class LockServiceTest {
     void givenValidSeatLocks_whenConfirm_thenBookSeats() {
         String reservationId = "res-1";
         UUID seatId = UUID.randomUUID();
+        Section section = Section.builder().id(UUID.randomUUID()).remainingCapacity(10).build();
         SeatLock seatLock = SeatLock.builder()
             .seatId(seatId)
             .reservationId(reservationId)
             .expiresAt(LocalDateTime.now().plusMinutes(5))
             .build();
-        Seat seat = Seat.builder().id(seatId).status(SeatStatus.AVAILABLE).build();
+        Seat seat = Seat.builder().id(seatId).status(SeatStatus.AVAILABLE).section(section).build();
 
         when(seatLockRepository.findByReservationIdWithLock(reservationId)).thenReturn(List.of(seatLock));
         when(seatRepository.findByIdsWithSection(List.of(seatId))).thenReturn(List.of(seat));
@@ -316,7 +317,7 @@ class LockServiceTest {
         Section section = Section.builder().id(zoneId).remainingCapacity(10).build();
 
         when(seatLockRepository.findByReservationIdWithLock(reservationId)).thenReturn(List.of());
-        when(zoneLockRepository.findByReservationIdWithLock(reservationId)).thenReturn(Optional.of(zoneLock));
+        when(zoneLockRepository.findAllByReservationIdWithLock(reservationId)).thenReturn(List.of(zoneLock));
         when(sectionRepository.findByIdWithLock(zoneId)).thenReturn(Optional.of(section));
 
         ConfirmResponse response = lockService.confirm(reservationId);
@@ -337,7 +338,7 @@ class LockServiceTest {
             .build();
 
         when(seatLockRepository.findByReservationIdWithLock(reservationId)).thenReturn(List.of());
-        when(zoneLockRepository.findByReservationIdWithLock(reservationId)).thenReturn(Optional.of(zoneLock));
+        when(zoneLockRepository.findAllByReservationIdWithLock(reservationId)).thenReturn(List.of(zoneLock));
 
         assertThatThrownBy(() -> lockService.confirm(reservationId))
             .isInstanceOf(LockExpiredException.class);
@@ -432,7 +433,7 @@ class LockServiceTest {
             .build();
 
         when(seatLockRepository.findByReservationIdWithLock(reservationId)).thenReturn(List.of());
-        when(zoneLockRepository.findByReservationIdWithLock(reservationId)).thenReturn(Optional.of(zoneLock));
+        when(zoneLockRepository.findAllByReservationIdWithLock(reservationId)).thenReturn(List.of(zoneLock));
         when(sectionRepository.findByIdWithLock(zoneId)).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> lockService.confirm(reservationId))

@@ -49,14 +49,13 @@ class RepositoryTests extends RepositoryTestBase {
         void givenEventWithSectionsAndSeats_whenFindEventById_thenEagerFetch() {
             Event event = eventRepository.save(createEvent("Concert", "DefaultOrg"));
             Section section = Section.builder()
-                .id(UUID.randomUUID())
                 .event(event)
                 .name("VIP")
                 .capacity(10)
                 .remainingCapacity(10)
                 .build();
             event.setSections(new ArrayList<>(List.of(section)));
-            Seat seat = Seat.builder().id(UUID.randomUUID()).section(section)
+            Seat seat = Seat.builder().section(section)
                 .lable("A1").status(SeatStatus.AVAILABLE).build();
             section.setSeats(new java.util.LinkedHashSet<>(List.of(seat)));
             eventRepository.save(event);
@@ -105,7 +104,8 @@ class RepositoryTests extends RepositoryTestBase {
         }
 
         private Event createEvent(String title, String org) {
-            return Event.builder().title(title).organization(org).eventCategory(category)
+            return Event.builder().title(title).location("Test Location").organization(org)
+                .eventCategory(category)
                 .PosterUrl("http://example.com/poster.jpg").status(EventStatus.PUBLISHED)
                 .bookingModel(BookingModel.SEAT)
                 .startDate(Instant.now().plusSeconds(86400))
@@ -121,13 +121,14 @@ class RepositoryTests extends RepositoryTestBase {
         @BeforeEach
         void setUp() {
             EventCategory cat = eventCategoryRepository.save(EventCategory.builder().name("Music").build());
-            Event event = eventRepository.save(Event.builder().title("Concert").eventCategory(cat)
+            Event event = eventRepository.save(Event.builder().title("Concert").location("Test Location")
+                .eventCategory(cat)
                 .PosterUrl("url").status(EventStatus.PUBLISHED).bookingModel(BookingModel.SEAT)
                 .startDate(Instant.now().plusSeconds(86400))
                 .finishDate(Instant.now().plusSeconds(172800)).build());
-            Section section = sectionRepository.save(Section.builder().id(UUID.randomUUID()).event(event)
+            Section section = sectionRepository.save(Section.builder().event(event)
                 .name("VIP").capacity(10).remainingCapacity(10).build());
-            seat = seatRepository.save(Seat.builder().id(UUID.randomUUID()).section(section)
+            seat = seatRepository.save(Seat.builder().section(section)
                 .lable("A1").status(SeatStatus.AVAILABLE).build());
         }
 
@@ -171,7 +172,7 @@ class RepositoryTests extends RepositoryTestBase {
 
         @Test
         void givenMultipleExpiredLocks_whenDeleteByExpiresAtBefore_thenRespectLimit() {
-            Seat seat2 = seatRepository.save(Seat.builder().id(UUID.randomUUID()).section(seat.getSection())
+            Seat seat2 = seatRepository.save(Seat.builder().section(seat.getSection())
                 .lable("A2").status(SeatStatus.AVAILABLE).build());
             seatLockRepository.save(SeatLock.builder().seatId(seat.getId()).reservationId("res-1")
                 .expiresAt(LocalDateTime.now().minusMinutes(10)).build());

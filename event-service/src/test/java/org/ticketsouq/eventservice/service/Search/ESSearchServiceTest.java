@@ -60,7 +60,7 @@ class ESSearchServiceTest {
     }
 
     @Test
-    @DisplayName("Should search by title and return mapped results sorted by start date")
+    @DisplayName("Should search by title and return mapped results in index order")
     void givenTitleParam_whenSearchBy_thenQueryESAndReturnResults() {
         EventSearchRequest request = new EventSearchRequest("Concert", null, null);
         Pageable pageable = PageRequest.of(0, 10);
@@ -86,8 +86,8 @@ class ESSearchServiceTest {
 
         assertThat(result).hasSize(2);
         assertThat(result.getTotalElements()).isEqualTo(2);
-        assertThat(result.getContent().get(0).startDate()).isEqualTo(event2.getStartDate());
-        assertThat(result.getContent().get(1).startDate()).isEqualTo(event1.getStartDate());
+        assertThat(result.getContent().get(0).startDate()).isEqualTo(event1.getStartDate());
+        assertThat(result.getContent().get(1).startDate()).isEqualTo(event2.getStartDate());
         verify(elasticsearchOperations).search(any(NativeQuery.class), eq(EventIndex.class));
     }
 

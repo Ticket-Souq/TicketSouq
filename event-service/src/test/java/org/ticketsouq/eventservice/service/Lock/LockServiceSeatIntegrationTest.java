@@ -26,12 +26,9 @@ class LockServiceSeatIntegrationTest extends LockServiceIntegrationTestBase {
     void givenOverlappingMultiSeatRequests_whenConcurrent_thenAtomicOutcome() throws Exception {
         Event event = createPublishedSeatEvent();
         Section section = createSection(event, 10);
-        UUID seatA = UUID.randomUUID();
-        UUID seatB = UUID.randomUUID();
-        UUID seatC = UUID.randomUUID();
-        createSeat(section, seatA, SeatStatus.AVAILABLE);
-        createSeat(section, seatB, SeatStatus.AVAILABLE);
-        createSeat(section, seatC, SeatStatus.AVAILABLE);
+        UUID seatA = createSeat(section, SeatStatus.AVAILABLE).getId();
+        UUID seatB = createSeat(section, SeatStatus.AVAILABLE).getId();
+        UUID seatC = createSeat(section, SeatStatus.AVAILABLE).getId();
 
         CountDownLatch startLatch = new CountDownLatch(1);
         CountDownLatch finishLatch = new CountDownLatch(2);
@@ -103,9 +100,7 @@ class LockServiceSeatIntegrationTest extends LockServiceIntegrationTestBase {
         Section section = createSection(event, totalSeats);
         List<UUID> seatIds = new ArrayList<>();
         for (int i = 0; i < totalSeats; i++) {
-            UUID sid = UUID.randomUUID();
-            seatIds.add(sid);
-            createSeat(section, sid, SeatStatus.AVAILABLE);
+            seatIds.add(createSeat(section, SeatStatus.AVAILABLE).getId());
         }
 
         record Req(List<UUID> seats, int expectedSize) {}
@@ -168,8 +163,7 @@ class LockServiceSeatIntegrationTest extends LockServiceIntegrationTestBase {
     void givenSeatManuallyBooked_whenConfirm_thenTransactionRollsBack() {
         Event event = createPublishedSeatEvent();
         Section section = createSection(event, 10);
-        UUID seatId = UUID.randomUUID();
-        createSeat(section, seatId, SeatStatus.AVAILABLE);
+        UUID seatId = createSeat(section, SeatStatus.AVAILABLE).getId();
 
         LockSeatsResponse lockRes = lockService.acquireSeatLocks(event.getId(), new LockSeatsRequest(List.of(seatId)));
         String reservationId = lockRes.reservationId().toString();
@@ -200,9 +194,7 @@ class LockServiceSeatIntegrationTest extends LockServiceIntegrationTestBase {
         List<UUID> seatIds = new ArrayList<>();
         List<String> reservationIds = new ArrayList<>();
         for (int i = 0; i < totalSeats; i++) {
-            UUID sid = UUID.randomUUID();
-            seatIds.add(sid);
-            createSeat(section, sid, SeatStatus.AVAILABLE);
+            seatIds.add(createSeat(section, SeatStatus.AVAILABLE).getId());
         }
 
         // Phase 1: Acquire 150 of 200 seats
@@ -277,9 +269,9 @@ class LockServiceSeatIntegrationTest extends LockServiceIntegrationTestBase {
         long orphanLocks = allLocks.stream().filter(l -> !allSeatIds.contains(l.getSeatId())).count();
         assertThat(orphanLocks).as("No orphan lock rows (every lock references a valid seat)").isZero();
 
-        // Invariant 6: remainingCapacity was NOT modified by seat operations (seat-model events don't touch section capacity)
+        // Invariant 6: remainingCapacity reflects booked seats (capacity - booked), maintained by seat confirmations
         assertThat(sectionRepository.findById(section.getId()).orElseThrow().getRemainingCapacity())
-            .as("Section remainingCapacity unchanged in seat-booking model").isEqualTo(totalSeats);
+            .as("Section remainingCapacity = total - booked in seat-booking model").isEqualTo(totalSeats - bookedCount);
 
         // Invariant 7: exactly 200 - 115 - 30 = 55 seats were never acquired
         long neverAcquired = availableCount - allLocks.size();
@@ -291,8 +283,7 @@ class LockServiceSeatIntegrationTest extends LockServiceIntegrationTestBase {
     void givenBookedSeat_whenAcquireSeatLock_thenThrowsSeatAlreadyBooked() {
         Event event = createPublishedSeatEvent();
         Section section = createSection(event, 10);
-        UUID seatId = UUID.randomUUID();
-        createSeat(section, seatId, SeatStatus.AVAILABLE);
+        UUID seatId = createSeat(section, SeatStatus.AVAILABLE).getId();
 
         LockSeatsResponse lockRes = lockService.acquireSeatLocks(event.getId(), new LockSeatsRequest(List.of(seatId)));
         lockService.confirm(lockRes.reservationId().toString());
@@ -310,10 +301,8 @@ class LockServiceSeatIntegrationTest extends LockServiceIntegrationTestBase {
     void givenMultiSeatRequest_whenOneSeatIsBooked_thenNoPartialLocks() {
         Event event = createPublishedSeatEvent();
         Section section = createSection(event, 10);
-        UUID seatA = UUID.randomUUID();
-        UUID seatB = UUID.randomUUID();
-        createSeat(section, seatA, SeatStatus.AVAILABLE);
-        createSeat(section, seatB, SeatStatus.AVAILABLE);
+        UUID seatA = createSeat(section, SeatStatus.AVAILABLE).getId();
+        UUID seatB = createSeat(section, SeatStatus.AVAILABLE).getId();
 
         LockSeatsResponse lockRes = lockService.acquireSeatLocks(event.getId(), new LockSeatsRequest(List.of(seatA)));
         lockService.confirm(lockRes.reservationId().toString());
@@ -331,8 +320,7 @@ class LockServiceSeatIntegrationTest extends LockServiceIntegrationTestBase {
     void givenExpiredSeatLock_whenConfirmThrowsLockExpired_thenDeleteRolledBack() {
         Event event = createPublishedSeatEvent();
         Section section = createSection(event, 10);
-        UUID seatId = UUID.randomUUID();
-        createSeat(section, seatId, SeatStatus.AVAILABLE);
+        UUID seatId = createSeat(section, SeatStatus.AVAILABLE).getId();
 
         LockSeatsResponse lockRes = lockService.acquireSeatLocks(event.getId(), new LockSeatsRequest(List.of(seatId)));
         String reservationId = lockRes.reservationId().toString();
@@ -354,8 +342,7 @@ class LockServiceSeatIntegrationTest extends LockServiceIntegrationTestBase {
     void givenSeatAcquisition_whenOuterTxRollsBack_thenLockNotPersisted() {
         Event event = createPublishedSeatEvent();
         Section section = createSection(event, 10);
-        UUID seatId = UUID.randomUUID();
-        createSeat(section, seatId, SeatStatus.AVAILABLE);
+        UUID seatId = createSeat(section, SeatStatus.AVAILABLE).getId();
         String reservationId = "rollback-acquire-seat";
 
         TransactionTemplate tt = new TransactionTemplate(transactionManager);
@@ -378,8 +365,7 @@ class LockServiceSeatIntegrationTest extends LockServiceIntegrationTestBase {
     void givenSeatConfirm_whenOuterTxRollsBack_thenBookingAndDeleteReversed() {
         Event event = createPublishedSeatEvent();
         Section section = createSection(event, 10);
-        UUID seatId = UUID.randomUUID();
-        createSeat(section, seatId, SeatStatus.AVAILABLE);
+        UUID seatId = createSeat(section, SeatStatus.AVAILABLE).getId();
 
         LockSeatsResponse lockRes = lockService.acquireSeatLocks(event.getId(), new LockSeatsRequest(List.of(seatId)));
         String reservationId = lockRes.reservationId().toString();
@@ -406,8 +392,7 @@ class LockServiceSeatIntegrationTest extends LockServiceIntegrationTestBase {
     void givenSeatRelease_whenOuterTxRollsBack_thenDeleteReversed() {
         Event event = createPublishedSeatEvent();
         Section section = createSection(event, 10);
-        UUID seatId = UUID.randomUUID();
-        createSeat(section, seatId, SeatStatus.AVAILABLE);
+        UUID seatId = createSeat(section, SeatStatus.AVAILABLE).getId();
 
         LockSeatsResponse lockRes = lockService.acquireSeatLocks(event.getId(), new LockSeatsRequest(List.of(seatId)));
         String reservationId = lockRes.reservationId().toString();

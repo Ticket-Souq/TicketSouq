@@ -7,6 +7,7 @@ import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import org.springframework.test.context.jdbc.Sql;
 import org.testcontainers.containers.PostgreSQLContainer;
 import org.testcontainers.junit.jupiter.Testcontainers;
 import org.ticketsouq.eventservice.Client.UserServiceClient;
@@ -18,22 +19,23 @@ import org.ticketsouq.eventservice.model.enums.SeatStatus;
 import org.ticketsouq.eventservice.repository.*;
 import org.ticketsouq.eventservice.repository.ElasticsearchEventRepository;
 import org.ticketsouq.eventservice.service.LockService;
-import org.ticketsouq.eventservice.service.Search.ESSearchService;
+import org.ticketsouq.eventservice.service.Search.SearchService;
 import org.springframework.transaction.PlatformTransactionManager;
 
 import java.time.Duration;
 import java.time.Instant;
-import java.util.UUID;
 
 @SpringBootTest(classes = EventServiceApplication.class, webEnvironment = SpringBootTest.WebEnvironment.NONE)
 @Testcontainers(disabledWithoutDocker = true)
+@Sql(statements = """
+    TRUNCATE TABLE zone_locks, seat_locks, seats, sections, events, event_categories CASCADE
+    """, executionPhase = Sql.ExecutionPhase.BEFORE_TEST_CLASS)
 abstract class LockServiceIntegrationTestBase {
 
     static PostgreSQLContainer<?> postgres = new PostgreSQLContainer<>("postgres")
-        .withDatabaseName("testdb")
+        .withDatabaseName("testdb_app")
         .withUsername("test")
-        .withPassword("test")
-        .withReuse(true);
+        .withPassword("test");
 
     static {
         postgres.start();
@@ -45,7 +47,9 @@ abstract class LockServiceIntegrationTestBase {
         registry.add("spring.datasource.username", postgres::getUsername);
         registry.add("spring.datasource.password", postgres::getPassword);
         registry.add("spring.jpa.hibernate.ddl-auto", () -> "create-drop");
+        registry.add("spring.jpa.database-platform", () -> "org.hibernate.dialect.PostgreSQLDialect");
         registry.add("spring.datasource.driver-class-name", () -> "org.postgresql.Driver");
+        registry.add("spring.flyway.enabled", () -> "false");
     }
 
     @Autowired protected LockService lockService;
@@ -57,7 +61,7 @@ abstract class LockServiceIntegrationTestBase {
     @Autowired protected PlatformTransactionManager transactionManager;
 
     @MockitoBean protected UserServiceClient userServiceClient;
-    @MockitoBean(name = "ESSearchService") protected ESSearchService esSearchService;
+    @MockitoBean protected SearchService esSearchService;
     @MockitoBean protected ElasticsearchEventRepository elasticsearchEventRepository;
     @MockitoBean protected KafkaTemplate<String, Object> kafkaTemplate;
 
@@ -73,6 +77,7 @@ abstract class LockServiceIntegrationTestBase {
     protected Event createPublishedSeatEvent() {
         Event event = Event.builder()
             .title("Seat Event")
+            .location("Test Location")
             .PosterUrl("http://example.com/poster.jpg")
             .status(EventStatus.PUBLISHED)
             .bookingModel(BookingModel.SEAT)
@@ -85,6 +90,7 @@ abstract class LockServiceIntegrationTestBase {
     protected Event createPublishedZoneEvent() {
         Event event = Event.builder()
             .title("Zone Event")
+            .location("Test Location")
             .PosterUrl("http://example.com/poster.jpg")
             .status(EventStatus.PUBLISHED)
             .bookingModel(BookingModel.ZONE)
@@ -96,7 +102,6 @@ abstract class LockServiceIntegrationTestBase {
 
     protected Section createSection(Event event, int capacity) {
         Section section = Section.builder()
-            .id(UUID.randomUUID())
             .event(event)
             .name("VIP")
             .capacity(capacity)
@@ -105,13 +110,12 @@ abstract class LockServiceIntegrationTestBase {
         return sectionRepository.save(section);
     }
 
-    protected void createSeat(Section section, UUID seatId, SeatStatus status) {
+    protected Seat createSeat(Section section, SeatStatus status) {
         Seat seat = Seat.builder()
-            .id(seatId)
             .section(section)
             .lable("A1")
             .status(status)
             .build();
-        seatRepository.save(seat);
+        return seatRepository.save(seat);
     }
 }

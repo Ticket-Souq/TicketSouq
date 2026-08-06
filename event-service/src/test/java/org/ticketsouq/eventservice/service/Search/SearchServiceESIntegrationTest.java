@@ -1,7 +1,6 @@
 package org.ticketsouq.eventservice.service.Search;
 
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
-import jakarta.annotation.Resource;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -14,6 +13,7 @@ import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import org.springframework.test.context.jdbc.Sql;
 import org.testcontainers.containers.PostgreSQLContainer;
 import org.testcontainers.elasticsearch.ElasticsearchContainer;
 import org.testcontainers.junit.jupiter.Container;
@@ -37,6 +37,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 @SpringBootTest(classes = EventServiceApplication.class, webEnvironment = SpringBootTest.WebEnvironment.NONE)
 @Testcontainers(disabledWithoutDocker = true)
+@Sql(statements = """
+    TRUNCATE TABLE zone_locks, seat_locks, seats, sections, events, event_categories CASCADE
+    """, executionPhase = Sql.ExecutionPhase.BEFORE_TEST_CLASS)
 class SearchServiceESIntegrationTest {
 
     @Container
@@ -45,23 +48,21 @@ class SearchServiceESIntegrationTest {
             .asCompatibleSubstituteFor("docker.elastic.co/elasticsearch/elasticsearch"))
         .withEnv("xpack.security.enabled", "false")
         .withEnv("ES_JAVA_OPTS", "-Xms256m -Xmx256m")
-        .withStartupTimeout(java.time.Duration.ofMinutes(2))
-        .withReuse(true);
+        .withStartupTimeout(java.time.Duration.ofMinutes(2));
 
     @Container
     static PostgreSQLContainer<?> postgres = new PostgreSQLContainer<>("postgres")
-        .withDatabaseName("testdb")
+        .withDatabaseName("testdb_es")
         .withUsername("test")
-        .withPassword("test")
-        .withReuse(true);
+        .withPassword("test");
 
     static {
         elasticsearch.start();
         postgres.start();
     }
 
-    @Resource(name = "ESSearchService")
-    private ESSearchService esSearchService;
+    @Autowired
+    private SearchService esSearchService;
     @Autowired
     private EventRepository eventRepository;
     @Autowired
@@ -81,7 +82,9 @@ class SearchServiceESIntegrationTest {
         registry.add("spring.datasource.username", postgres::getUsername);
         registry.add("spring.datasource.password", postgres::getPassword);
         registry.add("spring.jpa.hibernate.ddl-auto", () -> "create-drop");
+        registry.add("spring.jpa.database-platform", () -> "org.hibernate.dialect.PostgreSQLDialect");
         registry.add("spring.datasource.driver-class-name", () -> "org.postgresql.Driver");
+        registry.add("spring.flyway.enabled", () -> "false");
         registry.add("spring.elasticsearch.connection-timeout", () -> "10s");
         registry.add("spring.elasticsearch.socket-timeout", () -> "30s");
     }
@@ -253,6 +256,7 @@ class SearchServiceESIntegrationTest {
                               Instant startDate) {
         Event event = Event.builder()
             .title(title)
+            .location("Test Location")
             .organization(organization)
             .eventCategory(category)
             .PosterUrl("http://example.com/poster.jpg")
