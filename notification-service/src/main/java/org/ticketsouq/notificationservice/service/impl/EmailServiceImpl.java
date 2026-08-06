@@ -12,7 +12,6 @@ import org.ticketsouq.notificationservice.service.EmailService;
 
 import java.util.Map;
 
-@Service
 @RequiredArgsConstructor
 public class EmailServiceImpl implements EmailService {
 

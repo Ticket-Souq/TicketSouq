@@ -29,3 +29,6 @@ spring:
             connectTimeout: 3000
             readTimeout: 3000
 
+
+email:
+  provider: ${EMAIL_PROVIDER:MOCK} # REAL

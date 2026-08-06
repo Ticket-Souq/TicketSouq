@@ -1,11 +1,9 @@
 package org.ticketsouq.notificationservice.service.impl;
 
-import org.springframework.stereotype.Service;
 import org.ticketsouq.notificationservice.service.EmailService;
 
 import java.util.Map;
 
-@Service
 public class MockemailSender implements EmailService {
 
     @Override
