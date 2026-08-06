@@ -140,7 +140,7 @@
       "targets": [
         {
           "datasource": { "type": "prometheus", "uid": "prometheus" },
-          "expr": "sum(rate(http_server_requests_seconds_count{application=~\"$app\", instance=~\"$instance\", status=~\"5..\"}[$__rate_interval])) / sum(rate(http_server_requests_seconds_count{application=~\"$app\", instance=~\"$instance\"}[$__rate_interval])) * 100",
+          "expr": "(sum(rate(http_server_requests_seconds_count{application=~\"$app\", instance=~\"$instance\", status=~\"5..\"}[$__rate_interval])) or vector(0)) / sum(rate(http_server_requests_seconds_count{application=~\"$app\", instance=~\"$instance\"}[$__rate_interval])) * 100",
           "legendFormat": "__auto",
           "refId": "A"
         }
@@ -230,7 +230,7 @@
         },
         "overrides": []
       },
-      "gridPos": { "h": 10, "w": 12, "x": 0, "y": 6 },
+      "gridPos": { "h": 10, "w": 24, "x": 0, "y": 6 },
       "id": 5,
       "options": {
         "legend": {
@@ -249,82 +249,6 @@
           "expr": "sum by (application) (rate(http_server_requests_seconds_count{application=~\"$app\", instance=~\"$instance\"}[$__rate_interval]))",
           "legendFormat": "{{application}}",
           "refId": "A"
-        }
-      ]
-    },
-    {
-      "datasource": { "type": "prometheus", "uid": "prometheus" },
-      "fieldConfig": {
-        "defaults": {
-          "color": { "mode": "palette-classic" },
-          "custom": {
-            "axisBorderShow": false,
-            "axisCenteredZero": false,
-            "axisColorMode": "text",
-            "axisLabel": "",
-            "axisPlacement": "auto",
-            "barAlignment": 0,
-            "drawStyle": "line",
-            "fillOpacity": 15,
-            "gradientMode": "scheme",
-            "hideFrom": {
-              "legend": false,
-              "tooltip": false,
-              "viz": false
-            },
-            "lineInterpolation": "smooth",
-            "lineWidth": 1,
-            "pointSize": 5,
-            "scaleDistribution": { "type": "linear" },
-            "showPoints": "never",
-            "spanNulls": true,
-            "stacking": { "group": "A", "mode": "none" },
-            "thresholdsStyle": { "mode": "off" }
-          },
-          "mappings": [],
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              { "color": "green", "value": null },
-              { "color": "yellow", "value": 0.5 },
-              { "color": "red", "value": 2 }
-            ]
-          },
-          "unit": "s"
-        },
-        "overrides": []
-      },
-      "gridPos": { "h": 10, "w": 12, "x": 12, "y": 6 },
-      "id": 6,
-      "options": {
-        "legend": {
-          "calcs": ["max", "lastNotNull"],
-          "displayMode": "table",
-          "placement": "bottom",
-          "showLegend": true
-        },
-        "tooltip": { "mode": "multi", "sort": "desc" }
-      },
-      "title": "Latency Percentiles (p50 / p95 / p99)",
-      "type": "timeseries",
-      "targets": [
-        {
-          "datasource": { "type": "prometheus", "uid": "prometheus" },
-          "expr": "histogram_quantile(0.50, sum by (le) (rate(http_server_requests_seconds_bucket{application=~\"$app\", instance=~\"$instance\"}[$__rate_interval])))",
-          "legendFormat": "p50 {{application}}",
-          "refId": "A"
-        },
-        {
-          "datasource": { "type": "prometheus", "uid": "prometheus" },
-          "expr": "histogram_quantile(0.95, sum by (le) (rate(http_server_requests_seconds_bucket{application=~\"$app\", instance=~\"$instance\"}[$__rate_interval])))",
-          "legendFormat": "p95 {{application}}",
-          "refId": "B"
-        },
-        {
-          "datasource": { "type": "prometheus", "uid": "prometheus" },
-          "expr": "histogram_quantile(0.99, sum by (le) (rate(http_server_requests_seconds_bucket{application=~\"$app\", instance=~\"$instance\"}[$__rate_interval])))",
-          "legendFormat": "p99 {{application}}",
-          "refId": "C"
         }
       ]
     },
@@ -596,7 +520,7 @@
       "collapsed": false,
       "gridPos": { "h": 1, "w": 24, "x": 0, "y": 35 },
       "id": 103,
-      "title": "CPU, GC & Logging",
+      "title": "CPU",
       "type": "row"
     },
     {
@@ -641,7 +565,7 @@
         },
         "overrides": []
       },
-      "gridPos": { "h": 8, "w": 8, "x": 0, "y": 36 },
+      "gridPos": { "h": 8, "w": 24, "x": 0, "y": 36 },
       "id": 9,
       "options": {
         "legend": {
@@ -659,213 +583,6 @@
           "datasource": { "type": "prometheus", "uid": "prometheus" },
           "expr": "sum by (application) (process_cpu_usage{application=~\"$app\", instance=~\"$instance\"})",
           "legendFormat": "{{application}}",
-          "refId": "A"
-        }
-      ]
-    },
-    {
-      "datasource": { "type": "prometheus", "uid": "prometheus" },
-      "fieldConfig": {
-        "defaults": {
-          "color": { "mode": "palette-classic" },
-          "custom": {
-            "axisBorderShow": false,
-            "axisCenteredZero": false,
-            "axisColorMode": "text",
-            "axisLabel": "",
-            "axisPlacement": "auto",
-            "barAlignment": 0,
-            "drawStyle": "bars",
-            "fillOpacity": 50,
-            "gradientMode": "scheme",
-            "hideFrom": {
-              "legend": false,
-              "tooltip": false,
-              "viz": false
-            },
-            "lineInterpolation": "smooth",
-            "lineWidth": 0,
-            "pointSize": 5,
-            "scaleDistribution": { "type": "linear" },
-            "showPoints": "never",
-            "spanNulls": false,
-            "stacking": { "group": "A", "mode": "none" },
-            "thresholdsStyle": { "mode": "off" }
-          },
-          "mappings": [],
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              { "color": "green", "value": null }
-            ]
-          },
-          "unit": "ops"
-        },
-        "overrides": []
-      },
-      "gridPos": { "h": 8, "w": 8, "x": 8, "y": 36 },
-      "id": 10,
-      "options": {
-        "legend": {
-          "calcs": ["lastNotNull"],
-          "displayMode": "table",
-          "placement": "bottom",
-          "showLegend": true
-        },
-        "tooltip": { "mode": "multi", "sort": "desc" }
-      },
-      "title": "GC Pauses",
-      "type": "timeseries",
-      "targets": [
-        {
-          "datasource": { "type": "prometheus", "uid": "prometheus" },
-          "expr": "sum by (application) (rate(jvm_gc_pause_seconds_sum{application=~\"$app\", instance=~\"$instance\"}[$__rate_interval]))",
-          "legendFormat": "{{application}}",
-          "refId": "A"
-        }
-      ]
-    },
-    {
-      "datasource": { "type": "prometheus", "uid": "prometheus" },
-      "fieldConfig": {
-        "defaults": {
-          "color": { "mode": "palette-classic" },
-          "custom": {
-            "axisBorderShow": false,
-            "axisCenteredZero": false,
-            "axisColorMode": "text",
-            "axisLabel": "",
-            "axisPlacement": "auto",
-            "barAlignment": 0,
-            "drawStyle": "line",
-            "fillOpacity": 15,
-            "gradientMode": "scheme",
-            "hideFrom": {
-              "legend": false,
-              "tooltip": false,
-              "viz": false
-            },
-            "lineInterpolation": "smooth",
-            "lineWidth": 1,
-            "pointSize": 5,
-            "scaleDistribution": { "type": "linear" },
-            "showPoints": "never",
-            "spanNulls": true,
-            "stacking": { "group": "A", "mode": "none" },
-            "thresholdsStyle": { "mode": "off" }
-          },
-          "mappings": [],
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              { "color": "green", "value": null },
-              { "color": "yellow", "value": 0.5 },
-              { "color": "red", "value": 1 }
-            ]
-          },
-          "unit": "percentunit"
-        },
-        "overrides": []
-      },
-      "gridPos": { "h": 8, "w": 8, "x": 16, "y": 36 },
-      "id": 13,
-      "options": {
-        "legend": {
-          "calcs": ["lastNotNull"],
-          "displayMode": "table",
-          "placement": "bottom",
-          "showLegend": true
-        },
-        "tooltip": { "mode": "multi", "sort": "desc" }
-      },
-      "title": "HikariCP Pool Usage",
-      "type": "timeseries",
-      "targets": [
-        {
-          "datasource": { "type": "prometheus", "uid": "prometheus" },
-          "expr": "sum by (application) (hikaricp_connections_active{application=~\"$app\"}) / sum by (application) (hikaricp_connections_max{application=~\"$app\"})",
-          "legendFormat": "{{application}} active/max",
-          "refId": "A"
-        },
-        {
-          "datasource": { "type": "prometheus", "uid": "prometheus" },
-          "expr": "sum by (application) (hikaricp_connections_pending{application=~\"$app\"})",
-          "legendFormat": "{{application}} pending",
-          "refId": "B"
-        }
-      ]
-    },
-    {
-      "datasource": { "type": "prometheus", "uid": "prometheus" },
-      "fieldConfig": {
-        "defaults": {
-          "color": { "mode": "palette-classic" },
-          "custom": {
-            "axisBorderShow": false,
-            "axisCenteredZero": false,
-            "axisColorMode": "text",
-            "axisLabel": "",
-            "axisPlacement": "auto",
-            "barAlignment": 0,
-            "drawStyle": "line",
-            "fillOpacity": 15,
-            "gradientMode": "scheme",
-            "hideFrom": {
-              "legend": false,
-              "tooltip": false,
-              "viz": false
-            },
-            "lineInterpolation": "smooth",
-            "lineWidth": 1,
-            "pointSize": 5,
-            "scaleDistribution": { "type": "linear" },
-            "showPoints": "never",
-            "spanNulls": true,
-            "stacking": { "group": "A", "mode": "normal" },
-            "thresholdsStyle": { "mode": "off" }
-          },
-          "mappings": [],
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              { "color": "green", "value": null }
-            ]
-          },
-          "unit": "ops"
-        },
-        "overrides": [
-          {
-            "matcher": { "id": "byName", "options": "error" },
-            "properties": [
-              { "id": "color", "value": { "mode": "fixed", "fixedColor": "red" } }
-            ]
-          },
-          {
-            "matcher": { "id": "byName", "options": "warn" },
-            "properties": [
-              { "id": "color", "value": { "mode": "fixed", "fixedColor": "yellow" } }
-            ]
-          }
-        ]
-      },
-      "gridPos": { "h": 8, "w": 24, "x": 0, "y": 44 },
-      "id": 14,
-      "options": {
-        "legend": {
-          "calcs": ["lastNotNull"],
-          "displayMode": "table",
-          "placement": "bottom",
-          "showLegend": true
-        },
-        "tooltip": { "mode": "multi", "sort": "desc" }
-      },
-      "title": "Log Events by Level",
-      "type": "timeseries",
-      "targets": [
-        {
-          "datasource": { "type": "prometheus", "uid": "prometheus" },
-          "expr": "sum by (level) (rate(logback_events_total{application=~\"$app\", instance=~\"$instance\"}[$__rate_interval]))",
-          "legendFormat": "{{level}}",
           "refId": "A"
         }
       ]
@@ -938,6 +655,6 @@
   "timezone": "browser",
   "title": "Prometheus Spring Boot",
   "uid": "prometheus-spring-boot",
-  "version": 1,
+  "version": 3,
   "weekStart": ""
 }

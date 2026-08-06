@@ -7,6 +7,7 @@
   "timezone": "browser",
   "graphTooltip": 1,
   "editable": true,
+  "version": 11,
   "links": [
     {
       "title": "Loki Logs",
@@ -26,7 +27,7 @@
       {
         "name": "app",
         "type": "custom",
-        "label": "Topic",
+        "label": "Stream Topic",
         "current": { "text": "event.created", "value": "event.created" },
         "query": "accounts.generated,audit.event,event.activated,event.cancelled,event.completed,event.created,event.payout-released,org.status.changed,organizer.reservation.cancelled,organizer.reservation.created,payment.failed,payment.refund.request,payment.refunded,payment.success,reservation.begin,reservation.completed,saga.lock.confirm.command,saga.lock.confirm.compensate,saga.lock.confirm.reply,saga.payment.command,saga.payment.compensate,saga.payment.reply,saga.ticket.command,saga.ticket.compensate,saga.ticket.reply,user.email-verification,user.password-change,user.password-reset",
         "options": [
@@ -59,7 +60,7 @@
           { "text": "user.password-change", "value": "user.password-change", "selected": false },
           { "text": "user.password-reset", "value": "user.password-reset", "selected": false }
         ],
-        "hide": 0
+        "hide": 2
       },
       {
         "name": "group",
@@ -77,7 +78,25 @@
         "multi": true,
         "refresh": 1,
         "sort": 1,
-        "hide": 0
+        "hide": 2
+      },
+      {
+        "name": "topic",
+        "type": "query",
+        "label": "Lag Topic",
+        "datasource": { "type": "prometheus", "uid": "prometheus" },
+        "definition": "label_values(kafka_consumergroup_lag{consumergroup=~\"$group\"}, topic)",
+        "query": {
+          "query": "label_values(kafka_consumergroup_lag{consumergroup=~\"$group\"}, topic)",
+          "refId": "StandardVariableQuery"
+        },
+        "current": { "selected": true, "text": "All", "value": "$__all" },
+        "includeAll": true,
+        "allValue": ".*",
+        "multi": true,
+        "refresh": 1,
+        "sort": 1,
+        "hide": 2
       },
       {
         "name": "datasource",
@@ -85,7 +104,7 @@
         "query": "prometheus",
         "label": "Datasource",
         "current": { "text": "prometheus", "value": "prometheus" },
-        "hide": 0
+        "hide": 2
       }
     ]
   },
@@ -102,7 +121,7 @@
       "type": "stat",
       "title": "Brokers",
       "datasource": { "type": "prometheus", "uid": "prometheus" },
-      "gridPos": { "h": 4, "w": 4, "x": 0, "y": 1 },
+      "gridPos": { "h": 4, "w": 3, "x": 0, "y": 1 },
       "fieldConfig": {
         "defaults": {
           "color": { "mode": "thresholds" },
@@ -146,7 +165,7 @@
       "type": "stat",
       "title": "Topics",
       "datasource": { "type": "prometheus", "uid": "prometheus" },
-      "gridPos": { "h": 4, "w": 4, "x": 4, "y": 1 },
+      "gridPos": { "h": 4, "w": 3, "x": 3, "y": 1 },
       "fieldConfig": {
         "defaults": {
           "color": { "mode": "thresholds" },
@@ -184,7 +203,7 @@
       "type": "stat",
       "title": "Consumer Groups",
       "datasource": { "type": "prometheus", "uid": "prometheus" },
-      "gridPos": { "h": 4, "w": 4, "x": 8, "y": 1 },
+      "gridPos": { "h": 4, "w": 3, "x": 6, "y": 1 },
       "fieldConfig": {
         "defaults": {
           "color": { "mode": "thresholds" },
@@ -222,7 +241,7 @@
       "type": "stat",
       "title": "Partitions",
       "datasource": { "type": "prometheus", "uid": "prometheus" },
-      "gridPos": { "h": 4, "w": 4, "x": 12, "y": 1 },
+      "gridPos": { "h": 4, "w": 3, "x": 9, "y": 1 },
       "fieldConfig": {
         "defaults": {
           "color": { "mode": "thresholds" },
@@ -260,7 +279,7 @@
       "type": "stat",
       "title": "Total Lag",
       "datasource": { "type": "prometheus", "uid": "prometheus" },
-      "gridPos": { "h": 4, "w": 4, "x": 16, "y": 1 },
+      "gridPos": { "h": 4, "w": 3, "x": 12, "y": 1 },
       "fieldConfig": {
         "defaults": {
           "color": { "mode": "thresholds" },
@@ -288,7 +307,7 @@
       "targets": [
         {
           "datasource": { "type": "prometheus", "uid": "prometheus" },
-          "expr": "sum(kafka_consumergroup_lag_sum{consumergroup=~\"$group\"})",
+          "expr": "clamp_min(sum(kafka_consumergroup_lag_sum{consumergroup=~\"$group\", topic=~\"$topic\"}), 0)",
           "legendFormat": "",
           "refId": "A"
         }
@@ -299,7 +318,7 @@
       "type": "stat",
       "title": "Under Replicated",
       "datasource": { "type": "prometheus", "uid": "prometheus" },
-      "gridPos": { "h": 4, "w": 4, "x": 20, "y": 1 },
+      "gridPos": { "h": 4, "w": 3, "x": 15, "y": 1 },
       "fieldConfig": {
         "defaults": {
           "color": { "mode": "thresholds" },
@@ -445,16 +464,68 @@
       "targets": [
         {
           "datasource": { "type": "prometheus", "uid": "prometheus" },
-          "expr": "sum by (consumergroup) (kafka_consumergroup_lag{consumergroup=~\"$group\"})",
+          "expr": "clamp_min(sum by (consumergroup) (kafka_consumergroup_lag{consumergroup=~\"$group\", topic=~\"$topic\"}), 0)",
           "legendFormat": "{{consumergroup}}",
           "refId": "A"
         }
       ]
     },
     {
-      "id": 14,
+      "id": 18,
+      "type": "timeseries",
+      "title": "Lag Growth Rate",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "gridPos": { "h": 10, "w": 12, "x": 12, "y": 16 },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "palette-classic" },
+          "unit": "ops",
+          "custom": {
+            "drawStyle": "line",
+            "lineInterpolation": "smooth",
+            "fillOpacity": 15,
+            "gradientMode": "scheme",
+            "lineWidth": 1,
+            "showPoints": "never",
+            "pointSize": 5,
+            "spanNulls": true,
+            "stacking": { "mode": "none", "group": "A" },
+            "axisPlacement": "auto",
+            "axisColorMode": "text",
+            "thresholdsStyle": { "mode": "off" }
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null }
+            ]
+          },
+          "mappings": []
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "calcs": ["mean", "max", "lastNotNull"],
+          "showLegend": true
+        },
+        "tooltip": { "mode": "multi", "sort": "desc" }
+      },
+      "targets": [
+        {
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "expr": "deriv(kafka_consumergroup_lag{consumergroup=~\"$group\", topic=~\"$topic\"}[5m])",
+          "legendFormat": "{{consumergroup}} / {{topic}}",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "id": 20,
       "type": "bargauge",
-      "title": "Consumer Group Lag by Topic",
+      "title": "Lag by Consumer Group",
       "datasource": { "type": "prometheus", "uid": "prometheus" },
       "gridPos": { "h": 10, "w": 12, "x": 0, "y": 16 },
       "fieldConfig": {
@@ -465,8 +536,8 @@
             "mode": "absolute",
             "steps": [
               { "color": "green", "value": null },
-              { "color": "yellow", "value": 10 },
-              { "color": "red", "value": 100 }
+              { "color": "yellow", "value": 100 },
+              { "color": "red", "value": 1000 }
             ]
           },
           "mappings": []
@@ -488,73 +559,9 @@
       "targets": [
         {
           "datasource": { "type": "prometheus", "uid": "prometheus" },
-          "expr": "sum by (topic) (kafka_consumergroup_lag{topic!=\"\", consumergroup=~\"$group\"})",
-          "legendFormat": "{{topic}}",
+          "expr": "clamp_min(kafka_consumergroup_lag{consumergroup=~\"$group\", topic=~\"$topic\"}, 0)",
+          "legendFormat": "{{consumergroup}} / {{topic}}",
           "refId": "A"
-        }
-      ]
-    },
-    {
-      "id": 15,
-      "type": "table",
-      "title": "Lag by Topic & Partition",
-      "datasource": { "type": "prometheus", "uid": "prometheus" },
-      "gridPos": { "h": 10, "w": 12, "x": 12, "y": 16 },
-      "fieldConfig": {
-        "defaults": {
-          "color": { "mode": "thresholds" },
-          "custom": {
-            "align": "auto",
-            "cellOptions": { "type": "color-background" },
-            "inspect": false,
-            "filterable": true
-          },
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              { "color": "green", "value": null },
-              { "color": "yellow", "value": 10 },
-              { "color": "red", "value": 100 }
-            ]
-          },
-          "mappings": []
-        },
-        "overrides": []
-      },
-      "options": {
-        "showHeader": true,
-        "footer": { "show": false, "reducer": [], "countRows": false },
-        "sortBy": [
-          { "displayName": "Lag", "desc": true }
-        ]
-      },
-      "transformations": [
-        {
-          "id": "organize",
-          "options": {
-            "excludeByName": {
-              "Time": true,
-              "instance": true,
-              "job": true,
-              "__name__": true
-            },
-            "renameByName": {
-              "consumergroup": "Consumer Group",
-              "topic": "Topic",
-              "partition": "Partition",
-              "Value": "Lag"
-            }
-          }
-        }
-      ],
-      "targets": [
-        {
-          "datasource": { "type": "prometheus", "uid": "prometheus" },
-          "expr": "kafka_consumergroup_lag{consumergroup=~\"$group\"}",
-          "legendFormat": "{{topic}}",
-          "refId": "A",
-          "format": "table",
-          "instant": true
         }
       ]
     },
@@ -672,8 +679,9 @@
       "id": 9,
       "type": "stat",
       "title": "Brokers In Sync",
+      "description": "Kafka ISR (In-Sync Replicas) as a percentage of the replication factor: the average number of replicas per partition that are caught up with the leader. 100% means every replica is in sync; values below 100% mean replicas are falling behind or brokers are unreachable, so partitions are at risk if the leader fails.",
       "datasource": { "type": "prometheus", "uid": "prometheus" },
-      "gridPos": { "h": 8, "w": 6, "x": 0, "y": 35 },
+      "gridPos": { "h": 4, "w": 6, "x": 18, "y": 1 },
       "fieldConfig": {
         "defaults": {
           "color": { "mode": "thresholds" },
@@ -704,109 +712,6 @@
           "expr": "sum(kafka_topic_partition_in_sync_replica{topic!=\"\"}) / count(kafka_topic_partition_in_sync_replica{topic!=\"\"}) * 100",
           "instant": true,
           "legendFormat": "",
-          "refId": "A"
-        }
-      ]
-    },
-    {
-      "id": 10,
-      "type": "bargauge",
-      "title": "Partition Leader Distribution",
-      "datasource": { "type": "prometheus", "uid": "prometheus" },
-      "gridPos": { "h": 8, "w": 18, "x": 6, "y": 35 },
-      "fieldConfig": {
-        "defaults": {
-          "color": { "mode": "palette-classic" },
-          "unit": "short",
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              { "color": "green", "value": null }
-            ]
-          },
-          "mappings": []
-        },
-        "overrides": []
-      },
-      "options": {
-        "orientation": "horizontal",
-        "displayMode": "gradient",
-        "showThresholdLabels": false,
-        "showThresholdMarkers": true,
-        "reduceOptions": {
-          "calcs": ["lastNotNull"],
-          "fields": "",
-          "values": false
-        },
-        "text": { "autoSize": true }
-      },
-      "targets": [
-        {
-          "datasource": { "type": "prometheus", "uid": "prometheus" },
-          "expr": "sum by (broker) (kafka_topic_partition_leader)",
-          "legendFormat": "{{broker}}",
-          "refId": "A"
-        }
-      ]
-    },
-    {
-      "id": 103,
-      "type": "row",
-      "title": "Live Topic Stream",
-      "collapsed": false,
-      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 43 }
-    },
-    {
-      "id": 11,
-      "type": "timeseries",
-      "title": "Live Messages from $app",
-      "datasource": { "type": "hamedkarbasi93-kafka-datasource", "uid": "kafka" },
-      "gridPos": { "h": 8, "w": 24, "x": 0, "y": 44 },
-      "fieldConfig": {
-        "defaults": {
-          "color": { "mode": "palette-classic" },
-          "unit": "short",
-          "custom": {
-            "drawStyle": "line",
-            "lineInterpolation": "smooth",
-            "fillOpacity": 20,
-            "gradientMode": "scheme",
-            "lineWidth": 1,
-            "showPoints": "auto",
-            "pointSize": 3,
-            "spanNulls": true,
-            "stacking": { "mode": "none", "group": "A" },
-            "axisPlacement": "auto",
-            "axisColorMode": "text",
-            "thresholdsStyle": { "mode": "off" }
-          },
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              { "color": "green", "value": null }
-            ]
-          },
-          "mappings": []
-        },
-        "overrides": []
-      },
-      "options": {
-        "legend": {
-          "displayMode": "table",
-          "placement": "bottom",
-          "calcs": ["mean", "max", "lastNotNull"],
-          "showLegend": true
-        },
-        "tooltip": { "mode": "multi", "sort": "desc" }
-      },
-      "targets": [
-        {
-          "datasource": { "type": "hamedkarbasi93-kafka-datasource", "uid": "kafka" },
-          "queryType": "streaming",
-          "topic": "$app",
-          "partition": 0,
-          "autoOffsetReset": "latest",
-          "timestampMode": "now",
           "refId": "A"
         }
       ]

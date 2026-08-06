@@ -31,13 +31,6 @@
       "type": "link",
       "icon": "external link",
       "targetBlank": true
-    },
-    {
-      "title": "Saga Orchestrator",
-      "url": "/d/saga-orchestrator/saga-orchestrator",
-      "type": "link",
-      "icon": "external link",
-      "targetBlank": true
     }
   ],
   "panels": [
@@ -64,7 +57,7 @@
       ],
       "fieldConfig": {
         "defaults": {
-          "unit": "currencyUSD",
+          "unit": "prefix:E£",
           "color": { "mode": "thresholds" },
           "thresholds": {
             "mode": "absolute",
@@ -92,14 +85,13 @@
       "id": 2,
       "type": "stat",
       "title": "Tickets Sold (Total)",
-      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "datasource": { "type": "postgres", "uid": "postgres-analytics" },
       "gridPos": { "h": 6, "w": 6, "x": 6, "y": 1 },
       "targets": [
         {
           "refId": "A",
-          "expr": "tickets_sold_total",
-          "legendFormat": "Tickets Sold",
-          "instant": true
+          "rawSql": "SELECT COALESCE(SUM(tickets_sold), 0) as tickets FROM sales_records",
+          "format": "table"
         }
       ],
       "fieldConfig": {
@@ -143,7 +135,7 @@
       ],
       "fieldConfig": {
         "defaults": {
-          "unit": "currencyUSD",
+          "unit": "prefix:E£",
           "color": { "mode": "thresholds" },
           "thresholds": {
             "mode": "absolute",
@@ -171,14 +163,13 @@
       "id": 4,
       "type": "stat",
       "title": "Payment Success Rate",
-      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "datasource": { "type": "postgres", "uid": "postgres-payment" },
       "gridPos": { "h": 6, "w": 6, "x": 18, "y": 1 },
       "targets": [
         {
           "refId": "A",
-          "expr": "rate(payments_total{status=\"SUCCESS\"}[$__rate_interval]) / (rate(payments_total{status=\"SUCCESS\"}[$__rate_interval]) + rate(payments_total{status=\"FAILED\"}[$__rate_interval])) * 100",
-          "legendFormat": "Success Rate",
-          "instant": false
+          "rawSql": "SELECT COALESCE(SUM(CASE WHEN payment_status = 'SUCCESS' THEN 1 ELSE 0 END) * 100.0 / NULLIF(COUNT(*), 0), 0) as success_rate FROM payment_model",
+          "format": "table"
         }
       ],
       "fieldConfig": {
@@ -235,7 +226,7 @@
       ],
       "fieldConfig": {
         "defaults": {
-          "unit": "currencyUSD",
+          "unit": "prefix:E£",
           "color": { "mode": "palette-classic" },
           "custom": {
             "drawStyle": "line",
@@ -277,13 +268,14 @@
       "id": 6,
       "type": "timeseries",
       "title": "Tickets Sold Over Time",
-      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "datasource": { "type": "postgres", "uid": "postgres-analytics" },
       "gridPos": { "h": 8, "w": 12, "x": 12, "y": 8 },
       "targets": [
         {
           "refId": "A",
-          "expr": "increase(tickets_sold_total[$__rate_interval])",
-          "legendFormat": "Tickets Sold"
+          "rawSql": "SELECT sale_date::timestamp as time, SUM(tickets_sold) as tickets FROM sales_records WHERE sale_date >= $__timeFrom()::date AND sale_date <= $__timeTo()::date GROUP BY 1 ORDER BY 1",
+          "timeColumn": "time",
+          "format": "time_series"
         }
       ],
       "fieldConfig": {
@@ -338,13 +330,13 @@
       "id": 7,
       "type": "gauge",
       "title": "Payment Success Rate",
-      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "datasource": { "type": "postgres", "uid": "postgres-payment" },
       "gridPos": { "h": 6, "w": 8, "x": 0, "y": 17 },
       "targets": [
         {
           "refId": "A",
-          "expr": "rate(payments_total{status=\"SUCCESS\"}[$__rate_interval]) / (rate(payments_total{status=\"SUCCESS\"}[$__rate_interval]) + rate(payments_total{status=\"FAILED\"}[$__rate_interval])) * 100",
-          "legendFormat": "Success Rate"
+          "rawSql": "SELECT COALESCE(SUM(CASE WHEN payment_status = 'SUCCESS' THEN 1 ELSE 0 END) * 100.0 / NULLIF(COUNT(*), 0), 0) as success_rate FROM payment_model",
+          "format": "table"
         }
       ],
       "fieldConfig": {
@@ -379,23 +371,19 @@
       "id": 8,
       "type": "timeseries",
       "title": "Payment Success vs Failed",
-      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "datasource": { "type": "postgres", "uid": "postgres-payment" },
       "gridPos": { "h": 6, "w": 8, "x": 8, "y": 17 },
       "targets": [
         {
           "refId": "A",
-          "expr": "rate(payments_total{status=\"SUCCESS\"}[$__rate_interval])",
-          "legendFormat": "Success"
-        },
-        {
-          "refId": "B",
-          "expr": "rate(payments_total{status=\"FAILED\"}[$__rate_interval])",
-          "legendFormat": "Failed"
+          "rawSql": "SELECT date_trunc('day', created_at) as time, COUNT(*) FILTER (WHERE payment_status = 'SUCCESS') as success, COUNT(*) FILTER (WHERE payment_status = 'FAILED') as failed FROM payment_model WHERE created_at > $__timeFrom() AND created_at < $__timeTo() GROUP BY 1 ORDER BY 1",
+          "timeColumn": "time",
+          "format": "time_series"
         }
       ],
       "fieldConfig": {
         "defaults": {
-          "unit": "ops",
+          "unit": "short",
           "color": { "mode": "palette-classic" },
           "custom": {
             "drawStyle": "line",
@@ -409,7 +397,7 @@
             "stacking": { "mode": "none", "group": "A" },
             "axisBorderShow": false,
             "axisCenteredZero": false,
-            "axisLabel": "Payments/sec",
+            "axisLabel": "Payments",
             "scaleDistribution": { "type": "linear" }
           },
           "thresholds": {
@@ -450,18 +438,19 @@
       "id": 9,
       "type": "timeseries",
       "title": "Refund Rate",
-      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "datasource": { "type": "postgres", "uid": "postgres-payment" },
       "gridPos": { "h": 6, "w": 8, "x": 16, "y": 17 },
       "targets": [
         {
           "refId": "A",
-          "expr": "rate(payments_total{status=\"REFUNDED\"}[$__rate_interval])",
-          "legendFormat": "Refund Rate"
+          "rawSql": "SELECT date_trunc('day', created_at) as time, COUNT(*) as refunds FROM payment_model WHERE payment_status = 'REFUNDED' AND created_at > $__timeFrom() AND created_at < $__timeTo() GROUP BY 1 ORDER BY 1",
+          "timeColumn": "time",
+          "format": "time_series"
         }
       ],
       "fieldConfig": {
         "defaults": {
-          "unit": "ops",
+          "unit": "short",
           "color": { "mode": "palette-classic" },
           "custom": {
             "drawStyle": "line",
@@ -475,7 +464,7 @@
             "stacking": { "mode": "none", "group": "A" },
             "axisBorderShow": false,
             "axisCenteredZero": false,
-            "axisLabel": "Refunds/sec",
+            "axisLabel": "Refunds",
             "scaleDistribution": { "type": "linear" }
           },
           "thresholds": {
@@ -534,7 +523,7 @@
           {
             "matcher": { "id": "byName", "options": "revenue" },
             "properties": [
-              { "id": "unit", "value": "currencyUSD" },
+              { "id": "unit", "value": "prefix:E£" },
               { "id": "custom.cellOptions", "value": { "type": "color-background" } }
             ]
           }
@@ -557,5 +546,5 @@
   "fiscalYearStartMonth": 0,
   "liveNow": false,
   "schemaVersion": 39,
-  "version": 1
+  "version": 5
 }

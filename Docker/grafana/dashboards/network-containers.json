@@ -1,6 +1,7 @@
 {
   "uid": "network-containers",
   "title": "Network & Containers",
+  "version": 4,
   "tags": ["docker", "containers", "network"],
   "timezone": "browser",
   "editable": true,
@@ -109,7 +110,7 @@
       "targets": [
         {
           "refId": "A",
-          "expr": "sum(rate(docker_container_cpu_usage_total{cpu=\"cpu-total\", com_docker_compose_service=~\"$container\"}[$__rate_interval]))",
+          "expr": "sum(rate(docker_container_cpu_usage_total{cpu=\"cpu-total\", com_docker_compose_service=~\"$container\"}[$__rate_interval])) / 1e9",
           "legendFormat": "",
           "instant": false
         }
@@ -377,7 +378,7 @@
       "targets": [
         {
           "refId": "A",
-          "expr": "sum by (com_docker_compose_service) (rate(docker_container_cpu_usage_total{cpu=\"cpu-total\", com_docker_compose_service=~\"$container\"}[$__rate_interval]))",
+          "expr": "sum by (com_docker_compose_service) (rate(docker_container_cpu_usage_total{cpu=\"cpu-total\", com_docker_compose_service=~\"$container\"}[$__rate_interval])) / 1e9",
           "legendFormat": "{{com_docker_compose_service}}"
         }
       ],
@@ -455,16 +456,16 @@
     },
     {
       "type": "row",
-      "id": 103,
-      "title": "Restarts & Details",
+      "id": 104,
+      "title": "Disk I/O",
       "gridPos": { "h": 1, "w": 24, "x": 0, "y": 25 },
       "collapsed": false,
       "panels": []
     },
     {
       "type": "timeseries",
-      "id": 9,
-      "title": "Container Restarts",
+      "id": 11,
+      "title": "Disk Read by Container",
       "gridPos": { "h": 8, "w": 12, "x": 0, "y": 26 },
       "datasource": {
         "uid": "prometheus",
@@ -473,29 +474,29 @@
       "targets": [
         {
           "refId": "A",
-          "expr": "sum by (com_docker_compose_service) (docker_container_status_restart_count{com_docker_compose_service=~\"$container\"})",
+          "expr": "sum by (com_docker_compose_service) (rate(docker_container_blkio_io_service_bytes_recursive_read{com_docker_compose_service=~\"$container\"}[$__rate_interval]))",
           "legendFormat": "{{com_docker_compose_service}}"
         }
       ],
       "options": {
         "tooltip": {
-          "mode": "single",
-          "sort": "none"
+          "mode": "multi",
+          "sort": "desc"
         },
         "legend": {
           "displayMode": "table",
           "placement": "bottom",
-          "calcs": ["lastNotNull"]
+          "calcs": ["mean", "max"]
         }
       },
       "fieldConfig": {
         "defaults": {
-          "unit": "short",
+          "unit": "Bps",
           "custom": {
-            "drawStyle": "bars",
-            "lineInterpolation": "linear",
-            "lineWidth": 0,
-            "fillOpacity": 50,
+            "drawStyle": "line",
+            "lineInterpolation": "smooth",
+            "lineWidth": 1,
+            "fillOpacity": 20,
             "gradientMode": "scheme",
             "showPoints": "never",
             "pointSize": 5,
@@ -522,9 +523,9 @@
       }
     },
     {
-      "type": "table",
-      "id": 10,
-      "title": "Container Details",
+      "type": "timeseries",
+      "id": 12,
+      "title": "Disk Write by Container",
       "gridPos": { "h": 8, "w": 12, "x": 12, "y": 26 },
       "datasource": {
         "uid": "prometheus",
@@ -533,35 +534,42 @@
       "targets": [
         {
           "refId": "A",
-          "expr": "docker_container_status_uptime_ns{com_docker_compose_service=~\"$container\"}",
-          "legendFormat": "{{com_docker_compose_service}}",
-          "instant": true,
-          "format": "table"
+          "expr": "sum by (com_docker_compose_service) (rate(docker_container_blkio_io_service_bytes_recursive_write{com_docker_compose_service=~\"$container\"}[$__rate_interval]))",
+          "legendFormat": "{{com_docker_compose_service}}"
         }
       ],
       "options": {
-        "showHeader": true,
-        "footer": {
-          "show": false,
-          "reducer": [],
-          "countRows": false
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
         },
-        "sortBy": [
-          {
-            "displayName": "com_docker_compose_service",
-            "desc": false
-          }
-        ]
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "calcs": ["mean", "max"]
+        }
       },
       "fieldConfig": {
         "defaults": {
+          "unit": "Bps",
           "custom": {
-            "align": "auto",
-            "cellOptions": {
-              "type": "auto"
+            "drawStyle": "line",
+            "lineInterpolation": "smooth",
+            "lineWidth": 1,
+            "fillOpacity": 20,
+            "gradientMode": "scheme",
+            "showPoints": "never",
+            "pointSize": 5,
+            "stacking": {
+              "mode": "normal",
+              "group": "A"
             },
-            "inspect": false,
-            "filterable": true
+            "spanNulls": false,
+            "axisPlacement": "auto",
+            "axisLabel": "",
+            "axisBorderShow": false,
+            "scaleDistribution": { "type": "linear" },
+            "thresholdsStyle": { "mode": "off" }
           },
           "thresholds": {
             "mode": "absolute",
@@ -571,70 +579,8 @@
           },
           "mappings": []
         },
-        "overrides": [
-          {
-            "matcher": { "id": "byName", "options": "Time" },
-            "properties": [
-              { "id": "custom.hidden", "value": true }
-            ]
-          },
-          {
-            "matcher": { "id": "byName", "options": "__name__" },
-            "properties": [
-              { "id": "custom.hidden", "value": true }
-            ]
-          },
-          {
-            "matcher": { "id": "byName", "options": "instance" },
-            "properties": [
-              { "id": "custom.hidden", "value": true }
-            ]
-          },
-          {
-            "matcher": { "id": "byName", "options": "job" },
-            "properties": [
-              { "id": "custom.hidden", "value": true }
-            ]
-          },
-          {
-            "matcher": { "id": "byName", "options": "com_docker_compose_service" },
-            "properties": [
-              { "id": "displayName", "value": "Container" },
-              { "id": "custom.width", "value": 200 }
-            ]
-          },
-          {
-            "matcher": { "id": "byName", "options": "Value #A" },
-            "properties": [
-              { "id": "displayName", "value": "Uptime" },
-              { "id": "unit", "value": "ns" },
-              { "id": "custom.cellOptions", "value": { "type": "auto" } }
-            ]
-          }
-        ]
-      },
-      "transformations": [
-        {
-          "id": "organize",
-          "options": {
-            "excludeByName": {
-              "__name__": true,
-              "instance": true,
-              "job": true,
-              "Time": true,
-              "container_name": true,
-              "engine_host": true,
-              "host": true,
-              "container_id": true,
-              "container_status": true
-            },
-            "renameByName": {
-              "com_docker_compose_service": "Container",
-              "Value #A": "Uptime"
-            }
-          }
-        }
-      ]
+        "overrides": []
+      }
     }
   ]
 }

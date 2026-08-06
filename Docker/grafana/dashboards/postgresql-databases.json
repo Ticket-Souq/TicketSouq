@@ -409,7 +409,7 @@
       "targets": [
         {
           "datasource": { "type": "postgres", "uid": "${db}" },
-          "rawSql": "SELECT\n  now() AS \"time\",\n  c.relname AS \"Table\",\n  pg_size_pretty(pg_total_relation_size(c.oid)) AS \"Total Size\",\n  pg_size_pretty(pg_relation_size(c.oid)) AS \"Table Size\",\n  pg_size_pretty(pg_indexes_size(c.oid)) AS \"Index Size\",\n  (SELECT reltuples::bigint FROM pg_class WHERE oid = c.oid) AS \"Est. Rows\"\nFROM pg_class c\nLEFT JOIN pg_namespace n ON n.oid = c.relnamespace\nWHERE c.relkind = 'r'\n  AND n.nspname = 'public'\nORDER BY pg_total_relation_size(c.oid) DESC\nLIMIT 20",
+          "rawSql": "SELECT\n  now() AS \"time\",\n  c.relname AS \"Table\",\n  pg_size_pretty(pg_total_relation_size(c.oid)) AS \"Total Size\",\n  pg_size_pretty(pg_relation_size(c.oid)) AS \"Table Size\",\n  pg_size_pretty(pg_indexes_size(c.oid)) AS \"Index Size\",\n  NULLIF(reltuples::bigint, -1) AS \"Est. Rows\"\nFROM pg_class c\nLEFT JOIN pg_namespace n ON n.oid = c.relnamespace\nWHERE c.relkind = 'r'\n  AND n.nspname = 'public'\nORDER BY pg_total_relation_size(c.oid) DESC\nLIMIT 20",
           "format": "table",
           "refId": "A"
         }
@@ -583,5 +583,5 @@
   "timezone": "browser",
   "title": "PostgreSQL Databases",
   "uid": "postgresql-databases",
-  "version": 1
+  "version": 2
 }

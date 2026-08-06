@@ -103,6 +103,8 @@ management:
         enabled: true
 
   metrics:
+    enable:
+      resilience4j: false
     distribution:
       percentiles-histogram:
         http.server.requests: true

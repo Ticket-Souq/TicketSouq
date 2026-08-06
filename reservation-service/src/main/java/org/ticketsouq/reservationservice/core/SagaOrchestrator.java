@@ -31,8 +31,6 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
-import org.ticketsouq.reservationservice.metrics.SagaMetrics;
-
 import static org.ticketsouq.sharedmodule.Constants.TOPIC_NAMES.RESERVATION_COMPLETED;
 import static org.ticketsouq.sharedmodule.Constants.TOPIC_NAMES.SAGA_LOCK_CONFIRM_COMMAND;
 import static org.ticketsouq.sharedmodule.Constants.TOPIC_NAMES.SAGA_LOCK_CONFIRM_COMPENSATE;
@@ -51,7 +49,6 @@ public class SagaOrchestrator {
     private final OutboxWriter outboxWriter;
     private final TransactionTemplate transactionTemplate;
     private final ObjectMapper objectMapper;
-    private final SagaMetrics sagaMetrics;
 
     public void startSaga(ReservationContext context) {
         SagaInstance saga = createOrFindSaga(context);
@@ -82,7 +79,6 @@ public class SagaOrchestrator {
                 .ticketDetails(toJson(context.getTickets()))
                 .build();
             try {
-                sagaMetrics.sagaStarted();
                 return sagaInstanceRepository.save(saga);
             } catch (DataIntegrityViolationException e) {
                 log.debug("Race condition on saga creation for reservation {}, fetching existing", context.getReservationId());
@@ -213,7 +209,6 @@ public class SagaOrchestrator {
     }
 
     public void startCompensation(SagaInstance saga, String reason) {
-        sagaMetrics.compensationTriggered();
         transactionTemplate.executeWithoutResult(status -> {
             saga.setSagaStatus(SagaStatus.COMPENSATING);
             saga.setFailReason(reason);
@@ -247,11 +242,6 @@ public class SagaOrchestrator {
             saga.setCurrentStep(SagaStep.FAILED);
             saga.setCompletedAt(Instant.now());
             sagaInstanceRepository.save(saga);
-
-            long duration = saga.getCreatedAt() != null
-                ? java.time.Duration.between(saga.getCreatedAt(), Instant.now()).toMillis()
-                : 0;
-            sagaMetrics.sagaFailed(lastConfirmed.name(), duration);
 
             reservationRepository.findById(saga.getReservationId()).ifPresent(r -> {
                 r.setStatus(ReservationStatus.FAILED);
@@ -292,11 +282,6 @@ public class SagaOrchestrator {
             saga.setCompletedAt(Instant.now());
             saga.setLastStepCompletedAt(Instant.now());
             sagaInstanceRepository.save(saga);
-
-            long duration = saga.getCreatedAt() != null
-                ? java.time.Duration.between(saga.getCreatedAt(), Instant.now()).toMillis()
-                : 0;
-            sagaMetrics.sagaCompleted(duration);
 
             reservationRepository.findById(saga.getReservationId()).ifPresent(r -> {
                 r.setStatus(ReservationStatus.COMPLETED);

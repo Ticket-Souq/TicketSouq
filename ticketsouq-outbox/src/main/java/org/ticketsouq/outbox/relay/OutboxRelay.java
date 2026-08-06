@@ -18,8 +18,6 @@ import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 
-import org.ticketsouq.outbox.metrics.OutboxMetrics;
-
 @Slf4j
 @Component
 @RequiredArgsConstructor
@@ -30,11 +28,9 @@ public class OutboxRelay {
     private final ObjectMapper objectMapper;
     private final TransactionTemplate transactionTemplate;
     private final OutboxProperties properties;
-    private final OutboxMetrics outboxMetrics;
 
     @Scheduled(fixedDelayString = "${app.outbox.poll-interval:2000}")
     public void publishPendingEvents() {
-        long start = System.currentTimeMillis();
         transactionTemplate.executeWithoutResult(status -> {
             repository.resetStuckInProgress(properties.getMaxRetries(),
                 Instant.now().minus(Duration.ofMinutes(properties.getStaleMinutes())));
@@ -42,7 +38,6 @@ public class OutboxRelay {
 
         transactionTemplate.executeWithoutResult(status -> {
             List<OutboxEvent> pending = repository.findByStatusOrderByCreatedAt(OutboxStatus.PENDING);
-            outboxMetrics.setPendingCount(pending.size());
             for (OutboxEvent event : pending) {
                 int claimed = repository.markInProgress(event.getId(), Instant.now());
                 if (claimed == 0) continue;
@@ -51,20 +46,16 @@ public class OutboxRelay {
                     Object payload = deserialize(event);
                     if (kafkaSender.send(event.getTopic(), event.getAggregateId(), payload)) {
                         markPublished(event.getId());
-                        outboxMetrics.recordPublished();
                     } else {
                         requeue(event);
-                        outboxMetrics.recordRetry();
                     }
                 } catch (OutboxKafkaException e) {
                     requeue(event);
-                    outboxMetrics.recordRetry();
                 } catch (Exception e) {
                     handleFailure(event, e);
                 }
             }
         });
-        outboxMetrics.recordProcessingTime(System.currentTimeMillis() - start);
     }
 
     @Scheduled(cron = "0 0 0 * * *")
@@ -104,7 +95,6 @@ public class OutboxRelay {
             if (e.getRetryCount() >= properties.getMaxRetries()) {
                 e.setStatus(OutboxStatus.FAILED);
                 log.error("Outbox event {} failed after {} retries: {}", e.getId(), properties.getMaxRetries(), ex.getMessage());
-                outboxMetrics.recordFailed();
             } else {
                 e.setStatus(OutboxStatus.PENDING);
                 log.warn("Outbox event {} publish failed (retry {}/{}): {}", e.getId(), e.getRetryCount(), properties.getMaxRetries(), ex.getMessage());

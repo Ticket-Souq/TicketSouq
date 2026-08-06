@@ -288,14 +288,6 @@
           },
           "expr": "{service=~\"$service\"}",
           "refId": "A"
-        },
-        {
-          "datasource": {
-            "type": "loki",
-            "uid": "loki"
-          },
-          "expr": "{service=~\"$service\"} |~ \"(?i)(error|exception|failed|warn)\"",
-          "refId": "B"
         }
       ]
     }
@@ -326,7 +318,7 @@
           "query": "label_values({service!=\"\"}, service)",
           "refId": "StandardVariableQuery"
         },
-        "refresh": 2,
+        "refresh": 1,
         "regex": "",
         "skipUrlSync": false,
         "sort": 1,
@@ -342,6 +334,6 @@
   "timezone": "browser",
   "title": "Loki Logs",
   "uid": "loki-logs",
-  "version": 2,
+  "version": 3,
   "weekStart": ""
 }
