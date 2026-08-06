@@ -24,7 +24,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-@Disabled
 class RecoveryGuardStressTest extends AbstractIntegrationTest {
 
     @Autowired

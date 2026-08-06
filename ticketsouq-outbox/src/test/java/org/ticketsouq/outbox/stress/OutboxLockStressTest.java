@@ -1,17 +1,18 @@
-package org.ticketsouq.reservationservice.stress;
+package org.ticketsouq.outbox.stress;
 
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.annotation.Propagation;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionTemplate;
+import org.ticketsouq.outbox.AbstractOutboxIntegrationTest;
 import org.ticketsouq.outbox.entity.OutboxEvent;
 import org.ticketsouq.outbox.entity.OutboxStatus;
 import org.ticketsouq.outbox.repository.OutboxEventRepository;
-import org.ticketsouq.reservationservice.integration.AbstractIntegrationTest;
-
 
 import java.time.Duration;
 import java.time.Instant;
@@ -21,20 +22,22 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-
-@Disabled
-class OutboxLockStressTest extends AbstractIntegrationTest {
+@Transactional(propagation = Propagation.NOT_SUPPORTED)
+class OutboxLockStressTest extends AbstractOutboxIntegrationTest {
 
     @Autowired
     private OutboxEventRepository outboxEventRepository;
 
     @Autowired
+    private PlatformTransactionManager transactionManager;
+
     private TransactionTemplate transactionTemplate;
 
     private UUID outboxEventId;
 
     @BeforeEach
     void setUp() {
+        transactionTemplate = new TransactionTemplate(transactionManager);
         transactionTemplate.executeWithoutResult(status -> {
             OutboxEvent event = OutboxEvent.builder()
                 .id(UUID.randomUUID())
@@ -44,6 +47,7 @@ class OutboxLockStressTest extends AbstractIntegrationTest {
                 .payload("{}")
                 .status(OutboxStatus.PENDING)
                 .retryCount(0)
+                .createdAt(Instant.now())
                 .build();
             outboxEventRepository.save(event);
             outboxEventId = event.getId();
@@ -115,6 +119,7 @@ class OutboxLockStressTest extends AbstractIntegrationTest {
                     .payload("{}")
                     .status(OutboxStatus.PENDING)
                     .retryCount(0)
+                    .createdAt(Instant.now())
                     .build();
                 outboxEventRepository.save(event);
                 eventIds[i] = event.getId();
@@ -174,6 +179,7 @@ class OutboxLockStressTest extends AbstractIntegrationTest {
                 .status(OutboxStatus.IN_PROGRESS)
                 .retryCount(0)
                 .claimedAt(Instant.now().minus(Duration.ofMinutes(10)))
+                .createdAt(Instant.now().minus(Duration.ofMinutes(10)))
                 .build();
             outboxEventRepository.save(stuckEvent);
             return stuckEvent.getId();
