@@ -9,10 +9,8 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
-import org.ticketsouq.apigateway.dto.AuthResponse;
-import org.ticketsouq.apigateway.dto.LoginRequest;
-import org.ticketsouq.apigateway.dto.RegisterRequest;
-import org.ticketsouq.apigateway.dto.ResetPasswordRequest;
+import org.ticketsouq.apigateway.dto.*;
+import org.ticketsouq.apigateway.metrics.GatewayMetrics;
 import org.ticketsouq.apigateway.service.AuthService;
 import org.ticketsouq.apigateway.service.AuthTokenService;
 
@@ -37,6 +35,8 @@ class AuthControllerTest {
     private AuthService authService;
     @MockitoBean
     private AuthTokenService authTokenService;
+    @MockitoBean
+    private GatewayMetrics gatewayMetrics;
 
     @Test
     void register_shouldReturn201() throws Exception {
@@ -99,12 +99,14 @@ class AuthControllerTest {
 
     @Test
     void emailVarification_shouldVerifyEmail() throws Exception {
-        doNothing().when(authService).verifyEmail("verify-token");
+        doNothing().when(authService).verifyEmail("123456");
 
         mockMvc.perform(post("/api/v1/auth/email-varification")
-                .contentType(MediaType.TEXT_PLAIN)
-                .content("verify-token"))
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"otp\":\"123456\"}"))
             .andExpect(status().isOk());
+
+        verify(authService).verifyEmail("123456");
     }
 
     @Test
@@ -118,7 +120,7 @@ class AuthControllerTest {
 
     @Test
     void passwordForgot_shouldResetPassword() throws Exception {
-        var req = new ResetPasswordRequest("reset-token", "newPassword123");
+        var req = new ResetPasswordRequest("654321", "newPassword123");
         doNothing().when(authService).resetPassword(any(ResetPasswordRequest.class));
 
         mockMvc.perform(post("/api/v1/auth/password-forgot")

@@ -10,6 +10,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.ticketsouq.apigateway.client.UserServiceClient;
 import org.ticketsouq.apigateway.dto.*;
+import org.ticketsouq.apigateway.metrics.GatewayMetrics;
 import org.ticketsouq.apigateway.model.AuthCredential;
 import org.ticketsouq.apigateway.model.RefreshToken;
 import org.ticketsouq.apigateway.model.Role;
@@ -54,6 +55,7 @@ class AuthServiceTest {
     @Mock private AuthCredentialRepository credentialRepository;
     @Mock private OutboxWriter outboxWriter;
     @Mock private PlatformTransactionManager transactionManager;
+    @Mock private GatewayMetrics gatewayMetrics;
     private AuthService authService;
     private AuthCredential customerCredential;
     private AuthCredential verifiedCredential;
@@ -61,7 +63,7 @@ class AuthServiceTest {
     @BeforeEach
     void setUp() {
         authService = new AuthService(authTokenService, passwordEncoder, userServiceClient,
-            credentialRepository, outboxWriter, transactionManager);
+            credentialRepository, outboxWriter, transactionManager, gatewayMetrics);
 
         customerCredential = AuthCredential.builder()
             .userId(USER_ID)
@@ -252,7 +254,7 @@ class AuthServiceTest {
     void login_shouldThrowWhenLockedDueToFailedAttempts() {
         AuthCredential locked = AuthCredential.builder().userId(UUID.randomUUID()).email("l@t.com")
             .passwordHash("hash").role(Role.CUSTOMER).isActive(true).isVerified(true).locked(true)
-            .lockedUntil(Instant.now().plus(1, ChronoUnit.HOURS)).failedAttempts(5).build();
+            .lockedUntil(Instant.now().plus(30, ChronoUnit.MINUTES)).failedAttempts(5).build();
         LoginRequest req = new LoginRequest("l@t.com", "password");
         when(credentialRepository.findByEmail("l@t.com")).thenReturn(Optional.of(locked));
 

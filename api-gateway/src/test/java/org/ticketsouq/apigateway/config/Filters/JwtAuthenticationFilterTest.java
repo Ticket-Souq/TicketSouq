@@ -11,7 +11,6 @@ import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.mock.web.MockHttpServletResponse;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
-import org.ticketsouq.apigateway.dto.AuthResponse;
 import org.ticketsouq.apigateway.service.AuthService;
 import org.ticketsouq.apigateway.service.AuthTokenService;
 
@@ -34,9 +33,6 @@ class JwtAuthenticationFilterTest {
     private MockHttpServletRequest request;
     private MockHttpServletResponse response;
 
-    private static final String NEW_ACCESS = "new-access-token";
-    private static final String NEW_REFRESH = "new-refresh-token";
-
     @BeforeEach
     void setUp() {
         filter = new JwtAuthenticationFilter(authTokenService, authService);
@@ -50,7 +46,7 @@ class JwtAuthenticationFilterTest {
     @Test
     void shouldAuthenticateWithValidAccessToken() throws Exception {
         String token = "valid-jwt";
-        request.addHeader("Authentication", token);
+        request.addHeader("Authorization", token);
 
         Claims claims = mock(Claims.class);
         when(authTokenService.isAccessTokenValid(token)).thenReturn(true);
@@ -78,7 +74,7 @@ class JwtAuthenticationFilterTest {
 
     @Test
     void shouldSkipWhenAccessTokenEmpty() throws Exception {
-        request.addHeader("Authentication", "");
+        request.addHeader("Authorization", "");
 
         filter.doFilterInternal(request, response, filterChain);
 
@@ -89,7 +85,7 @@ class JwtAuthenticationFilterTest {
 
     @Test
     void shouldSkipWhenAccessTokenInvalid() throws Exception {
-        request.addHeader("Authentication", "invalid");
+        request.addHeader("Authorization", "invalid");
         when(authTokenService.isAccessTokenValid("invalid")).thenReturn(false);
 
         filter.doFilterInternal(request, response, filterChain);
@@ -100,7 +96,7 @@ class JwtAuthenticationFilterTest {
 
     @Test
     void shouldHandleAuthenticationExceptionGracefully() throws Exception {
-        request.addHeader("Authentication", "bad");
+        request.addHeader("Authorization", "bad");
         when(authTokenService.isAccessTokenValid("bad")).thenThrow(new RuntimeException("JWT error"));
 
         filter.doFilterInternal(request, response, filterChain);
@@ -111,7 +107,7 @@ class JwtAuthenticationFilterTest {
 
     @Test
     void shouldHandleNullRoles() throws Exception {
-        request.addHeader("Authentication", "token-no-roles");
+        request.addHeader("Authorization", "token-no-roles");
 
         Claims claims = mock(Claims.class);
         when(authTokenService.isAccessTokenValid("token-no-roles")).thenReturn(true);
@@ -128,7 +124,7 @@ class JwtAuthenticationFilterTest {
 
     @Test
     void shouldHandleRolesWithRolePrefix() throws Exception {
-        request.addHeader("Authentication", "token-prefixed");
+        request.addHeader("Authorization", "token-prefixed");
 
         Claims claims = mock(Claims.class);
         when(authTokenService.isAccessTokenValid("token-prefixed")).thenReturn(true);
@@ -142,12 +138,12 @@ class JwtAuthenticationFilterTest {
         assertThat(auth.getAuthorities()).extracting("authority").containsExactly("ROLE_ADMIN");
     }
 
-    // ── Refresh flow (both Authentication + refresh headers) ──────────────
+    // ── Refresh header is ignored (refresh flow currently disabled) ────────
 
     @Test
     void shouldAuthenticateWithValidAccessTokenIgnoringRefresh() throws Exception {
-        request.addHeader("Authentication", "valid-access");
-        request.addHeader("refresh", "any-refresh");
+        request.addHeader("Authorization", "valid-access");
+        request.addHeader("X-Refresh-Token", "any-refresh");
 
         Claims claims = mock(Claims.class);
         when(authTokenService.isAccessTokenValid("valid-access")).thenReturn(true);
@@ -160,85 +156,54 @@ class JwtAuthenticationFilterTest {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         assertThat(auth).isNotNull();
         assertThat(auth.getName()).isEqualTo("user-id");
-        assertThat(response.getHeader("Authentication")).isNull();
-        assertThat(response.getHeader("refresh")).isNull();
+        assertThat(response.getHeader("Authorization")).isNull();
+        assertThat(response.getHeader("X-Refresh-Token")).isNull();
         verifyNoInteractions(authService);
         verify(filterChain).doFilter(request, response);
     }
 
     @Test
-    void shouldRefreshWhenAccessTokenInvalidAndRefreshPresent() throws Exception {
-        request.addHeader("Authentication", "expired-access");
-        request.addHeader("refresh", "valid-refresh");
+    void shouldNotRefreshWhenAccessTokenInvalidEvenWithRefreshPresent() throws Exception {
+        request.addHeader("Authorization", "expired-access");
+        request.addHeader("X-Refresh-Token", "valid-refresh");
 
         when(authTokenService.isAccessTokenValid("expired-access")).thenReturn(false);
-        when(authService.refresh("valid-refresh")).thenReturn(new AuthResponse(NEW_ACCESS, NEW_REFRESH));
-
-        Claims claims = mock(Claims.class);
-        when(authTokenService.parseToken(NEW_ACCESS)).thenReturn(claims);
-        when(claims.getSubject()).thenReturn("user-id");
-        when(claims.get("roles")).thenReturn(List.of("CUSTOMER"));
 
         filter.doFilterInternal(request, response, filterChain);
 
-        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-        assertThat(auth).isNotNull();
-        assertThat(auth.getName()).isEqualTo("user-id");
-        assertThat(response.getHeader("Authentication")).isEqualTo(NEW_ACCESS);
-        assertThat(response.getHeader("refresh")).isEqualTo(NEW_REFRESH);
-        verify(authService).refresh("valid-refresh");
+        assertThat(SecurityContextHolder.getContext().getAuthentication()).isNull();
+        assertThat(response.getHeader("Authorization")).isNull();
+        assertThat(response.getHeader("X-Refresh-Token")).isNull();
+        verifyNoInteractions(authService);
         verify(filterChain).doFilter(request, response);
     }
 
     @Test
     void shouldStayAnonymousWhenBothTokensInvalid() throws Exception {
-        request.addHeader("Authentication", "expired-access");
-        request.addHeader("refresh", "expired-refresh");
+        request.addHeader("Authorization", "expired-access");
+        request.addHeader("X-Refresh-Token", "expired-refresh");
 
         when(authTokenService.isAccessTokenValid("expired-access")).thenReturn(false);
-        when(authService.refresh("expired-refresh")).thenThrow(new RuntimeException("Refresh expired"));
 
         filter.doFilterInternal(request, response, filterChain);
 
         assertThat(SecurityContextHolder.getContext().getAuthentication()).isNull();
-        assertThat(response.getHeader("Authentication")).isNull();
-        assertThat(response.getHeader("refresh")).isNull();
+        assertThat(response.getHeader("Authorization")).isNull();
+        assertThat(response.getHeader("X-Refresh-Token")).isNull();
+        verifyNoInteractions(authService);
         verify(filterChain).doFilter(request, response);
     }
 
     @Test
-    void shouldRefreshWhenOnlyRefreshToken() throws Exception {
-        request.addHeader("refresh", "valid-refresh");
-
-        when(authService.refresh("valid-refresh")).thenReturn(new AuthResponse(NEW_ACCESS, NEW_REFRESH));
-
-        Claims claims = mock(Claims.class);
-        when(authTokenService.parseToken(NEW_ACCESS)).thenReturn(claims);
-        when(claims.getSubject()).thenReturn("user-id");
-        when(claims.get("roles")).thenReturn(List.of("CUSTOMER"));
-
-        filter.doFilterInternal(request, response, filterChain);
-
-        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-        assertThat(auth).isNotNull();
-        assertThat(auth.getName()).isEqualTo("user-id");
-        assertThat(response.getHeader("Authentication")).isEqualTo(NEW_ACCESS);
-        assertThat(response.getHeader("refresh")).isEqualTo(NEW_REFRESH);
-        verify(authService).refresh("valid-refresh");
-        verify(filterChain).doFilter(request, response);
-    }
-
-    @Test
-    void shouldStayAnonymousWhenOnlyRefreshTokenFails() throws Exception {
-        request.addHeader("refresh", "invalid-refresh");
-
-        when(authService.refresh("invalid-refresh")).thenThrow(new RuntimeException("Invalid refresh"));
+    void shouldDoNothingWhenOnlyRefreshToken() throws Exception {
+        request.addHeader("X-Refresh-Token", "valid-refresh");
 
         filter.doFilterInternal(request, response, filterChain);
 
         assertThat(SecurityContextHolder.getContext().getAuthentication()).isNull();
-        assertThat(response.getHeader("Authentication")).isNull();
-        assertThat(response.getHeader("refresh")).isNull();
+        assertThat(response.getHeader("Authorization")).isNull();
+        assertThat(response.getHeader("X-Refresh-Token")).isNull();
+        verifyNoInteractions(authTokenService, authService);
         verify(filterChain).doFilter(request, response);
     }
 }

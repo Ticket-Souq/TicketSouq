@@ -7,6 +7,7 @@ import org.springframework.http.MediaType;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
+import org.ticketsouq.apigateway.metrics.GatewayMetrics;
 import org.ticketsouq.apigateway.service.AuthService;
 import org.ticketsouq.apigateway.service.AuthTokenService;
 
@@ -23,6 +24,7 @@ class AuthPrivateControllerTest {
 
     @MockitoBean private AuthService authService;
     @MockitoBean private AuthTokenService authTokenService;
+    @MockitoBean private GatewayMetrics gatewayMetrics;
 
     @Test
     @WithMockUser

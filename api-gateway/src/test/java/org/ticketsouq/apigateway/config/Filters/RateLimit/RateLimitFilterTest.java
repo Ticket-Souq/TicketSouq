@@ -12,6 +12,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.mock.web.MockHttpServletResponse;
+import org.ticketsouq.apigateway.metrics.GatewayMetrics;
 
 import java.time.Duration;
 import java.util.List;
@@ -23,6 +24,8 @@ class RateLimitFilterTest {
 
     @Mock
     private FilterChain filterChain;
+    @Mock
+    private GatewayMetrics gatewayMetrics;
     private RateLimitFilter filter;
 
     @BeforeEach
@@ -34,7 +37,7 @@ class RateLimitFilterTest {
         properties.setRefill(5);
         properties.setRefillPeriod(Duration.ofMinutes(1));
         properties.setAllowedOrigins(List.of("http://localhost:4200", "http://localhost:3000"));
-        filter = new RateLimitFilter(objectMapper, properties);
+        filter = new RateLimitFilter(objectMapper, properties, gatewayMetrics);
     }
 
     @AfterEach

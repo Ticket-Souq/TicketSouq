@@ -54,7 +54,7 @@ class AuthTokenServiceTest {
     @SuppressWarnings("unchecked")
     @BeforeEach
     void setUp() {
-        when(redis.opsForValue()).thenReturn(valueOps);
+        lenient().when(redis.opsForValue()).thenReturn(valueOps);
         authTokenService = new AuthTokenService(refreshTokenRepository, accessTokenRepository, redis);
         ReflectionTestUtils.setField(authTokenService, "secret", SECRET);
         ReflectionTestUtils.setField(authTokenService, "accessExpiry", ACCESS_EXPIRY);

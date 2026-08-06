@@ -1,3 +1,7 @@
+logging:
+  loki:
+    enabled: false
+
 spring:
   cloud:
     config:
