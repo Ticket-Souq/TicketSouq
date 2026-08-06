@@ -15,6 +15,7 @@ import org.ticketsouq.apigateway.service.AuthService;
 import org.ticketsouq.apigateway.service.AuthTokenService;
 
 import java.util.List;
+import java.util.UUID;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
@@ -127,6 +128,19 @@ class AuthControllerTest {
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(req)))
             .andExpect(status().isOk());
+    }
+
+    @Test
+    void unlockOrg_shouldReturn200() throws Exception {
+        UUID orgHeadId = UUID.randomUUID();
+        doNothing().when(authService).unlockOrg(orgHeadId);
+
+        mockMvc.perform(post("/api/v1/auth/unlock-org")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("\"" + orgHeadId + "\""))
+                .andExpect(status().isOk());
+
+        verify(authService).unlockOrg(orgHeadId);
     }
 
 //    @Test

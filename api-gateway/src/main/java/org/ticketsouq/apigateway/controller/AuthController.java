@@ -133,4 +133,10 @@ public class AuthController {
         return ResponseEntity.ok(authService.getOrgMembers(UUID.fromString(orgHeadUserId)));
     }
 
+    @PostMapping("/unlock-org")
+    public ResponseEntity<Void> unlockOrg(@RequestBody UUID orgHeadId) {
+        authService.unlockOrg(orgHeadId);
+        return ResponseEntity.ok().build();
+    }
+
 }

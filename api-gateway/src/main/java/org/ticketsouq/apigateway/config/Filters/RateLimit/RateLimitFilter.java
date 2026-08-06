@@ -9,13 +9,11 @@ import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.http.MediaType;
+import org.springframework.security.web.servlet.util.matcher.PathPatternRequestMatcher;
 import org.springframework.stereotype.Component;
-import org.springframework.util.AntPathMatcher;
-import org.springframework.util.PathMatcher;
 import org.springframework.web.filter.OncePerRequestFilter;
 import org.ticketsouq.apigateway.metrics.GatewayMetrics;
 import org.ticketsouq.sharedmodule.GeneralExceptions.ErrorResponse;
@@ -27,14 +25,30 @@ import java.util.List;
 
 @Component
 @Slf4j
-@RequiredArgsConstructor
 @EnableConfigurationProperties(RateLimitProperties.class)
 public class RateLimitFilter extends OncePerRequestFilter {
+
+    // Endpoints that are never rate limited (developer tooling)
+    private static final List<PathPatternRequestMatcher> NEVER_RATE_LIMITED = List.of(
+            PathPatternRequestMatcher.pathPattern("/swagger-ui.html"),
+            PathPatternRequestMatcher.pathPattern("/swagger-ui/**"),
+            PathPatternRequestMatcher.pathPattern("/v3/api-docs/**"),
+            PathPatternRequestMatcher.pathPattern("/aggregate/*/v3/api-docs")
+    );
 
     private final ObjectMapper objectMapper;
     private final RateLimitProperties rateLimitProperties;
     private final GatewayMetrics gatewayMetrics;
-    private final PathMatcher pathMatcher = new AntPathMatcher();
+    private final List<PathPatternRequestMatcher> pathMatchers;
+
+    public RateLimitFilter(ObjectMapper objectMapper, RateLimitProperties rateLimitProperties, GatewayMetrics gatewayMetrics) {
+        this.objectMapper = objectMapper;
+        this.rateLimitProperties = rateLimitProperties;
+        this.gatewayMetrics = gatewayMetrics;
+        this.pathMatchers = rateLimitProperties.getPaths().stream()
+                .map(PathPatternRequestMatcher::pathPattern)
+                .toList();
+    }
 
     // Per-IP token buckets, evicted after 2min of inactivity, max 100k entries
     private final Cache<String, Bucket> buckets = Caffeine.newBuilder()
@@ -98,39 +112,40 @@ public class RateLimitFilter extends OncePerRequestFilter {
     }
 
     @Override
+    protected boolean shouldNotFilter(HttpServletRequest request) {
+        // Skip rate limiting for requests from frontend origins
+        if (isFromFrontend(request)) {
+            return true;
+        }
+        // Skip endpoints that are explicitly excluded (swagger etc.)
+        if (NEVER_RATE_LIMITED.stream().anyMatch(m -> m.matches(request))) {
+            return true;
+        }
+        // Only rate-limit paths matching the configured patterns
+        return pathMatchers.stream().noneMatch(m -> m.matches(request));
+    }
+
+    @Override
     protected void doFilterInternal(HttpServletRequest req, HttpServletResponse res, FilterChain chain)
             throws ServletException, IOException {
 
-        // Skip rate limiting for requests from frontend origins
-        if (isFromFrontend(req)) {
-            chain.doFilter(req, res);
+        String ip = resolveClientIp(req);
+        Bucket bucket = bucket(ip);
+
+        // If no tokens left, reject with 429 + rate-limit headers
+        if (!bucket.tryConsume(1)) {
+            log.warn("Rate limit exceeded for IP: {}", ip);
+            gatewayMetrics.recordRateLimitExceeded();
+            writeRateLimitHeaders(res, bucket);
+            ErrorResponse body = ErrorResponse.of(429, "Too Many Requests", "Rate limit exceeded. Retry after " + rateLimitProperties.getRefillPeriod().toSeconds() + " seconds");
+            res.setStatus(429);
+            res.setContentType(MediaType.APPLICATION_JSON_VALUE);
+            res.getWriter().write(objectMapper.writeValueAsString(body));
             return;
         }
 
-        // Only rate-limit paths matching the configured patterns
-        String path = req.getRequestURI();
-        boolean matches = rateLimitProperties.getPaths().stream()
-                .anyMatch(p -> pathMatcher.match(p, path));
-
-        if (matches) {
-            String ip = resolveClientIp(req);
-            Bucket bucket = bucket(ip);
-
-            // If no tokens left, reject with 429 + rate-limit headers
-            if (!bucket.tryConsume(1)) {
-                log.warn("Rate limit exceeded for IP: {}", ip);
-                gatewayMetrics.recordRateLimitExceeded();
-                writeRateLimitHeaders(res, bucket);
-                ErrorResponse body = ErrorResponse.of(429, "Too Many Requests", "Rate limit exceeded. Retry after " + rateLimitProperties.getRefillPeriod().toSeconds() + " seconds");
-                res.setStatus(429);
-                res.setContentType(MediaType.APPLICATION_JSON_VALUE);
-                res.getWriter().write(objectMapper.writeValueAsString(body));
-                return;
-            }
-
-            // Request allowed — tell them their remaining budget
-            writeRateLimitHeaders(res, bucket);
-        }
+        // Request allowed — tell them their remaining budget
+        writeRateLimitHeaders(res, bucket);
         chain.doFilter(req, res);
     }
 

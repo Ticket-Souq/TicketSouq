@@ -55,7 +55,7 @@ class RateLimitFilterTest {
             request.setRequestURI("/api/v1/auth/login");
             request.setRemoteAddr("10.0.0.1");
 
-            filter.doFilterInternal(request, response, filterChain);
+            filter.doFilter(request, response, filterChain);
 
             assertThat(response.getStatus()).isNotEqualTo(429);
         }
@@ -63,13 +63,13 @@ class RateLimitFilterTest {
         // Verify that requests exceeding the 5-token bucket are rejected with 429
         @Test
         void shouldRateLimitWhenExceeded() throws Exception {
-            MockHttpServletRequest req = new MockHttpServletRequest();
             MockHttpServletResponse resp = new MockHttpServletResponse();
-            req.setRequestURI("/api/v1/auth/login");
-            req.setRemoteAddr("10.0.0.1");
 
             for (int i = 0; i < 6; i++) {
-                filter.doFilterInternal(req, resp, filterChain);
+                MockHttpServletRequest req = new MockHttpServletRequest();
+                req.setRequestURI("/api/v1/auth/login");
+                req.setRemoteAddr("10.0.0.1");
+                filter.doFilter(req, resp, filterChain);
             }
 
             assertThat(resp.getStatus()).isEqualTo(429);
@@ -85,11 +85,57 @@ class RateLimitFilterTest {
             request.setRequestURI("/api/v1/auth/login");
             request.setRemoteAddr("10.0.0.1");
 
-            filter.doFilterInternal(request, response, filterChain);
+            filter.doFilter(request, response, filterChain);
 
             assertThat(response.getHeader("X-RateLimit-Limit")).isEqualTo("5");
             assertThat(response.getHeader("X-RateLimit-Remaining")).isNotNull();
             assertThat(response.getHeader("X-RateLimit-Reset")).isNotNull();
+        }
+    }
+
+    @Nested
+    class Exclusions {
+
+        // Verify that swagger UI resources are not rate limited
+        @Test
+        void shouldNotRateLimitSwaggerUi() throws Exception {
+            MockHttpServletRequest request = new MockHttpServletRequest();
+            MockHttpServletResponse response = new MockHttpServletResponse();
+            request.setRequestURI("/swagger-ui/index.html");
+            request.setRemoteAddr("10.0.0.1");
+
+            filter.doFilter(request, response, filterChain);
+
+            assertThat(response.getHeader("X-RateLimit-Limit")).isNull();
+            assertThat(response.getStatus()).isNotEqualTo(429);
+        }
+
+        // Verify that OpenAPI docs endpoints are not rate limited
+        @Test
+        void shouldNotRateLimitApiDocs() throws Exception {
+            MockHttpServletRequest request = new MockHttpServletRequest();
+            MockHttpServletResponse response = new MockHttpServletResponse();
+            request.setRequestURI("/v3/api-docs");
+            request.setRemoteAddr("10.0.0.1");
+
+            filter.doFilter(request, response, filterChain);
+
+            assertThat(response.getHeader("X-RateLimit-Limit")).isNull();
+            assertThat(response.getStatus()).isNotEqualTo(429);
+        }
+
+        // Verify that paths outside the configured rate-limit patterns are skipped
+        @Test
+        void shouldNotRateLimitNonMatchingPath() throws Exception {
+            MockHttpServletRequest request = new MockHttpServletRequest();
+            MockHttpServletResponse response = new MockHttpServletResponse();
+            request.setRequestURI("/api/v1/event");
+            request.setRemoteAddr("10.0.0.1");
+
+            filter.doFilter(request, response, filterChain);
+
+            assertThat(response.getHeader("X-RateLimit-Limit")).isNull();
+            assertThat(response.getStatus()).isNotEqualTo(429);
         }
     }
 
@@ -105,7 +151,7 @@ class RateLimitFilterTest {
             request.setRemoteAddr("10.0.0.1");
             request.addHeader("Origin", "http://localhost:4200");
 
-            filter.doFilterInternal(request, response, filterChain);
+            filter.doFilter(request, response, filterChain);
 
             assertThat(response.getHeader("X-RateLimit-Limit")).isNull();
             assertThat(response.getStatus()).isNotEqualTo(429);
@@ -120,7 +166,7 @@ class RateLimitFilterTest {
             request.setRemoteAddr("10.0.0.1");
             request.addHeader("Referer", "http://localhost:3000/login");
 
-            filter.doFilterInternal(request, response, filterChain);
+            filter.doFilter(request, response, filterChain);
 
             assertThat(response.getHeader("X-RateLimit-Limit")).isNull();
         }
@@ -134,7 +180,7 @@ class RateLimitFilterTest {
             request.setRemoteAddr("10.0.0.1");
             request.addHeader("Origin", "http://NotMyWebsite.com");
 
-            filter.doFilterInternal(request, response, filterChain);
+            filter.doFilter(request, response, filterChain);
 
             assertThat(response.getHeader("X-RateLimit-Limit")).isEqualTo("5");
         }
@@ -147,7 +193,7 @@ class RateLimitFilterTest {
             request.setRequestURI("/api/v1/auth/login");
             request.setRemoteAddr("10.0.0.1");
 
-            filter.doFilterInternal(request, response, filterChain);
+            filter.doFilter(request, response, filterChain);
 
             assertThat(response.getHeader("X-RateLimit-Limit")).isEqualTo("5");
         }
@@ -156,23 +202,22 @@ class RateLimitFilterTest {
         @Test
         void shouldLetFrontendRequestConsumeNoTokens() throws Exception {
 
-            MockHttpServletRequest req = new MockHttpServletRequest();
             MockHttpServletResponse resp = new MockHttpServletResponse();
-            req.setRequestURI("/api/v1/auth/login");
-            req.setRemoteAddr("10.0.0.99");
 
             for (int i = 0; i < 6; i++) {
-                filter.doFilterInternal(req, resp, filterChain);
+                MockHttpServletRequest req = new MockHttpServletRequest();
+                req.setRequestURI("/api/v1/auth/login");
+                req.setRemoteAddr("10.0.0.99");
+                filter.doFilter(req, resp, filterChain);
             }
             assertThat(resp.getStatus()).isEqualTo(429);
-
 
             MockHttpServletRequest frontendReq = new MockHttpServletRequest();
             MockHttpServletResponse frontendResp = new MockHttpServletResponse();
             frontendReq.setRequestURI("/api/v1/auth/login");
             frontendReq.setRemoteAddr("10.0.0.99");
             frontendReq.addHeader("Origin", "http://localhost:4200");
-            filter.doFilterInternal(frontendReq, frontendResp, filterChain);
+            filter.doFilter(frontendReq, frontendResp, filterChain);
 
             assertThat(frontendResp.getStatus()).isNotEqualTo(429);
             assertThat(frontendResp.getHeader("X-RateLimit-Limit")).isNull();
@@ -191,7 +236,7 @@ class RateLimitFilterTest {
             request.addHeader("X-Forwarded-For", "10.0.0.1, 10.0.0.2");
             request.setRemoteAddr("192.168.1.1");
 
-            filter.doFilterInternal(request, response, filterChain);
+            filter.doFilter(request, response, filterChain);
 
             assertThat(response.getHeader("X-RateLimit-Limit")).isEqualTo("5");
         }
@@ -205,7 +250,7 @@ class RateLimitFilterTest {
             request.addHeader("X-Real-IP", "10.0.0.5");
             request.setRemoteAddr("192.168.1.1");
 
-            filter.doFilterInternal(request, response, filterChain);
+            filter.doFilter(request, response, filterChain);
 
             assertThat(response.getHeader("X-RateLimit-Limit")).isEqualTo("5");
         }
@@ -218,7 +263,7 @@ class RateLimitFilterTest {
             request.setRequestURI("/api/v1/auth/login");
             request.setRemoteAddr("10.0.0.99");
 
-            filter.doFilterInternal(request, response, filterChain);
+            filter.doFilter(request, response, filterChain);
 
             assertThat(response.getHeader("X-RateLimit-Limit")).isEqualTo("5");
         }
@@ -232,7 +277,7 @@ class RateLimitFilterTest {
             request.addHeader("X-Forwarded-For", " ");
             request.setRemoteAddr("10.0.0.99");
 
-            filter.doFilterInternal(request, response, filterChain);
+            filter.doFilter(request, response, filterChain);
 
             assertThat(response.getHeader("X-RateLimit-Limit")).isEqualTo("5");
         }
@@ -243,22 +288,21 @@ class RateLimitFilterTest {
             String ip1 = "10.0.0.201";
             String ip2 = "10.0.0.202";
 
-            MockHttpServletRequest req = new MockHttpServletRequest();
             MockHttpServletResponse resp = new MockHttpServletResponse();
-            req.setRequestURI("/api/v1/auth/login");
-            req.setRemoteAddr(ip1);
 
             for (int i = 0; i < 6; i++) {
-                filter.doFilterInternal(req, resp, filterChain);
+                MockHttpServletRequest req = new MockHttpServletRequest();
+                req.setRequestURI("/api/v1/auth/login");
+                req.setRemoteAddr(ip1);
+                filter.doFilter(req, resp, filterChain);
             }
             assertThat(resp.getStatus()).isEqualTo(429);
-
 
             MockHttpServletRequest allowedReq = new MockHttpServletRequest();
             MockHttpServletResponse allowedResp = new MockHttpServletResponse();
             allowedReq.setRequestURI("/api/v1/auth/login");
             allowedReq.setRemoteAddr(ip2);
-            filter.doFilterInternal(allowedReq, allowedResp, filterChain);
+            filter.doFilter(allowedReq, allowedResp, filterChain);
             assertThat(allowedResp.getStatus()).isNotEqualTo(429);
         }
     }

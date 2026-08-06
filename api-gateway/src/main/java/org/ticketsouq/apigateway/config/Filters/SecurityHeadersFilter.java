@@ -6,27 +6,35 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.core.Ordered;
 import org.springframework.core.annotation.Order;
+import org.springframework.security.web.servlet.util.matcher.PathPatternRequestMatcher;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
+import java.util.List;
 
 @Component
 @Order(Ordered.HIGHEST_PRECEDENCE)
 public class SecurityHeadersFilter extends OncePerRequestFilter {
+
+    private static final List<PathPatternRequestMatcher> EXCLUDED_PATHS = List.of(
+            PathPatternRequestMatcher.pathPattern("/uploads/**"),
+            PathPatternRequestMatcher.pathPattern("/swagger-ui.html"),
+            PathPatternRequestMatcher.pathPattern("/swagger-ui/**"),
+            PathPatternRequestMatcher.pathPattern("/v3/api-docs/**"),
+            PathPatternRequestMatcher.pathPattern("/aggregate/*/v3/api-docs")
+    );
+
+    @Override
+    protected boolean shouldNotFilter(HttpServletRequest request) {
+        return EXCLUDED_PATHS.stream().anyMatch(m -> m.matches(request));
+    }
 
     @Override
     protected void doFilterInternal(
             HttpServletRequest req,
             HttpServletResponse res,
             FilterChain chain) throws ServletException, IOException {
-
-        String path = req.getRequestURI();
-
-        if (path.startsWith("/uploads/")) {
-            chain.doFilter(req, res);
-            return;
-        }
 
         // Prevent MIME-type sniffing (browser won't guess Content-Type)
         res.setHeader("X-Content-Type-Options", "nosniff");
