@@ -1,4 +1,4 @@
-# TicketSouq — Documentation Index
+﻿# TicketSouq — Documentation Index
 
 > Central entry point for all architectural documentation. Use this as your onboarding landing page.
 
@@ -9,10 +9,13 @@
 | Document | Description |
 |----------|-------------|
 | [Documentation Guidelines](DOCUMENTATION_GUIDELINES.md) | Standards and conventions for all docs in this repository |
+| [Future Plans](Future%20Plans.md) | Roadmap and planned features |
 | [System Architecture](architecture/system-architecture.md) | Overall architecture: services, communication patterns (sync/async), Outbox pattern, sagas |
 | [Config Server](infrastructure/config-server.md) | Centralised configuration — Spring Cloud Config, `config-repo/` structure, shared defaults |
 | [Discovery Server](infrastructure/discovery-server.md) | Netflix Eureka service registry — registration, lease renewal, per-environment config |
+| [API Gateway](infrastructure/api-gateway.md) | Edge routing, JWT auth, refresh flow, OTP tokens, rate limiting, outbox publishing |
 | [Shared Module](shared-module/README.md) | Library JAR — DTOs, Events, Exceptions, Constants, Utilities shared across all services |
+| [Outbox Library](ticketsouq-outbox/README.md) | Transactional outbox — `ticket_souq_outbox` table, relay lifecycle, config, delivery guarantees |
 
 ---
 
@@ -59,6 +62,7 @@
 docs/
 ├── README.md                          ◄── YOU ARE HERE
 ├── DOCUMENTATION_GUIDELINES.md
+├── Future Plans.md
 │
 ├── architecture/
 │   └── system-architecture.md
@@ -67,10 +71,14 @@ docs/
 │   └── global-erd.md
 │
 ├── infrastructure/
+│   ├── api-gateway.md
 │   ├── config-server.md
 │   └── discovery-server.md
 │
 ├── shared-module/
+│   └── README.md
+│
+├── ticketsouq-outbox/
 │   └── README.md
 │
 ├── services/
@@ -95,4 +103,4 @@ docs/
 
 ---
 
-*22 documentation files across 6 categories — all links verified against actual on-disk paths.*
+*25 documentation files across 7 categories — all links verified against actual on-disk paths.*

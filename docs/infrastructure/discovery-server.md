@@ -14,30 +14,6 @@ Netflix Eureka service registry for the TicketSouq platform. All microservices r
 
 ---
 
-## Configuration
-
-```yaml
-spring:
-  application:
-    name: discovery-server
-    version: 1.0.0
-  config:
-    import: optional:file:./profile.properties
-```
-
-**Evidence source:** `discovery-server/.../resources/application.yaml:1-8`.
-
-The discovery server reads **profile-specific configuration from the config-server**. Its per-environment YAML files exist at:
-
-```
-config-server/.../config-repo/discovery-server/
-├── discovery-server.yaml          # default profile
-├── discovery-server-local.yaml    # local profile
-└── discovery-server-Docker.yaml   # Docker profile
-```
-
----
-
 ## How Services Register
 
 Every other microservice inherits the following Eureka defaults from `config-repo/application.yaml`:
@@ -56,8 +32,6 @@ eureka:
     lease-expiration-duration-in-seconds: 15
 ```
 
-**Evidence source:** `config-repo/application.yaml:107-119`.
-
 Key points:
 - **Lease renewal** every 5 seconds; eviction after 15 seconds of missed heartbeats.
 - **`prefer-ip-address: true`** — useful in Docker environments where hostnames may not resolve.
@@ -68,5 +42,7 @@ Key points:
 ## Key Notes
 
 - The discovery-server is **one of the first services to start**, alongside config-server.
-- All services (except config-server) register with Eureka on startup.
+- All services (except config-server and discovery-server) register with Eureka on startup.
+- The discovery-server itself opts out of registration and registry fetching (`config-repo/discovery-server/discovery-server.yaml`: `register-with-eureka: false`, `fetch-registry: false`).
+- `discovery-server-local.yaml` and `discovery-server-docker.yaml` exist in `config-repo/discovery-server/` but are empty (no overrides needed). Note the lowercase `-docker` suffix — unlike other services which use `-Docker.yaml`.
 - Feign clients use the registered service names (e.g., `user-service`, `event-service`) for inter-service HTTP calls.

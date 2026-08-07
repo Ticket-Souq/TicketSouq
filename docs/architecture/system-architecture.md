@@ -29,29 +29,30 @@ flowchart LR
     PS["Payment Service"]
     NS["Notification Service"]
     AS["Audit Service"]
+    AnS["Analytics Service"]
   end
 
   %% Client → Gateway
-  %% Source: docker-compose.yml:417-418 (api-gateway port mapping)
+  %% Source: docker-compose.yml:508-509 (api-gateway port mapping)
   Client -->|"REST / HTTPS"| GW
 
   %% Gateway → Config & Discovery
-  %% Source: docker-compose.yml:429-431 (gateway depends_on config-server + discovery-server)
+  %% Source: docker-compose.yml:521-529 (gateway depends_on config-server + discovery-server)
   GW -.->|"Spring Cloud Config"| Config
-  %% Source: api-gateway/pom.xml:26 (spring-cloud-starter-gateway-server-webmvc)
+  %% Source: pom.xml:56 (spring-cloud-starter-netflix-eureka-client, inherited by all services)
   GW -.->|"Eureka Client"| Discovery
 
   %% Gateway → User Service (Feign)
-  %% Source: api-gateway/src/main/java/.../client/UserServiceClient.java:10
+  %% Source: api-gateway/src/main/java/.../client/UserServiceClient.java:12
   GW -->|"Feign /api/v1/private/user"| US
 
   %% Event Service → User Service (Feign)
-  %% Source: event-service/src/main/java/.../Client/UserServiceClient.java:9
+  %% Source: event-service/src/main/java/.../Client/UserServiceClient.java:11
   ES -->|"Feign /api/v1/private/user/organization"| US
 
   %% Notification Service → Event Service (Feign)
   %% Source: notification-service/src/main/java/.../client/EventClient.java:11
-  NS -->|"Feign /api/v1/events/{eventId}"| ES
+  NS -->|"Feign /api/v1/event/{id}"| ES
 
   %% Ticket Service → Event Service (Feign)
   %% Source: ticket-service/src/main/java/.../client/EventServiceClient.java:10
@@ -59,17 +60,19 @@ flowchart LR
 
   %% User Service → Gateway (Feign)
   %% Source: user-service/src/main/java/.../client/AuthServiceClient.java:10
-  US -->|"Feign /api/v1/private/auth"| GW
+  US -->|"Feign /api/v1/auth/unlock-org"| GW
 
   %% Gateway → All business services (routed traffic)
-  %% Source: api-gateway/pom.xml:26 (spring-cloud-starter-gateway-server-webmvc)
-  GW -->|"Route /api/v1/users/**"| US
-  GW -->|"Route /api/v1/events/**"| ES
-  GW -->|"Route /api/v1/venue/**"| VS
-  GW -->|"Route /api/v1/tickets/**"| TS
-  GW -->|"Route /api/v1/reservations/**"| RS
-  GW -->|"Route /api/v1/notification/**"| NS
+  %% Source: api-gateway/.../config/RoutesConfig.java:58-64 (route-building loop, prefix = service.replace("-service", ""))
+  GW -->|"Route /api/v1/user/**"| US
+  GW -->|"Route /api/v1/analytics/**"| AnS
   GW -->|"Route /api/v1/audit/**"| AS
+  GW -->|"Route /api/v1/event/**"| ES
+  GW -->|"Route /api/v1/notification/**"| NS
+  GW -->|"Route /api/v1/payment/**"| PS
+  GW -->|"Route /api/v1/reservation/**"| RS
+  GW -->|"Route /api/v1/ticket/**"| TS
+  GW -->|"Route /api/v1/venue/**"| VS
 ```
 
 ---
@@ -83,30 +86,53 @@ flowchart LR
     US_P["User Service"]
     ES_P["Event Service"]
     RS_P["Reservation Service"]
+    PS_P["Payment Service"]
   end
 
-  subgraph Topics
-    T1["user.email-verification"]
-    T2["user.password-reset"]
-    T3["user.password-change"]
-    T4["accounts.generated"]
-    T5["event.created"]
-    T6["event.activated"]
-    T7["event.completed"]
-    T8["event.cancelled"]
-    T9["payment.success"]
-    T10["payment.refunded"]
-    T11["reservation.begin"]
-    T12["saga.payment.command"]
-    T13["saga.payment.reply"]
-    T14["saga.payment.compensate"]
-    T15["saga.ticket.command"]
-    T16["saga.ticket.reply"]
-    T17["saga.ticket.compensate"]
-    T18["saga.lock.confirm.command"]
-    T19["saga.lock.confirm.compensate"]
-    T20["saga.lock.confirm.reply"]
-    T21["audit.event"]
+  subgraph Topics["Kafka Topics (grouped by domain)"]
+    direction TB
+    subgraph AUTH["Auth & Account"]
+      direction LR
+      T1["user.email-verification"]
+      T2["user.password-reset"]
+      T3["user.password-change"]
+      T4["accounts.generated"]
+    end
+    subgraph EVT["Event Lifecycle"]
+      direction LR
+      T5["event.created"]
+      T6["event.activated"]
+      T7["event.completed"]
+      T8["event.cancelled"]
+      T22["event.payout-released"]
+      T25["organizer.reservation.created"]
+      T26["organizer.reservation.cancelled"]
+    end
+    subgraph SAGA["Reservation / Payment"]
+      direction LR
+      T11["reservation.begin"]
+      T24["reservation.completed"]
+      T9["payment.success"]
+      T10["payment.refunded"]
+      T23["payment.failed"]
+    end
+    subgraph CMD["Saga Commands & Replies"]
+      direction LR
+      T12["saga.payment.command"]
+      T14["saga.payment.compensate"]
+      T15["saga.ticket.command"]
+      T17["saga.ticket.compensate"]
+      T18["saga.lock.confirm.command"]
+      T19["saga.lock.confirm.compensate"]
+      T13["saga.payment.reply"]
+      T16["saga.ticket.reply"]
+      T20["saga.lock.confirm.reply"]
+    end
+    subgraph SYS["System"]
+      direction LR
+      T21["audit.event"]
+      T27["org.status.changed"]
+    end
   end
 
   subgraph Consumers
@@ -116,59 +142,67 @@ flowchart LR
     PS_C["Payment Service"]
     ES_C["Event Service"]
     RS_C["Reservation Service"]
+    AnS_C["Analytics Service"]
   end
 
-  %% Source: shared-module/src/main/java/.../Constants/TOPIC_NAMES.java:9
+  %% Source: shared-module/src/main/java/.../Constants/TOPIC_NAMES.java:9-12
   GW_P -->|publishes| T1
-  %% Source: shared-module/src/main/java/.../Constants/TOPIC_NAMES.java:10
   GW_P -->|publishes| T2
-  %% Source: shared-module/src/main/java/.../Constants/TOPIC_NAMES.java:11
   GW_P -->|publishes| T3
-  %% Source: shared-module/src/main/java/.../Constants/TOPIC_NAMES.java:12
   GW_P -->|publishes| T4
-  %% Source: api-gateway/src/main/java/.../event/AuthEventPublisher.java:27-28
+  %% Source: api-gateway/src/main/java/.../service/AuthService.java:453 (outbox)
   GW_P -->|publishes| T21
 
-  %% Source: shared-module/src/main/java/.../Constants/TOPIC_NAMES.java:15
+  %% Source: shared-module/src/main/java/.../Constants/TOPIC_NAMES.java:15-19
   ES_P -->|publishes| T5
-  %% Source: shared-module/src/main/java/.../Constants/TOPIC_NAMES.java:16
   ES_P -->|publishes| T6
-  %% Source: shared-module/src/main/java/.../Constants/TOPIC_NAMES.java:17
   ES_P -->|publishes| T7
-  %% Source: shared-module/src/main/java/.../Constants/TOPIC_NAMES.java:19
   ES_P -->|publishes| T8
-  %% Source: event-service/src/main/java/.../event/EventEventPublisher.java:31-32
+  %% Source: event-service/src/main/java/.../service/EventService.java:195,206 (outbox)
+  ES_P -->|publishes| T22
+  %% Source: event-service/src/main/java/.../service/LockService.java:263,291 (outbox)
   ES_P -->|publishes| T11
+  %% Source: event-service/src/main/java/.../service/EventService.java:101-102 (outbox)
+  ES_P -->|publishes| T25
+  %% Source: event-service/src/main/java/.../service/EventService.java:227 (outbox)
+  ES_P -->|publishes| T26
 
-  %% Source: shared-module/src/main/java/.../Constants/TOPIC_NAMES.java:22
-  PS_C -->|publishes| T9
-  %% Source: shared-module/src/main/java/.../Constants/TOPIC_NAMES.java:24
-  PS_C -->|publishes| T10
+  %% Source: shared-module/src/main/java/.../Constants/TOPIC_NAMES.java:22-24
+  PS_P -->|publishes| T9
+  %% Source: payment-service/src/main/java/.../service/PaymentService.java:119 (outbox)
+  PS_P -->|publishes| T23
+  PS_P -->|publishes| T10
 
-  %% Source: shared-module/src/main/java/.../Constants/TOPIC_NAMES.java:28-38
+  %% Source: shared-module/src/main/java/.../Constants/TOPIC_NAMES.java:27-39
   RS_P -->|publishes| T12
   RS_P -->|publishes| T14
   RS_P -->|publishes| T15
   RS_P -->|publishes| T17
   RS_P -->|publishes| T18
   RS_P -->|publishes| T19
+  %% Source: reservation-service/src/main/java/.../core/SagaOrchestrator.java:292-303 (outbox)
+  RS_P -->|publishes| T24
 
-  %% Source: user-service/src/main/java/.../event/UserEventPublisher.java:24-25
+  %% Source: user-service/src/main/java/.../service/OrganizationService.java:42-45 (outbox)
   US_P -->|publishes| T21
+  %% Source: user-service/src/main/java/.../service/OrganizationService.java:47-53 (outbox)
+  US_P -->|publishes| T27
 
   %% Consumers
-  %% Source: notification-service/src/main/java/.../event/NotificationEventConsumer.java:24
+  %% Source: notification-service/src/main/java/.../event/NotificationEventConsumer.java:47
   T1 -->|consumes| NS_C
-  %% Source: notification-service/src/main/java/.../event/NotificationEventConsumer.java:36
+  %% Source: notification-service/src/main/java/.../event/NotificationEventConsumer.java:37
   T2 -->|consumes| NS_C
-  %% Source: notification-service/src/main/java/.../event/NotificationEventConsumer.java:41
+  %% Source: notification-service/src/main/java/.../event/NotificationEventConsumer.java:42
   T3 -->|consumes| NS_C
-  %% Source: notification-service/src/main/java/.../event/NotificationEventConsumer.java:30
-  T9 -->|consumes| NS_C
-  %% Source: notification-service/src/main/java/.../event/NotificationEventConsumer.java:24
+  %% Source: notification-service/src/main/java/.../event/NotificationEventConsumer.java:25
   T10 -->|consumes| NS_C
-  %% Source: notification-service/src/main/java/.../event/NotificationEventConsumer.java:51
+  %% Source: notification-service/src/main/java/.../event/NotificationEventConsumer.java:31
+  T24 -->|consumes| NS_C
+  %% Source: notification-service/src/main/java/.../event/NotificationEventConsumer.java:52
   T4 -->|consumes| NS_C
+  %% Source: notification-service/src/main/java/.../event/NotificationEventConsumer.java:57
+  T27 -->|consumes| NS_C
 
   %% Source: audit-service/src/main/java/.../consumer/AuditEventConsumer.java:20
   T21 -->|consumes| AS_C
@@ -186,24 +220,33 @@ flowchart LR
   %% Source: ticket-service/src/main/java/.../listener/SagaTicketCompensateConsumer.java:21
   T17 -->|consumes| TS_C
 
-  %% Source: payment-service/src/main/java/.../listener/SagaPaymentCommandConsumer.java:33
+  %% Source: payment-service/src/main/java/.../listener/SagaPaymentCommandConsumer.java:34
   T12 -->|consumes| PS_C
   %% Source: payment-service/src/main/java/.../listener/SagaPaymentCompensateConsumer.java:25
   T14 -->|consumes| PS_C
 
-  %% Source: event-service/src/main/java/.../event/EventEventConsumer.java:27
+  %% Source: event-service/src/main/java/.../event/EventEventConsumer.java:28
   T18 -->|consumes| ES_C
-  %% Source: event-service/src/main/java/.../event/EventEventConsumer.java:39
+  %% Source: event-service/src/main/java/.../event/EventEventConsumer.java:40
   T19 -->|consumes| ES_C
   %% Source: reservation-service/src/main/java/.../event/SagaReplyConsumer.java:31
   T11 -->|consumes| RS_C
-
   %% Source: reservation-service/src/main/java/.../event/SagaReplyConsumer.java:41
   T13 -->|consumes| RS_C
   %% Source: reservation-service/src/main/java/.../event/SagaReplyConsumer.java:52
   T16 -->|consumes| RS_C
   %% Source: reservation-service/src/main/java/.../event/SagaReplyConsumer.java:63
   T20 -->|consumes| RS_C
+
+  %% Source: analytics-service/src/main/java/.../consumer/AnalyticsEventConsumer.java:22,28,34,40,46
+  T5 -->|consumes| AnS_C
+  T6 -->|consumes| AnS_C
+  T7 -->|consumes| AnS_C
+  T8 -->|consumes| AnS_C
+  T24 -->|consumes| AnS_C
+```
+
+Note: `T9 payment.success` is produced by PS_C but has **no consumer** in the current codebase.
 ```
 
 ---
@@ -260,7 +303,7 @@ flowchart LR
   end
 
   %% Service → Database (PostgreSQL)
-  %% Source: docker-compose.yml:48-50 (auth_db), docker-compose.yml:5-24 (auth-db)
+  %% Source: docker-compose.yml:5-24 (auth-db)
   GW --> DB_Auth
   %% Source: docker-compose.yml:25-44 (user-db)
   US --> DB_User
@@ -272,51 +315,34 @@ flowchart LR
   TS --> DB_Ticket
   %% Source: docker-compose.yml:65-84 (payment-db)
   PS --> DB_Payment
-  %% Source: docker-compose.yml:165-183 (reservation-db)
+  %% Source: docker-compose.yml:165-184 (reservation-db)
   RS --> DB_Reservation
   %% Source: docker-compose.yml:45-64 (notification-db)
   NS --> DB_Notification
   %% Source: docker-compose.yml:145-164 (audit-db)
   AS --> DB_Audit
-  %% Source: docker-compose.yml:184-203 (analytics-db)
+  %% Source: docker-compose.yml:185-204 (analytics-db)
   AnS --> DB_Analytics
 
   %% Service → Redis
-  %% Source: docker-compose.yml:309-324 (redis)
+  %% Source: docker-compose.yml:372-387 (redis)
   GW --> Redis
 
   %% Service → Elasticsearch
-  %% Source: config-server/src/main/resources/config-repo/event-service/event-service.yaml:19-22
+  %% Source: config-server/src/main/resources/config-repo/event-service/event-service.yaml:15-16
   ES --> ES_Engine
   ES_Engine --> Kibana
 
-  %% Observability connections
-  %% Source: docker-compose.yml:252-305
-  GW -.-> Prom
-  US -.-> Prom
-  ES -.-> Prom
-  VS -.-> Prom
-  TS -.-> Prom
-  PS -.-> Prom
-  RS -.-> Prom
-  NS -.-> Prom
-  AS -.-> Prom
-  AnS -.-> Prom
-
+  %% Observability — all 10 services export metrics to Prometheus
+  %% Source: docker-compose.yml:265-282 (prometheus), :343-368 (grafana), loki/tempo
+  Microservices -.->|"metrics (all services)"| Prom
   Prom --> Grafana
   Loki --> Grafana
   Tempo --> Grafana
 
-  %% Kafka
-  %% Source: docker-compose.yml:207-248
-  GW -.-> Kafka
-  US -.-> Kafka
-  ES -.-> Kafka
-  TS -.-> Kafka
-  PS -.-> Kafka
-  RS -.-> Kafka
-  NS -.-> Kafka
-  AS -.-> Kafka
+  %% Kafka — all 9 backing services (incl. gateway) publish/consume
+  %% Source: docker-compose.yml:208-236 (kafka), :237-249 (kafka-ui)
+  Microservices -.->|"events (all services)"| Kafka
   Kafka --> KafkaUI
 ```
 
@@ -337,13 +363,13 @@ flowchart LR
 | Reservation Service | dynamic | Saga orchestrator, outbox pattern | `reservation-service/pom.xml` |
 | Notification Service | dynamic | Email (SMTP), in-app notifications | `notification-service/pom.xml` |
 | Audit Service | dynamic | Immutable audit log | `audit-service/pom.xml` |
-| Analytics Service | dynamic | Reporting (currently commented out) | `analytics-service/pom.xml` |
-| Kafka | `:29092` | Event broker (Confluent 7.6.0) | `docker-compose.yml:207-248` |
-| Redis | `:6379` | Session cache, token store | `docker-compose.yml:309-324` |
-| Elasticsearch | `:9200` | Full-text search engine | `docker-compose.yml:328-350` |
-| PostgreSQL (×10) | `:5432-5441` | Per-service databases | `docker-compose.yml:3-203` |
-| Prometheus | `:9090` | Metrics collection | `docker-compose.yml:252-263` |
-| Grafana | `:3000` | Metrics dashboard | `docker-compose.yml:288-305` |
+| Analytics Service | dynamic | Reporting, event/reservation metrics | `analytics-service/pom.xml` |
+| Kafka | `:29092` | Event broker (Confluent 7.6.0) | `docker-compose.yml:208-249` |
+| Redis | `:6379` | Session cache, token store | `docker-compose.yml:372-387` |
+| Elasticsearch | `:9200` | Full-text search engine | `docker-compose.yml:419-441` |
+| PostgreSQL (×10) | `:5432-5441` | Per-service databases | `docker-compose.yml:5-204` |
+| Prometheus | `:9090` | Metrics collection | `docker-compose.yml:265-282` |
+| Grafana | `:3000` | Metrics dashboard | `docker-compose.yml:343-368` |
 
 ## Communication Matrix
 
@@ -355,12 +381,13 @@ flowchart LR
 | Notification Service | Event Service | Feign (REST) | Sync | Get event details |
 | Ticket Service | Event Service | Feign (REST) | Sync | Get event snapshot |
 | API Gateway | Kafka | Produce | Async | Auth events (email verification, password reset, audit) |
-| User Service | Kafka | Produce | Async | Audit events |
-| Event Service | Kafka | Produce | Async | Event lifecycle events, reservation begin |
-| Reservation Service | Kafka | Produce | Async | Saga commands/compensations |
-| Payment Service | Kafka | Produce/Consume | Async | Payment success/failure events, saga commands |
+| User Service | Kafka | Produce | Async | Audit events, organization status changes |
+| Event Service | Kafka | Produce | Async | Event lifecycle events, reservation begin, organizer reservations, payout release |
+| Reservation Service | Kafka | Produce | Async | Saga commands/compensations, reservation completed |
+| Payment Service | Kafka | Produce/Consume | Async | Payment success/failure/refund events, saga commands |
 | Ticket Service | Kafka | Consume | Async | Event snapshots, saga commands |
-| Notification Service | Kafka | Consume | Async | Email triggers (registration, payment, password) |
+| Notification Service | Kafka | Consume | Async | Email triggers (registration, password reset/change, refund, account generation, org status) |
 | Audit Service | Kafka | Consume | Async | Immutable audit log |
+| Analytics Service | Kafka | Consume | Async | Event lifecycle + reservation-completed metrics |
 | Event Service | Kafka | Consume | Async | Saga lock confirm commands |
 | Reservation Service | Kafka | Consume | Async | Saga replies from payment, ticket, lock services |

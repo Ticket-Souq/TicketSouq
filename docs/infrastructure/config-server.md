@@ -6,11 +6,11 @@ Centralised configuration server for the TicketSouq microservices platform. Ever
 
 ## Technologies
 
-| Technology | Purpose | Evidence |
-|------------|---------|----------|
-| Spring Cloud Config Server | Serves external configuration to all microservices | `pom.xml:17` — dependency `spring-cloud-config-server` |
-| `@EnableConfigServer` | Activates the Config Server capabilities | `ConfigServerApplication.java:8` |
-| Native profile (classpath) | Stores configuration as YAML files in `config-repo/` | `application.yaml:8-17` — `spring.profiles.active: native` |
+| Technology | Purpose |
+|------------|---------|
+| Spring Cloud Config Server | Serves external configuration to all microservices |
+| `@EnableConfigServer` | Activates the Config Server capabilities |
+| Native profile (classpath) | Stores configuration as YAML files in `config-repo/` |
 
 ---
 
@@ -41,49 +41,23 @@ config-repo/
 
 The `application.yaml` at the root of `config-repo` defines **global defaults** — database connection, Kafka broker, Eureka registration, Swagger, logging, tracing, and metrics — that every service inherits. Services override only the values they differ on.
 
-**Evidence source:** `config-repo/application.yaml` (lines 1–119) — contains PostgreSQL, Kafka, Springdoc, Loki/Zipkin tracing, Prometheus metrics, and Eureka client defaults.
-
 ---
 
 ## Defaults Provided by `config-repo/application.yaml`
 
 | Concern | Default Setting (overridable per service) |
 |---------|-------------------------------------------|
-| Database | PostgreSQL 16 via `${database.*}` placeholders |
-| JPA | `ddl-auto: update`, `PostgreSQLDialect` |
-| Kafka | `JSON` serialisation, `RECORD` ack mode, `earliest` offset |
+| Database | PostgreSQL (docker image `postgres:18.4` in docker-compose.yml) via `${database.*}` placeholders |
+| JPA | `ddl-auto: validate`, `PostgreSQLDialect` |
+| Migrations | Flyway enabled, `baseline-on-migrate: true`, migrations in `classpath:db/migration` |
+| Kafka | `JSON` serialisation, `RECORD` ack mode, `earliest` offset, idempotent producer |
 | Swagger | `/swagger-ui.html`, `/v3/api-docs` enabled |
-| Tracing | Micrometer + Zipkin to Tempo |
-| Metrics | Prometheus `/actuator/prometheus` |
+| Tracing | Micrometer + Zipkin to Tempo (OTLP export commented out) |
+| Metrics | Prometheus `/actuator/prometheus` (read-only endpoint) |
 | Logging | Pattern with `spring.application.name`, Loki push |
-| Eureka | Register + fetch enabled, 5s lease renewal, 15s expiry |
-
----
-
-## Server Config
-
-```yaml
-server:
-  port: 8888
-spring:
-  application:
-    name: config-server
-  profiles:
-    active: native
-  cloud:
-    config:
-      server:
-        native:
-          search-locations:
-            - classpath:/config-repo/
-            - classpath:/config-repo/{application}/
-eureka:
-  client:
-    register-with-eureka: false   # config-server does NOT register itself
-    fetch-registry: false
-```
-
-**Evidence sources:** `config-server/.../resources/application.yaml:1-22`.
+| Eureka | Register + fetch enabled, 5s lease renewal, 15s expiry (`:125-138`) |
+| Feign | Circuit breaker enabled (Resilience4j: 10-window, 50% threshold, 30s open) |
+| Profiling | Pyroscope agent enabled |
 
 ---
 
@@ -91,4 +65,4 @@ eureka:
 
 - **Eureka registration is disabled** for the config-server itself (it starts before the discovery server).
 - The `spring-cloud-config-monitor` dependency is commented out in `pom.xml:19-22` — webhook-based config refresh is not currently used.
-- Every service references this server via `spring.config.import` in its bootstrap config.
+- Every service references this server via `spring.config.import: "configserver:http://config-server:8888"` in its `application-Docker.yaml` (and `http://localhost:8888` in `application-local.yaml`).

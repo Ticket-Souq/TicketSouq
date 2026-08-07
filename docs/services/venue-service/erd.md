@@ -18,18 +18,18 @@ erDiagram
 
   Venue {
     UUID id PK "auto-generated"
-    UUID org_id "not null, detached ref"
+    string organization "not null, detached ref"
     string name "not null"
     string address "not null"
     enum type "SEAT_BASED | ZONE_BASED"
-    boolean deleted "soft delete, default false"
+    boolean deleted "soft delete, Java default false"
   }
 
   VenueTemplate {
     UUID id PK "auto-generated"
-    UUID venue_id FK "not null"
+    UUID venue_id FK "nullable"
     string layout "jsonb, nullable"
-    boolean deleted "soft delete, default false"
+    boolean deleted "soft delete, Java default false"
   }
 ```
 
@@ -41,19 +41,19 @@ erDiagram
 | Column | Type | Constraints | Description |
 |--------|------|-------------|-------------|
 | id | UUID | PK, auto-generated | Venue ID |
-| org_id | UUID | NOT NULL | Logical FK → Organization.id (user-service) |
+| organization | VARCHAR(255) | NOT NULL | Logical FK → Organization.id (user-service) — stored as string (column `organization`) |
 | name | VARCHAR(255) | NOT NULL | Venue name |
 | address | VARCHAR(255) | NOT NULL | Physical address |
-| type | ENUM | NOT NULL | SEAT_BASED or ZONE_BASED |
-| deleted | BOOLEAN | NOT NULL, default false | Soft-delete flag |
+| type | ENUM | nullable | SEAT_BASED or ZONE_BASED |
+| deleted | BOOLEAN | NOT NULL (Java default false) | Soft-delete flag |
 
 ### VenueTemplate
 | Column | Type | Constraints | Description |
 |--------|------|-------------|-------------|
 | id | UUID | PK, auto-generated | Template ID |
-| venue_id | UUID | NOT NULL, FK → Venue.id | Parent venue |
+| venue_id | UUID | nullable, FK → Venue.id | Parent venue |
 | layout | JSONB | nullable | Full venue layout definition (sections, seats, zones) |
-| deleted | BOOLEAN | NOT NULL, default false | Soft-delete flag |
+| deleted | BOOLEAN | NOT NULL (Java default false) | Soft-delete flag |
 
 ---
 
@@ -77,8 +77,8 @@ Both entities use Hibernate's `@SQLRestriction("deleted = false")`:
 | SEAT_BASED | Individual numbered seats (rows + columns) |
 | ZONE_BASED | General admission zones/areas (no assigned seats) |
 
-### `org_id` — Detached Reference
-`Venue.orgId` is a plain UUID pointing to `Organization.id` in the **user-service**. There is no JPA relationship — it is a logical foreign key only.
+### `organization` — Detached Reference
+`Venue.organization` is a plain String holding `Organization.id` from the **user-service**. There is no JPA relationship — it is a logical foreign key only.
 
 ---
 

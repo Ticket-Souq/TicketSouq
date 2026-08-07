@@ -39,7 +39,7 @@ erDiagram
 
   Venue {
     UUID id PK
-    UUID org_id "logical ref -> Organization"
+    string organization "denormalized org ref -> Organization"
     string name
     string address
     enum type
@@ -52,10 +52,7 @@ erDiagram
   }
 
   Venue ||--o{ VenueTemplate : "has templates"
-  %% Source: venue-service/.../model/Venue.java:34-35 (@OneToMany)
-
-  VenueTemplate }|--|| Venue : "belongs to"
-  %% Source: venue-service/.../model/VenueTemplate.java:24-26 (@ManyToOne)
+  %% Source: venue-service/.../model/Venue.java:34-35 (@OneToMany; inverse @ManyToOne: VenueTemplate.java:24-26)
 
   %% ================= EVENT SERVICE =================
 
@@ -68,16 +65,16 @@ erDiagram
     UUID id PK
     UUID venue_template_id "logical ref -> VenueTemplate"
     UUID event_category_id FK
-    UUID created_by "logical ref -> User"
+    UUID created_by_id "logical ref -> User"
     string organization "denormalized"
     enum status
     enum booking_model
-    instant start_date
-    instant finish_date
+    instant start_date_time "startDate"
+    instant end_date_time "finishDate"
   }
 
   Section {
-    UUID id PK "manual"
+    UUID id PK "auto-generated"
     UUID event_id FK
     string name
     int capacity
@@ -85,27 +82,20 @@ erDiagram
   }
 
   Seat {
-    UUID id PK "manual"
-    UUID section_id FK
-    int row
-    int col
+    UUID id PK "auto-generated"
+    UUID template_seat_id "logical ref -> venue template seat"
+    string lable "not null"
     enum status
   }
 
   EventCategory ||--o{ Event : "categorizes"
-  %% Source: event-service/.../model/Event.java:40 (@ManyToOne)
+  %% Source: event-service/.../model/Event.java:43-45 (@ManyToOne)
 
   Event ||--o{ Section : "contains"
-  %% Source: event-service/.../model/Event.java:67 (@OneToMany)
-
-  Section }|--|| Event : "belongs to"
-  %% Source: event-service/.../model/Section.java:38-39 (@ManyToOne + @JoinColumn)
+  %% Source: event-service/.../model/Event.java:73-75 (@OneToMany; inverse @ManyToOne: Section.java:44-47)
 
   Section ||--o{ Seat : "contains"
-  %% Source: event-service/.../model/Section.java:57 (@OneToMany)
-
-  Seat }|--|| Section : "belongs to"
-  %% Source: event-service/.../model/Seat.java:28-29 (@ManyToOne + @JoinColumn)
+  %% Source: event-service/.../model/Section.java:63-68 (@OneToMany; inverse @ManyToOne: Seat.java:31-34)
 
   %% ================= RESERVATION SERVICE =================
 
@@ -127,13 +117,32 @@ erDiagram
   Reservation ||--|| SagaInstance : "drives saga"
   %% Source: reservation-service/.../model/SagaInstance.java:18-19 (@UniqueConstraint on reservationId)
 
+  %% ================= OUTBOX (SHARED MODULE) =================
+
+  OutboxEvent {
+    UUID id PK "manual"
+    string aggregateId "not null, logical ref -> Reservation.id"
+    string eventType "not null"
+    string topic "not null"
+    string payload "TEXT, not null"
+    enum status "PENDING | IN_PROGRESS | PUBLISHED | FAILED"
+    int retryCount "default 0"
+    instant createdAt "set by OutboxWriter"
+    instant claimedAt "nullable"
+    instant publishedAt "nullable"
+  }
+
+  Reservation ||--o{ OutboxEvent : "emits events (logical)"
+  %% Source: ticketsouq-outbox/.../entity/OutboxEvent.java:30-31 (aggregateId String field)
+
   %% ================= TICKET SERVICE =================
 
   EventSnapshot {
     UUID event_id PK "= Event.id"
     string title
-    string description
     string status "denormalized"
+    instant start_date
+    instant finish_date
   }
 
   Ticket {
@@ -143,12 +152,15 @@ erDiagram
     UUID user_id "logical ref -> User"
     boolean consumed
     decimal price
+    string reservation_status
+    string holder_name
     string ticket_type "discriminator: SEAT | ZONE"
   }
 
   SeatTicket {
     UUID seat_id "logical ref -> Seat"
-    int seat_row
+    UUID template_seat_id "logical ref -> venue template seat"
+    string row "seat_row column"
     int seat_number
     string category
   }
@@ -206,14 +218,14 @@ erDiagram
 
   %% ================= CROSS-SERVICE LINKS =================
 
-  Organization ||--o{ Venue : "owns (logical)"
-  %% Source: venue-service/.../model/Venue.java:22-23 (orgId UUID field)
+  Organization ||--o{ Venue : "owns (denormalized)"
+  %% Source: venue-service/.../model/Venue.java:22-23 (organization String field)
 
   VenueTemplate ||--o{ Event : "provides layout (logical)"
-  %% Source: event-service/.../model/Event.java:37-38 (venueTemplateId UUID field)
+  %% Source: event-service/.../model/Event.java:40-41 (venueTemplateId UUID field)
 
   User ||--o{ Event : "creates (logical)"
-  %% Source: event-service/.../model/Event.java:47-48 (createdBy UUID field)
+  %% Source: event-service/.../model/Event.java:50-51 (createdBy UUID field)
 
   User ||--o{ Reservation : "reserves (logical)"
   %% Source: reservation-service/.../model/Reservation.java:27-28 (userId UUID field)
@@ -261,9 +273,9 @@ erDiagram
 
 | Source Service | Source Entity | Field | Target Service | Target Entity | Type | Evidence File |
 |----------------|---------------|-------|----------------|---------------|------|---------------|
-| Venue Service | Venue | `orgId` | User Service | Organization | Detached UUID | `Venue.java:22` |
-| Event Service | Event | `venueTemplateId` | Venue Service | VenueTemplate | Detached UUID | `Event.java:37` |
-| Event Service | Event | `createdBy` | User Service | User | Detached UUID | `Event.java:47` |
+| Venue Service | Venue | `organization` | User Service | Organization | Denormalized string | `Venue.java:22` |
+| Event Service | Event | `venueTemplateId` | Venue Service | VenueTemplate | Detached UUID | `Event.java:40` |
+| Event Service | Event | `createdBy` | User Service | User | Detached UUID | `Event.java:50` |
 | Reservation Service | Reservation | `userId` | User Service | User | Detached UUID | `Reservation.java:27` |
 | Reservation Service | Reservation | `eventId` | Event Service | Event | Detached UUID | `Reservation.java:30` |
 | Ticket Service | EventSnapshot | `eventId` (PK) | Event Service | Event | Shared UUID | `EventSnapshot.java:25` |
@@ -277,6 +289,7 @@ erDiagram
 | Payment Service | Payout | `organizerId` | User Service | User | Detached UUID | `Payout.java:28` |
 | Notification Service | Notification | `userId` | User Service | User | Detached UUID | `Notification.java:27` |
 | Audit Service | AuditLog | `madeById` | User Service | User | Detached UUID | `AuditLog.java:31` |
+| Ticketsouq-outbox (shared) | OutboxEvent | `aggregateId` | Reservation Service | Reservation | Detached String | `OutboxEvent.java:31` |
 
 ---
 
@@ -296,6 +309,7 @@ The `User` entity (user-service) is referenced by **6 other services** via detac
 | Payment Service | PaymentModel, Payout | — |
 | Notification Service | Notification | — |
 | Audit Service | AuditLog | — |
+| Ticketsouq-outbox (shared) | OutboxEvent | every service's own DB |
 
 ### Internal vs. Cross-Service Relationships
 - **Internal JPA** relationships (`@OneToMany`/`@ManyToOne`/`@OneToOne`) exist **only within a single service's database**

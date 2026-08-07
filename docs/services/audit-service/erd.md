@@ -33,13 +33,13 @@ erDiagram
 | action | VARCHAR(100) | NOT NULL | Action identifier (e.g. `USER_BANNED`, `ORG_APPROVED`) |
 | made_by_id | UUID | NOT NULL | Logical FK → User.id (who performed the action) |
 | reason | TEXT | nullable | Free-text justification or context |
-| made_at | TIMESTAMP | NOT NULL, indexed | Action timestamp, auto-set by Hibernate |
+| made_at | TIMESTAMPTZ | NOT NULL, indexed | Action timestamp, auto-set by Hibernate |
 
 ### Indexes
 ```sql
-CREATE INDEX idx_audit_made_by ON audit_logs (madeById);
+CREATE INDEX idx_audit_made_by ON audit_logs (made_by_id);
 CREATE INDEX idx_audit_action ON audit_logs (action);
-CREATE INDEX idx_audit_made_at ON audit_logs (madeAt);
+CREATE INDEX idx_audit_made_at ON audit_logs (made_at);
 ```
 All three indexes are declared via `@Index` annotations on the `@Table` definition to support the repository query methods.
 

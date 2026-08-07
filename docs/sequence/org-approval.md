@@ -1,73 +1,52 @@
 # Organization Approval — Admin Flow
 
-**Actors:** Admin → User Service (status update + Feign unlock) → API Gateway (credential unlock) → Kafka (audit events) → Audit Service (persist log)
+**Actors:** Admin → User Service (status update + Feign unlock) → API Gateway (credential unlock) → Kafka (audit + org status events via outbox) → Audit Service (persist log) + Notification Service (email to Org Head)
 
-> **Note:** The Notification Service does **not** currently consume any org-approval event — no email or in-app notification is sent to the Org Head when their organization is approved. Only audit logs capture the action.
+> **Note:** Approving an organization also notifies the Org Head by email. The Notification Service consumes the `org.status.changed` event (`NotificationEventConsumer.java:57-60`) and sends `ORG_APPROVED` / `ORG_BANNED` / `ORG_REJECTED` emails (`NotificationServiceImpl.handleOrgStatusChanged`, `NotificationServiceImpl.java:235-249`).
 
 ---
 
 ## Sequence Diagram
 
+> **Reading the diagram:** publishing arrows are async Kafka messages written via the outbox pattern; drawn service-to-service for readability.
+
 ```mermaid
 sequenceDiagram
-  participant Admin
-  participant UserCtrl as "UserPublicController (user-service)"
-  participant AuthCli as "AuthServiceClient (Feign)"
-  participant PrivCtrl as "AuthPrivateController (api-gateway)"
-  participant AuthSvc as "AuthService (api-gateway)"
-  participant authDB as "auth-db (Postgres)"
-  participant OrgSvc as "OrganizationService (user-service)"
-  participant userDB as "user-db (Postgres)"
-  participant Kafka
-  participant AuthPub as "AuthEventPublisher"
-  participant UserPub as "UserEventPublisher"
-  participant AuditConsumer as "AuditEventConsumer (audit-service)"
-  participant auditDB as "audit-db (Postgres)"
+  autonumber
+  actor Admin as Admin
+  participant US as "User Service"
+  participant GW as "API Gateway"
+  participant AuditSvc as "Audit Service"
+  participant NotifSvc as "Notification Service"
 
-  Note over Admin,auditDB: ================ 1. ADMIN APPROVES ORGANIZATION ================
+  rect rgb(0, 0, 0)
+    Note over Admin,GW: 1. ADMIN APPROVES ORGANIZATION
+    Admin->>US: POST /api/v1/user/org/{orgHeadId}/approve (X-User-Id: adminId)
+    %% Source: user-service/.../controller/UserPublicController.java:35-40
+    US->>GW: Feign unlockOrg(orgHeadId) → POST /api/v1/auth/unlock-org
+    %% Source: user-service/.../client/AuthServiceClient.java:13-14
+    %% Source: api-gateway/.../controller/AuthController.java:136-137
+    GW->>GW: SET locked = false, lockedUntil = NULL
+    %% Source: api-gateway/.../service/AuthService.java:286-292
+    GW->>AuditSvc: AuditEvent (audit.event) — "Approve Organization Head Request"
+    %% Source: api-gateway/.../service/AuthService.java:291
+    US->>US: changeStatus() → organization status = APPROVED
+    %% Source: user-service/.../service/OrganizationService.java:34-56
+    US->>AuditSvc: AuditEvent (audit.event) — "Change Organization status to APPROVED"
+    %% Source: user-service/.../service/OrganizationService.java:42-45
+    US->>NotifSvc: OrganizationStatusChangedEvent (org.status.changed)
+    %% Source: user-service/.../service/OrganizationService.java:47-53
+    US-->>Admin: 200 OK
+  end
 
-  Admin->>UserCtrl: POST /api/v1/user/org/{orgHeadId}/approve\nX-User-Id: adminId
-  %% Source: user-service/.../controller/UserPublicController.java:35-43
-
-  UserCtrl->>AuthCli: unlockOrg(orgHeadId)
-  %% Source: user-service/.../client/AuthServiceClient.java:13-14
-
-  AuthCli->>PrivCtrl: POST /api/v1/private/auth/unlock-org
-  %% Source: api-gateway/.../controller/AuthPrivateController.java:17-21
-
-  PrivCtrl->>AuthSvc: unlockOrg(orgHeadId)
-  %% Source: api-gateway/.../controller/AuthPrivateController.java:19
-
-  AuthSvc->>authDB: SET locked = false,\nlockedUntil = NULL
-  %% Source: api-gateway/.../service/AuthService.java:272-274
-
-  AuthSvc->>AuthPub: AuditEvent("Approve Organization Head Request")
-  %% Source: api-gateway/.../service/AuthService.java:275-276 (sendAuditEventWithNoReason)
-
-  AuthPub->>Kafka: AuditEvent (topic: audit.event)
-  %% Source: api-gateway/.../event/AuthEventPublisher.java:37-41
-
-  UserCtrl->>OrgSvc: changeStatus(orgHeadId, APPROVED, adminId)
-  %% Source: user-service/.../controller/UserPublicController.java:40
-
-  OrgSvc->>userDB: UPDATE organization SET status = 'APPROVED'
-  %% Source: user-service/.../service/OrganizationService.java:35-36
-
-  OrgSvc->>UserPub: AuditEvent("Change Organization [X] Status to APPROVED")
-  %% Source: user-service/.../service/OrganizationService.java:38-41
-
-  UserPub->>Kafka: AuditEvent (topic: audit.event)
-  %% Source: user-service/.../event/UserEventPublisher.java:22-26
-
-  UserCtrl-->>Admin: 200 OK
-
-  Note over Admin,auditDB: ================ 2. ASYNC: AUDIT LOGGING ================
-
-  Kafka->>AuditConsumer: AuditEvent × 2 (unlock + status change)
-  %% Source: audit-service/.../consumer/AuditEventConsumer.java:20-21
-
-  AuditConsumer->>auditDB: INSERT INTO audit_log\n(action, made_by_id, reason, made_at)
-  %% Source: audit-service/.../consumer/AuditEventConsumer.java:24-26
+  rect rgb(0, 0, 0)
+    Note over AuditSvc,NotifSvc: 2. ASYNC: AUDIT + NOTIFICATION
+    AuditSvc->>AuditSvc: INSERT audit_log ×2
+    %% Source: audit-service/.../consumer/AuditEventConsumer.java:20-27
+    NotifSvc->>NotifSvc: handleOrgStatusChanged() → ORG_APPROVED EmailJob
+    %% Source: notification-service/.../event/NotificationEventConsumer.java:57-60
+    %% Source: notification-service/.../service/impl/NotificationServiceImpl.java:235-249
+  end
 ```
 
 ---
@@ -78,24 +57,27 @@ sequenceDiagram
 
 | # | Action | File | Line(s) |
 |---|--------|------|---------|
-| 1a | Admin calls approve endpoint | `UserPublicController.java` | 35-43 |
+| 1a | Admin calls approve endpoint | `UserPublicController.java` | 35-40 |
 | 1b | Feign: unlockOrg(orgHeadId) → API Gateway | `AuthServiceClient.java` | 13-14 |
-| 1c | API Gateway private controller receives call | `AuthPrivateController.java` | 17-21 |
-| 1d | AuthService.unlockOrg(): set locked=false | `AuthService.java` | 270-276 |
-| 1e | Spring AuditEvent published (api-gateway side) | `AuthService.java` | 275-276 |
+| 1c | API Gateway controller receives call | `AuthController.java` | 136-137 |
+| 1d | AuthService.unlockOrg(): set locked=false, lockedUntil=null | `AuthService.java` | 286-292 |
+| 1e | AuditEvent published via outbox (api-gateway side) | `AuthService.java` | 291 |
 | 1f | Feign return to UserPublicController | — | — |
-| 1g | OrganizationService.changeStatus(): set APPROVED | `OrganizationService.java` | 31-44 |
-| 1h | Spring AuditEvent published (user-service side) | `OrganizationService.java` | 38-41 |
-| 1i | 200 OK returned to Admin | `UserPublicController.java` | 42 |
+| 1g | OrganizationService.changeStatus(): set APPROVED | `OrganizationService.java` | 34-56 |
+| 1h | AuditEvent published via outbox (user-service side) | `OrganizationService.java` | 42-45 |
+| 1i | OrganizationStatusChangedEvent published via outbox | `OrganizationService.java` | 47-53 |
+| 1j | 200 OK returned to Admin | `UserPublicController.java` | 39 |
 
-### Step 2 — Async Audit Logging
+### Step 2 — Async Audit Logging + Notification
 
 | # | Action | File | Line(s) |
 |---|--------|------|---------|
-| 2a | AuthEventPublisher sends AuditEvent → Kafka | `AuthEventPublisher.java` | 37-41 |
-| 2b | UserEventPublisher sends AuditEvent → Kafka | `UserEventPublisher.java` | 22-26 |
-| 2c | AuditEventConsumer consumes both events | `AuditEventConsumer.java` | 20-21 |
+| 2a | AuditEvent → Kafka via outbox relay (api-gateway side) | `AuthService.java` | 291 |
+| 2b | AuditEvent → Kafka via outbox relay (user-service side) | `OrganizationService.java` | 42-45 |
+| 2c | AuditEventConsumer consumes both events | `AuditEventConsumer.java` | 20-27 |
 | 2d | AuditLog row saved for each event | `AuditEventConsumer.java` | 24-26 |
+| 2e | NotificationEventConsumer consumes org.status.changed | `NotificationEventConsumer.java` | 57-60 |
+| 2f | EmailJob created with ORG_APPROVED template | `NotificationServiceImpl.java` | 235-249 |
 
 ---
 
@@ -109,23 +91,28 @@ sequenceDiagram
 | APPROVED | BANNED | Admin bans |
 | APPROVED | SUSPENDED | Admin suspends |
 
+`OrgStatus` enum values: `PENDING, APPROVED, REJECTED, SUSPENDED, BANNED` (`OrgStatus.java:3-9`).
+
 ---
 
 ## Key Evidence Sources
 
 | Component | File | Lines |
 |-----------|------|-------|
-| Admin approve endpoint | `UserPublicController.java` | 35-43 |
+| Admin approve endpoint | `UserPublicController.java` | 35-40 |
 | Feign client → API Gateway | `AuthServiceClient.java` | 10-14 |
-| API Gateway private /unlock-org | `AuthPrivateController.java` | 17-21 |
-| AuthService.unlockOrg | `AuthService.java` | 270-276 |
-| OrganizationService.changeStatus | `OrganizationService.java` | 31-44 |
-| AuditEvent → Kafka (api-gateway) | `AuthEventPublisher.java` | 37-41 |
-| AuditEvent → Kafka (user-service) | `UserEventPublisher.java` | 22-26 |
+| API Gateway /unlock-org | `AuthController.java` | 136-137 |
+| AuthService.unlockOrg | `AuthService.java` | 286-292 |
+| OrganizationService.changeStatus | `OrganizationService.java` | 34-56 |
+| AuditEvent via outbox (api-gateway) | `AuthService.java` | 291 |
+| AuditEvent + org status via outbox (user-service) | `OrganizationService.java` | 42-53 |
 | AuditEventConsumer (audit-service) | `AuditEventConsumer.java` | 20-27 |
-| Topic constant AUDIT_EVENT | `TOPIC_NAMES.java` | 41 |
-| OrgStatus enum | `OrgStatus.java` | 1-9 |
-| Organization entity (default PENDING) | `Organization.java` | 14-36 |
-| Registration sets org as PENDING | `UserService.java` | 45-49 |
-| Registration locks ORG_HEAD credential | `AuthService.java` | 392-395 |
-| Login blocked for locked org heads | `AuthService.java` | 320-343 |
+| ORG_STATUS_CHANGED consumer (notification-service) | `NotificationEventConsumer.java` | 57-60 |
+| handleOrgStatusChanged | `NotificationServiceImpl.java` | 235-249 |
+| Topic constant AUDIT_EVENT | `TOPIC_NAMES.java` | 46 |
+| Topic constant ORG_STATUS_CHANGED | `TOPIC_NAMES.java` | 49 |
+| OrgStatus enum | `OrgStatus.java` | 3-9 |
+| Organization entity (default PENDING) | `Organization.java` | — |
+| Registration sets org as PENDING | `UserService.java` | 42-51 |
+| Registration locks ORG_HEAD credential | `AuthService.java` | 431-434 |
+| Login blocked for locked org heads | `AuthService.java` | 350-382 |

@@ -47,7 +47,7 @@ erDiagram
 | id | UUID | PK (manual) | User ID (created by API Gateway) |
 | name | VARCHAR(100) | NOT NULL | User display name |
 | email | VARCHAR(255) | NOT NULL, UNIQUE | User email address |
-| created_at | TIMESTAMP | NOT NULL | Set via @PrePersist |
+| created_at | TIMESTAMPTZ | NOT NULL | Set via @PrePersist |
 
 ### Organization
 | Column | Type | Constraints | Description |
@@ -55,7 +55,7 @@ erDiagram
 | id | UUID | PK, auto-generated | Organization ID |
 | name | VARCHAR(150) | NOT NULL, UNIQUE | Organization name |
 | status | ENUM | NOT NULL | PENDING, APPROVED, REJECTED, SUSPENDED, BANNED |
-| created_at | TIMESTAMP | NOT NULL | Set via @PrePersist |
+| created_at | TIMESTAMPTZ | NOT NULL | Set via @PrePersist |
 
 ### OrgMember
 | Column | Type | Constraints | Description |
@@ -95,5 +95,4 @@ PENDING -> APPROVED -> SUSPENDED -> BANNED
 | Parent | Child | Type | FK Column | Source File |
 |--------|-------|------|-----------|-------------|
 | User | OrgMember | @OneToOne (shared PK) | `OrgMember.user_id` | `OrgMember.java:19-22` |
-| Organization | OrgMember | @OneToMany (inverse) | `OrgMember.org_id` | `OrgMember.java:24-26` |
 | OrgMember | Organization | @ManyToOne | `OrgMember.org_id` | `OrgMember.java:24-26` |

@@ -31,6 +31,7 @@ erDiagram
     boolean consumed
     decimal price
     string reservation_status
+    string holder_name
     datetime createdAt
     datetime updatedAt
     string ticket_type "discriminator: SEAT | ZONE"
@@ -38,7 +39,8 @@ erDiagram
 
   SeatTicket {
     UUID seat_id "detached ref -> Seat.id"
-    int seat_row
+    UUID template_seat_id "detached ref -> VenueTemplate.seat.id"
+    string seat_row
     int seat_number
     string category
   }
@@ -53,12 +55,7 @@ erDiagram
   EventSnapshot {
     UUID event_id PK "detached ref -> Event.id"
     string title
-    string description
-    UUID venue_template_id
-    string organization
     string status
-    string category_name
-    string poster_url
     instant start_date
     instant finish_date
   }
@@ -70,6 +67,10 @@ erDiagram
 
   Ticket ||--o| ZoneTicket : "is a (ZONE)"
   %% Source: ticket-service/src/main/java/.../models/ZoneTicket.java:9 (@DiscriminatorValue "ZONE")
+
+  EventSnapshot ||--o{ Ticket : "snapshotted for tickets (logical)"
+  %% Source: ticket-service/src/main/java/.../models/Ticket.java:31-32 (eventId -> EventSnapshot.eventId)
+  %% Source: ticket-service/src/main/java/.../service/TicketService.java:50 (resolve snapshot per eventId)
 ```
 
 ---
@@ -87,6 +88,7 @@ erDiagram
 | consumed | BOOLEAN | NOT NULL | Whether ticket has been used |
 | price | DECIMAL | nullable | Ticket price |
 | reservation_status | VARCHAR(255) | nullable | Status copied from saga |
+| holder_name | VARCHAR(255) | nullable | Ticket holder's name |
 | created_at | TIMESTAMP | | Auto-set by Spring Data |
 | updated_at | TIMESTAMP | | Auto-set by Spring Data |
 
@@ -94,8 +96,9 @@ erDiagram
 | Column | Type | Constraints | Description |
 |--------|------|-------------|-------------|
 | seat_id | UUID | nullable | Logical FK → Seat.id |
-| seat_row | INT | nullable | Row number (denormalized) |
-| seat_number | INT | nullable | Column/seat number (denormalized) |
+| template_seat_id | UUID | nullable | Logical FK → VenueTemplate seat id (denormalized) |
+| seat_row | VARCHAR(255) | nullable | Row label (string, e.g. "A") |
+| seat_number | INT | nullable | Seat number (denormalized) |
 | category | VARCHAR(255) | nullable | Category label |
 
 ### ZoneTicket (discriminator `ZONE` — additional columns in `tickets`)
@@ -109,25 +112,20 @@ erDiagram
 |--------|------|-------------|-------------|
 | event_id | UUID | PK (manual) | Logical FK → Event.id (same value) |
 | title | VARCHAR(255) | nullable | Denormalized event title |
-| description | TEXT | nullable | Denormalized event description |
-| venue_template_id | UUID | nullable | Denormalized venue template ref |
-| organization | VARCHAR(255) | nullable | Denormalized org name |
 | status | VARCHAR(255) | nullable | Denormalized event status |
-| category_name | VARCHAR(255) | nullable | Denormalized category name |
-| poster_url | VARCHAR(255) | nullable | Denormalized poster URL |
-| start_date | TIMESTAMP | nullable | Denormalized start date |
-| finish_date | TIMESTAMP | nullable | Denormalized end date |
+| start_date | TIMESTAMPTZ | nullable | Denormalized start date |
+| finish_date | TIMESTAMPTZ | nullable | Denormalized end date |
 
 ---
 
 ## Physical Table Layout — `tickets` (SINGLE_TABLE)
 
-| ticket_type | id | reservation_id | event_id | user_id | consumed | price | seat_id | seat_row | seat_number | section_id | category |
-|-------------|----|---------------|----------|---------|----------|-------|---------|----------|-------------|------------|----------|
-| **SEAT** | U1 | R1 | E1 | U1 | false | 50.00 | S1 | 5 | 12 | `null` | "Standard" |
-| **ZONE** | U2 | R2 | E1 | U2 | true | 100.00 | `null` | `null` | `null` | SEC1 | "VIP" |
+| ticket_type | id | reservation_id | event_id | user_id | consumed | price | seat_id | template_seat_id | seat_row | seat_number | section_id | category | holder_name |
+|-------------|----|---------------|----------|---------|----------|-------|---------|------------------|----------|-------------|------------|----------|-------------|
+| **SEAT** | U1 | R1 | E1 | U1 | false | 50.00 | S1 | TS1 | "A" | 12 | `null` | "Standard" | "Ahmed" |
+| **ZONE** | U2 | R2 | E1 | U2 | true | 100.00 | `null` | `null` | `null` | `null` | SEC1 | "VIP" | "Sara" |
 
-> Columns `seat_id`, `seat_row`, `seat_number` are `null` for ZONE tickets.  
+> Columns `seat_id`, `template_seat_id`, `seat_row`, `seat_number` are `null` for ZONE tickets.  
 > Column `section_id` is `null` for SEAT tickets.
 
 ---
@@ -142,5 +140,7 @@ erDiagram
 | Event (external) | Ticket | Logical N:1 (UUID) | `Ticket.eventId` | `Ticket.java:31-32` |
 | User (external) | Ticket | Logical N:1 (UUID) | `Ticket.userId` | `Ticket.java:34-35` |
 | Seat (external) | SeatTicket | Logical 1:1 (UUID) | `SeatTicket.seatId` | `SeatTicket.java:16-17` |
+| VenueTemplateSeat (external) | SeatTicket | Logical 1:1 (UUID) | `SeatTicket.templateSeatId` | `SeatTicket.java:19-20` |
 | Section (external) | ZoneTicket | Logical N:1 (UUID) | `ZoneTicket.sectionId` | `ZoneTicket.java:16-17` |
 | Event (external) | EventSnapshot | Logical 1:1 (UUID as PK) | `EventSnapshot.eventId` | `EventSnapshot.java:25-27` |
+| EventSnapshot | Ticket | Logical N:1 (UUID) | `Ticket.eventId` → `EventSnapshot.eventId` | `Ticket.java:31-32`, `TicketService.java:50` |

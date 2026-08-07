@@ -6,77 +6,55 @@
 
 ## Sequence Diagram
 
+> **Reading the diagram:** publishing arrows are async Kafka messages written via the outbox pattern; drawn service-to-service for readability.
+
 ```mermaid
 sequenceDiagram
-  participant Client
+  autonumber
+  actor Client as Client
   participant GW as "API Gateway"
-  participant authDB as "auth-db (Postgres)"
   participant US as "User Service"
-  participant userDB as "user-db (Postgres)"
-  participant Kafka
   participant NS as "Notification Service"
-  participant notifDB as "notification-db (Postgres)"
 
-  Note over Client,notifDB: ================ 1. REGISTRATION ================
-
-  Client->>GW: POST /api/v1/auth/register\n{ email, password, name, organizationName? }
-
-  GW->>GW: Check for duplicate email
-  %% Source: api-gateway/.../service/AuthService.java:63
-
-  GW->>GW: Build AuthCredential, hash password (BCrypt)
-  %% Source: api-gateway/.../service/AuthService.java:382-398 (buildCredential)
-
-  GW->>authDB: Save AuthCredential\n(userId, email, passwordHash, role)
-  %% Source: api-gateway/.../service/AuthService.java:65
-
-  GW->>US: Feign: registerUser(userId, name, email, orgName?)
-  %% Source: api-gateway/.../client/UserServiceClient.java:13-14
-
-  alt Has Organization Name (ORG_HEAD)
-    US->>userDB: Create Organization (PENDING)
-    %% Source: user-service/.../service/UserService.java:45-49
-    US->>userDB: Create User profile
-    %% Source: user-service/.../service/UserService.java:51-56
-    US->>userDB: Create OrgMember (HEAD)
-    %% Source: user-service/.../service/UserService.java:58-63
-  else No Organization (CUSTOMER)
-    US->>userDB: Create User profile only
-    %% Source: user-service/.../service/UserService.java:70-76
+  rect rgb(0, 0, 0)
+    Note over Client,NS: 1. REGISTRATION
+    Client->>GW: POST /api/v1/auth/register { email, password, name, organizationName? }
+    GW->>GW: Check duplicate email → build AuthCredential, hash password (BCrypt)
+    %% Source: api-gateway/.../service/AuthService.java:76 / 421-437
+    GW->>US: Feign registerUser(userId, name, email, orgName?)
+    %% Source: api-gateway/.../client/UserServiceClient.java:15-16
+    alt Has organization name (ORG_HEAD)
+      US->>US: Create Organization (PENDING) + profile + OrgMember (HEAD)
+      %% Source: user-service/.../service/UserService.java:47-65
+    else No organization (CUSTOMER)
+      US->>US: Create profile only
+      %% Source: user-service/.../service/UserService.java:72-77
+    end
+    GW->>GW: Generate 6-digit email verification OTP (Redis key auth:otp:EMAIL:{otp})
+    %% Source: api-gateway/.../service/AuthService.java:439-446
+    GW->>NS: EmailVerificationEvent (user.email-verification)
+    %% Source: api-gateway/.../service/AuthService.java:440-445
+    GW->>NS: AuditEvent (audit.event)
+    %% Source: api-gateway/.../service/AuthService.java:81 / 452-454
+    GW-->>Client: 201 CREATED
   end
 
-  GW->>GW: Generate email verification OTP (short-lived JWT)
-  %% Source: api-gateway/.../service/AuthService.java:400-407 (sendVarificationNotification)
+  rect rgb(0, 0, 0)
+    Note over NS: 2. ASYNC: EMAIL VERIFICATION
+    NS->>NS: Save UserEmailProjection (if missing) + create EmailJob
+    %% Source: notification-service/.../event/NotificationEventConsumer.java:47-50
+    Note over NS: EmailScheduler sends via SMTP (MockEmailSender) with OTP
+  end
 
-  GW->>Kafka: EmailVerificationEvent (topic: user.email-verification)
-  %% Source: api-gateway/.../event/AuthEventPublisher.java:25-29
-
-  GW->>Kafka: AuditEvent (topic: audit.event)
-  %% Source: api-gateway/.../service/AuthService.java:68
-
-  GW-->>Client: 201 CREATED
-
-  Note over Client,notifDB: ================ 2. ASYNC: EMAIL VERIFICATION ================
-
-  Kafka->>NS: Consume EmailVerificationEvent
-  %% Source: notification-service/.../event/NotificationEventConsumer.java:46-48
-
-  NS->>notifDB: Save in-app Notification (REGISTRATION type)
-  NS->>notifDB: Create EmailJob (PENDING, template: email/registration.html)
-
-  Note over NS: EmailScheduler picks up PENDING jobs,\nsends via SMTP (MockEmailSender)
-
-  Note over Client,notifDB: ================ 3. USER VERIFIES EMAIL ================
-
-  Client->>GW: POST /api/v1/auth/email-varification\n{ otp: "..." }
-
-  GW->>GW: Validate OTP JWT, extract userId
-  %% Source: api-gateway/.../service/AuthService.java:165-170
-
-  GW->>authDB: Set isVerified = true
-  %% Source: api-gateway/.../service/AuthService.java:168-169
-
-  GW-->>Client: 200 OK
+  rect rgb(0, 0, 0)
+    Note over Client,GW: 3. USER VERIFIES EMAIL
+    Client->>GW: POST /api/v1/auth/email-varification { otp }
+    GW->>GW: Validate OTP against Redis (one-time use) → extract userId
+    %% Source: api-gateway/.../service/AuthService.java:179
+    GW->>GW: Set isVerified = true
+    %% Source: api-gateway/.../service/AuthService.java:181
+    GW-->>Client: 200 OK
+  end
 ```
 
 ---
@@ -87,29 +65,29 @@ sequenceDiagram
 
 | # | Action | File | Line(s) |
 |---|--------|------|---------|
-| 1a | Duplicate email check | `AuthService.java` | 63 |
-| 1b | Hash password (BCrypt), build AuthCredential | `AuthService.java` | 64, 382-398 |
-| 1c | Persist AuthCredential to auth-db | `AuthService.java` | 65 |
-| 1d | Feign call: registerUser → User Service | `UserServiceClient.java` | 13-14 |
-| 1e | (If org) Create Organization + User + OrgMember | `UserService.java` | 45-63 |
-| 1f | (If no org) Create User profile only | `UserService.java` | 70-76 |
-| 1g | Generate email verification OTP | `AuthService.java` | 400-407 |
-| 1h | Publish EmailVerificationEvent → Kafka | `AuthEventPublisher.java` | 25-29 |
-| 1i | Publish AuditEvent → Kafka | `AuthService.java` | 68 |
+| 1a | Duplicate email check | `AuthService.java` | 76 |
+| 1b | Hash password (BCrypt), build AuthCredential | `AuthService.java` | 421-437 |
+| 1c | Persist AuthCredential to auth-db | `AuthService.java` | 74 |
+| 1d | Feign call: registerUser → User Service | `UserServiceClient.java` | 15-16 |
+| 1e | (If org) Create Organization + User + OrgMember | `UserService.java` | 47-65 |
+| 1f | (If no org) Create User profile only | `UserService.java` | 72-77 |
+| 1g | Generate email verification OTP (Redis) | `AuthService.java` | 439-446 |
+| 1h | Publish EmailVerificationEvent via outbox | `AuthService.java` | 440-445 |
+| 1i | Publish AuditEvent via outbox | `AuthService.java` | 81, 452-454 |
 
 ### Step 2 — Async Email Processing
 
 | # | Action | File | Line(s) |
 |---|--------|------|---------|
-| 2a | Consume EmailVerificationEvent | `NotificationEventConsumer.java` | 46-48 |
-| 2b | Save in-app Notification + EmailJob | `NotificationServiceImpl.java` | — |
+| 2a | Consume EmailVerificationEvent | `NotificationEventConsumer.java` | 47-50 |
+| 2b | Create EmailJob (no in-app notification) | `NotificationServiceImpl.java` | 46-63 |
 
 ### Step 3 — Email Verification
 
 | # | Action | File | Line(s) |
 |---|--------|------|---------|
-| 3a | Validate OTP JWT, extract userId | `AuthService.java` | 165-166 |
-| 3b | Update AuthCredential: isVerified = true | `AuthService.java` | 167-169 |
+| 3a | Validate OTP against Redis, extract userId | `AuthService.java` | 179 |
+| 3b | Update AuthCredential: isVerified = true | `AuthService.java` | 181 |
 
 ---
 
@@ -120,7 +98,7 @@ sequenceDiagram
 | user_id | UUID PK | Auto-generated, shared with User Service |
 | email | VARCHAR UNIQUE | Login identifier |
 | password_hash | VARCHAR | BCrypt hash |
-| role | ENUM | CUSTOMER, ORG_HEAD, AGENT |
+| role | ENUM | CUSTOMER, ADMIN, ORG_HEAD, ORG_Agent, ORG_Consumer |
 | is_active | BOOLEAN | Account active flag |
 | is_verified | BOOLEAN | Email verified flag |
 | failed_attempts | INT | Login failure counter |
@@ -134,12 +112,12 @@ sequenceDiagram
 | Step | File | Line(s) |
 |------|------|---------|
 | Register endpoint | `AuthController.java` | 30-34 |
-| AuthService.register | `AuthService.java` | 62-69 |
-| buildCredential | `AuthService.java` | 382-398 |
-| sendVarificationNotification | `AuthService.java` | 400-407 |
-| UserServiceClient Feign | `UserServiceClient.java` | 13-14 |
-| UserService.register (org path) | `UserService.java` | 38-66 |
-| UserService.register (customer path) | `UserService.java` | 69-77 |
-| AuthEventPublisher → Kafka | `AuthEventPublisher.java` | 25-29 |
-| EmailVerificationEvent consumed | `NotificationEventConsumer.java` | 46-48 |
-| Verify email endpoint | `AuthService.java` | 164-170 |
+| AuthService.register | `AuthService.java` | 70-78 |
+| buildCredential | `AuthService.java` | 421-437 |
+| sendVarificationNotification | `AuthService.java` | 439-446 |
+| UserServiceClient Feign | `UserServiceClient.java` | 15-16 |
+| UserService.register (org path) | `UserService.java` | 40-68 |
+| UserService.register (customer path) | `UserService.java` | 71-78 |
+| EmailVerificationEvent → outbox → Kafka | `AuthService.java` | 440-445 |
+| EmailVerificationEvent consumed | `NotificationEventConsumer.java` | 47-50 |
+| Verify email endpoint | `AuthService.java` | 173-179 |

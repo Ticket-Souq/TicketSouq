@@ -11,29 +11,31 @@
 ```mermaid
 erDiagram
   %% No JPA relationships exist between PaymentModel and Payout.
-  %% They are logically linked via reservationID -> saga context.
+  %% They are logically linked via reservationid -> saga context.
+  %% Column names are PHYSICAL (Flyway V1__init.sql); Java field names differ
+  %% (e.g. reservationID, customerID, stripePaymentIntentId).
 
   PaymentModel {
     UUID id PK "auto-generated"
-    UUID reservationID "detached ref -> Reservation.id"
-    UUID customerID "detached ref -> User.id"
-    decimal amount
-    enum paymentStatus "PENDING | SUCCESS | FAILED | REFUNDED"
-    string transactionRef "nullable"
-    string stripePaymentIntentId "nullable"
-    instant createdAt
-    instant updatedAt
+    UUID reservationid "detached ref -> Reservation.id"
+    UUID customerid "detached ref -> User.id"
+    decimal amount "numeric(38, 2)"
+    enum payment_status "PENDING | SUCCESS | FAILED | REFUNDED"
+    string transaction_ref "nullable"
+    string stripe_payment_intent_id "nullable"
+    instant created_at
+    instant updated_at
   }
 
   Payout {
     UUID id PK "auto-generated"
-    UUID organizerId "detached ref -> User.id"
-    decimal amount
-    string currency
+    UUID organizer_id "detached ref -> User.id"
+    decimal amount "numeric(38, 2)"
+    string currency "nullable"
     string status "PENDING | COMPLETED | FAILED"
-    string stripeTransferId "nullable"
-    instant createdAt
-    instant updatedAt
+    string stripe_transfer_id "nullable"
+    instant created_at
+    instant updated_at
   }
 ```
 
@@ -41,30 +43,30 @@ erDiagram
 
 ## Entity Definitions
 
-### PaymentModel
+### PaymentModel — table `payment_model`
 | Column | Type | Constraints | Description |
 |--------|------|-------------|-------------|
 | id | UUID | PK, auto-generated | Payment record ID |
-| reservationID | UUID | nullable | Logical FK → Reservation.id (saga correlation) |
-| customerID | UUID | nullable | Logical FK → User.id (payer) |
-| amount | DECIMAL | nullable | Payment amount |
-| paymentStatus | ENUM | nullable | PENDING, SUCCESS, FAILED, REFUNDED |
-| transactionRef | VARCHAR(255) | nullable | Provider transaction reference |
-| stripePaymentIntentId | VARCHAR(255) | nullable | Stripe PaymentIntent ID |
-| created_at | TIMESTAMP | | Auto-set by Hibernate `@CreationTimestamp` |
-| updated_at | TIMESTAMP | | Auto-set by Hibernate `@UpdateTimestamp` |
+| reservationid | UUID | nullable | Logical FK → Reservation.id (saga correlation). Java field `reservationID` |
+| customerid | UUID | nullable | Logical FK → User.id (payer). Java field `customerID` |
+| amount | DECIMAL(38,2) | nullable | Payment amount |
+| payment_status | VARCHAR(255) | nullable | PENDING, SUCCESS, FAILED, REFUNDED (Java enum `PaymentStatus`) |
+| transaction_ref | VARCHAR(255) | nullable | Provider transaction reference |
+| stripe_payment_intent_id | VARCHAR(255) | nullable | Stripe PaymentIntent ID |
+| created_at | TIMESTAMPTZ | | Auto-set by Hibernate `@CreationTimestamp` |
+| updated_at | TIMESTAMPTZ | | Auto-set by Hibernate `@UpdateTimestamp` |
 
-### Payout
+### Payout — table `payout`
 | Column | Type | Constraints | Description |
 |--------|------|-------------|-------------|
 | id | UUID | PK, auto-generated | Payout record ID |
-| organizerId | UUID | nullable | Logical FK → User.id (org head receiving funds) |
-| amount | DECIMAL | nullable | Payout amount |
-| currency | VARCHAR(3) | nullable | Currency code (e.g. "USD") |
+| organizer_id | UUID | nullable | Logical FK → User.id (org head receiving funds). Java field `organizerId` |
+| amount | DECIMAL(38,2) | nullable | Payout amount |
+| currency | VARCHAR(255) | nullable | Currency code (e.g. "USD") |
 | status | VARCHAR(255) | nullable | Free-text status: PENDING, COMPLETED, FAILED |
-| stripeTransferId | VARCHAR(255) | nullable | Stripe Transfer ID |
-| created_at | TIMESTAMP | | Auto-set by Hibernate `@CreationTimestamp` |
-| updated_at | TIMESTAMP | | Auto-set by Hibernate `@UpdateTimestamp` |
+| stripe_transfer_id | VARCHAR(255) | nullable | Stripe Transfer ID |
+| created_at | TIMESTAMPTZ | | Auto-set by Hibernate `@CreationTimestamp` |
+| updated_at | TIMESTAMPTZ | | Auto-set by Hibernate `@UpdateTimestamp` |
 
 ---
 
