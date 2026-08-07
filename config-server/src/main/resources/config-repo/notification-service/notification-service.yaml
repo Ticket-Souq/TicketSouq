@@ -32,3 +32,12 @@ spring:
 
 email:
   provider: ${EMAIL_PROVIDER:MOCK} # REAL
+
+management:
+  health:
+    mail:
+      enabled: false
+
+app:
+  frontend:
+    login-url: ${FRONTEND_URL:http://localhost:5173/login}

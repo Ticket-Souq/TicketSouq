@@ -1,2 +1,5 @@
 DATABASE_HOST : analytics-db
 DATABASE_PORT : 5432
+
+server:
+  port: 8089

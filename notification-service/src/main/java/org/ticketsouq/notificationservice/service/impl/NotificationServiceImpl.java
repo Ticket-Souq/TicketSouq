@@ -2,6 +2,7 @@ package org.ticketsouq.notificationservice.service.impl;
 
 import org.springframework.transaction.annotation.Transactional;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.ticketsouq.notificationservice.dto.EventDetailsResponse;
 import org.ticketsouq.notificationservice.dto.NotificationResponse;
@@ -37,6 +38,9 @@ public class NotificationServiceImpl implements NotificationService {
     private final UserEmailProjectionRepository userEmailProjectionRepository;
     private final NotificationMapper notificationMapper;
     private final EventDetailsService eventDetailsService;
+
+    @Value("${app.frontend.login-url:http://localhost:5173/login}")
+    private String loginUrl;
 
 
     @Override
@@ -182,7 +186,7 @@ public class NotificationServiceImpl implements NotificationService {
 
         Map<String, Object> variables = new HashMap<>();
         variables.put("accounts", event.accounts());
-        variables.put("loginUrl", "http://localhost:3000/login");
+        variables.put("loginUrl", loginUrl);
 
         emailJobService.createEmailJob(
             event.messageId(),

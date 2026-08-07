@@ -2,6 +2,12 @@ server:
   port: 0
 
 spring:
+
+  servlet:
+    multipart:
+      max-file-size: 10MB
+      max-request-size: 20MB
+
   # ── Database defaults (services override only what differs) ──────────
   datasource:
     url: jdbc:postgresql://${database.host}:${database.port}/${database.name}

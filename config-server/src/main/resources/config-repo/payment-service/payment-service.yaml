@@ -9,7 +9,7 @@ kafka:
   group-id: payment-service
 
 payment:
-  provider: ${PROVIDER:mock}
+  provider: ${PAYMENT_PROVIDER:mock}
   mock:
     success-rate: ${MOCK_SUCCESS_RATE:50}
 

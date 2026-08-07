@@ -1,0 +1,25 @@
+# ── Secrets & local config ─────────────────────────────
+.env
+.env.*
+profile.properties
+
+# ── VCS ────────────────────────────────────────────────
+.git
+.gitignore
+
+# ── IDE / OS ───────────────────────────────────────────
+.idea
+*.iml
+.vscode
+.DS_Store
+Thumbs.db
+
+# ── Logs ───────────────────────────────────────────────
+*.log
+
+# ── Runtime data (bind-mounted, not needed in the image) ──
+data
+uploads
+
+# NOTE: Do NOT ignore */target/ — the Dockerfile copies
+# prebuilt jars from <service>/target/*.jar into the image.
