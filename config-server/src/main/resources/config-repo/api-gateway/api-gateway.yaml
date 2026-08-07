@@ -31,6 +31,9 @@ jwt:
   refresh-token-expiry-ms: ${JWT_RTX:604800000}  # 7 day
   issuer: ticket-souq
 
+app:
+  generated-email-domain: ${GENERATED_EMAIL_DOMAIN:ticketaty.com}
+
 rate-limit:
   paths: /**
   capacity: ${RATE_LIMIT:20}

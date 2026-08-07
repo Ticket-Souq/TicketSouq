@@ -117,13 +117,13 @@
         </p>
 
         <a th:href="${loginUrl}" class="button">
-            Login to TicketSouq
+            Login to <span th:text="${brandName}">Ticketaty</span>
         </a>
 
     </div>
 
     <div class="footer">
-        This email was sent automatically by Ticketaty. Please do not reply to this message.
+        This email was sent automatically by <span th:text="${brandName}">Ticketaty</span>. Please do not reply to this message.
     </div>
 
 </div>

@@ -41,3 +41,5 @@ management:
 app:
   frontend:
     login-url: ${FRONTEND_URL:http://localhost:5173/login}
+  brand-name: ${BRAND_NAME:Ticketaty}
+  support-email: ${SUPPORT_EMAIL:support@ticketaty.com}

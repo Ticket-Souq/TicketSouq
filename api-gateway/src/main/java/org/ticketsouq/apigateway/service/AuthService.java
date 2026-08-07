@@ -2,6 +2,7 @@ package org.ticketsouq.apigateway.service;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -56,6 +57,9 @@ public class AuthService {
     private final OutboxWriter outboxWriter;
     private final PlatformTransactionManager transactionManager;
     private final GatewayMetrics gatewayMetrics;
+
+    @Value("${app.generated-email-domain:ticketaty.com}")
+    private String generatedEmailDomain;
 
     // ── REGISTER ──────────────────────────────────────────────────────────────
 
@@ -319,7 +323,7 @@ public class AuthService {
 
     private void addMember(List<GeneratedAccount> accounts, List<GenerateMembersRequest.MemberToCreate> members , Role role ) {
         String prefix = role==Role.ORG_Agent? "agent_":"consumer_";
-        String email = prefix + UUID.randomUUID().toString().substring(0, 8) + "@ticketsouq.com";
+        String email = prefix + UUID.randomUUID().toString().substring(0, 8) + "@" + generatedEmailDomain;
         String rawPassword = generateRandomString(8);
         AuthCredential credential = buildGeneratedCredential(email, rawPassword, role);
         credentialRepository.save(credential);

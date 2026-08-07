@@ -9,9 +9,9 @@ public enum NotificationTemplate {
 
     REGISTRATION(
         NotificationType.REGISTRATION,
-        "Welcome to Ticketaty",
+        "Welcome to {brand}",
         "Your account has been created successfully.",
-        "Verify your Ticketaty account",
+        "Verify your {brand} account",
         "email/registration"
     ),
 
@@ -50,7 +50,7 @@ public enum NotificationTemplate {
         NotificationType.ACCOUNT_GENERATED,
         null,
         null,
-        "Your Ticketaty Account",
+        "Your {brand} Account",
         "email/account-generated"
     ),
 

@@ -515,6 +515,7 @@ services:
       RATE_LIMIT: 2000
       FRONTEND_HOST: localhost
       FRONTEND_PORT: 5173
+      GENERATED_EMAIL_DOMAIN: ${GENERATED_EMAIL_DOMAIN:-ticketaty.com}
     depends_on:
       auth-db:
         condition: service_healthy
@@ -712,6 +713,8 @@ services:
       EMAIL_PASSWORD: ${EMAIL_PASSWORD}
       EMAIL_PROVIDER: ${EMAIL_PROVIDER}
       FRONTEND_URL: ${FRONTEND_URL:-http://localhost:5173/login}
+      BRAND_NAME: ${VITE_BRAND_NAME:-Ticketaty}
+      SUPPORT_EMAIL: ${VITE_SUPPORT_EMAIL:-support@ticketaty.com}
     depends_on:
       config-server:
         condition: service_healthy
@@ -789,7 +792,10 @@ services:
       context: ../client-side
       dockerfile: Dockerfile
       args:
-        VITE_API_URL: http://localhost:8080
+        VITE_API_URL: ${VITE_API_URL:-http://localhost:8080}
+        VITE_GRAFANA_URL: ${VITE_GRAFANA_URL:-http://localhost:3000}
+        VITE_BRAND_NAME: ${VITE_BRAND_NAME:-Ticketaty}
+        VITE_SUPPORT_EMAIL: ${VITE_SUPPORT_EMAIL:-support@ticketaty.com}
     container_name: frontend
     ports:
       - "5173:80"

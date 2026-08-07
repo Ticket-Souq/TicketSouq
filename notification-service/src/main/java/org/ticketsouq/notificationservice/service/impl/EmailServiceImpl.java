@@ -3,6 +3,7 @@ package org.ticketsouq.notificationservice.service.impl;
 import jakarta.mail.MessagingException;
 import jakarta.mail.internet.MimeMessage;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.stereotype.Service;
@@ -18,6 +19,12 @@ public class EmailServiceImpl implements EmailService {
     private final JavaMailSender mailSender;
     private final TemplateEngine templateEngine;
 
+    @Value("${app.brand-name:Ticketaty}")
+    private String brandName;
+
+    @Value("${app.support-email:support@ticketaty.com}")
+    private String supportEmail;
+
 
     @Override
     public void sendEmail(
@@ -29,6 +36,10 @@ public class EmailServiceImpl implements EmailService {
 
         Context context = new Context();
         context.setVariables(variables);
+        context.setVariable("brandName", brandName);
+        context.setVariable("supportEmail", supportEmail);
+
+        subject = subject.replace("{brand}", brandName);
 
         String html = templateEngine.process(template, context);
 
