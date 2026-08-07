@@ -353,6 +353,8 @@ services:
       GF_SECURITY_ALLOW_EMBEDDING: true
       GF_SECURITY_COOKIE_SAMESITE: none
       GF_SECURITY_ALLOW_GRANULATE_ACL: false
+      GF_SERVER_ROOT_URL: "%(protocol)s://%(domain)s/grafana"
+      GF_SERVER_SERVE_FROM_SUB_PATH: "true"
     volumes:
       - ./Docker/grafana/datasources:/etc/grafana/provisioning/datasources:ro
       - ./Docker/grafana/dashboards:/etc/grafana/provisioning/dashboards:ro
@@ -792,7 +794,8 @@ services:
       context: ../client-side
       dockerfile: Dockerfile
       args:
-        VITE_API_URL: ${VITE_API_URL:-http://localhost:8080}
+#        VITE_API_URL: ${VITE_API_URL:-http://localhost:8080}
+        VITE_API_URL: ${VITE_API_URL:-}
         VITE_GRAFANA_URL: ${VITE_GRAFANA_URL:-http://localhost:3000}
         VITE_BRAND_NAME: ${VITE_BRAND_NAME:-Ticketaty}
         VITE_SUPPORT_EMAIL: ${VITE_SUPPORT_EMAIL:-support@ticketaty.com}
