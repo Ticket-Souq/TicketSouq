@@ -161,7 +161,7 @@ public class AuthService {
      * 3. Generates a short-lived email-verification JWT
      * 4. Publishes an EmailVerificationEvent (async consumer sends the email)
      */
-    @Transactional(readOnly = true)
+    @Transactional
     public void triggerVerificationEmail(String email) {
         AuthCredential credential = getCredentialByEmail(email);
         if (credential.getIsVerified()) return;
@@ -190,7 +190,7 @@ public class AuthService {
      * 2. Generates a short-lived password-reset JWT
      * 3. Publishes a PasswordResetEvent (async consumer sends the email)
      */
-    @Transactional(readOnly = true)
+    @Transactional
     public void triggerPasswordReset(String email) {
         AuthCredential credential = getCredentialByEmail(email);
         String otp = authTokenService.generatePasswordResetOtp(credential.getUserId());
