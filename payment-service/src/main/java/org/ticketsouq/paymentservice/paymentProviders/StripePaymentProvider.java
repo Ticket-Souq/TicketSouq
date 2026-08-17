@@ -19,8 +19,6 @@ import org.ticketsouq.sharedmodule.PaymentService.exception.PaymentException;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.Currency;
-import java.util.HashMap;
-import java.util.Map;
 
 @RequiredArgsConstructor
 public class StripePaymentProvider implements PaymentProvider {
@@ -32,11 +30,6 @@ public class StripePaymentProvider implements PaymentProvider {
     public PaymentResponse pay(PaymentRequest request) {
         long amountInSmallestUnit = convertToSmallestCurrencyUnit(request.amount(), "EGP");
 
-        Map<String, String> metadata = new HashMap<>();
-        metadata.put("reservationId", request.reservationID().toString());
-        metadata.put("customerId", request.customerID().toString());
-        metadata.put("eventId", request.eventID() != null ? request.eventID().toString() : "");
-
         PaymentIntentCreateParams params = PaymentIntentCreateParams.builder()
                 .setAmount(amountInSmallestUnit)
                 .setCurrency("egp")
@@ -44,12 +37,11 @@ public class StripePaymentProvider implements PaymentProvider {
                         PaymentIntentCreateParams.AutomaticPaymentMethods.builder()
                                 .setEnabled(true)
                                 .build())
-                .putAllMetadata(metadata)
                 .build();
 
         try {
             RequestOptions requestOptions = RequestOptions.builder()
-                    .setIdempotencyKey("reservation-payment-" + request.reservationID())
+                    .setIdempotencyKey(request.reservationID().toString())
                     .build();
             PaymentIntent intent = PaymentIntent.create(params, requestOptions);
 

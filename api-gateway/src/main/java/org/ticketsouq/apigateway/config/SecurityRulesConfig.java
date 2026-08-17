@@ -158,8 +158,7 @@ public class SecurityRulesConfig {
                 "/api/v1/auth/unlock-org"
             ), HttpMethod.POST, SecurityRule.Access.PERMIT_ALL, null),
 
-            // Stripe webhook callback: payload is signature-verified by the payment-service,
-            // Stripe cannot send auth headers.
+            // Stripe webhook callback: payload is signature-verified by the payment-service, Stripe cannot send auth headers.
             new SecurityRule(List.of(
                 "/api/v1/payment/webhook/stripe"
             ), HttpMethod.POST, SecurityRule.Access.PERMIT_ALL, null),
