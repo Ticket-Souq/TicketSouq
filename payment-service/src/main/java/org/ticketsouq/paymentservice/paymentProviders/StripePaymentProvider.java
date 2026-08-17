@@ -3,6 +3,7 @@ package org.ticketsouq.paymentservice.paymentProviders;
 import com.stripe.exception.StripeException;
 import com.stripe.model.PaymentIntent;
 import com.stripe.model.Refund;
+import com.stripe.net.RequestOptions;
 import com.stripe.param.PaymentIntentCreateParams;
 import com.stripe.param.RefundCreateParams;
 import lombok.RequiredArgsConstructor;
@@ -18,6 +19,8 @@ import org.ticketsouq.sharedmodule.PaymentService.exception.PaymentException;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.Currency;
+import java.util.HashMap;
+import java.util.Map;
 
 @RequiredArgsConstructor
 public class StripePaymentProvider implements PaymentProvider {
@@ -29,6 +32,11 @@ public class StripePaymentProvider implements PaymentProvider {
     public PaymentResponse pay(PaymentRequest request) {
         long amountInSmallestUnit = convertToSmallestCurrencyUnit(request.amount(), "EGP");
 
+        Map<String, String> metadata = new HashMap<>();
+        metadata.put("reservationId", request.reservationID().toString());
+        metadata.put("customerId", request.customerID().toString());
+        metadata.put("eventId", request.eventID() != null ? request.eventID().toString() : "");
+
         PaymentIntentCreateParams params = PaymentIntentCreateParams.builder()
                 .setAmount(amountInSmallestUnit)
                 .setCurrency("egp")
@@ -36,10 +44,14 @@ public class StripePaymentProvider implements PaymentProvider {
                         PaymentIntentCreateParams.AutomaticPaymentMethods.builder()
                                 .setEnabled(true)
                                 .build())
+                .putAllMetadata(metadata)
                 .build();
 
         try {
-            PaymentIntent intent = PaymentIntent.create(params);
+            RequestOptions requestOptions = RequestOptions.builder()
+                    .setIdempotencyKey("reservation-payment-" + request.reservationID())
+                    .build();
+            PaymentIntent intent = PaymentIntent.create(params, requestOptions);
 
             PaymentModel payment = PaymentModel.builder()
                     .reservationID(request.reservationID())
@@ -48,6 +60,7 @@ public class StripePaymentProvider implements PaymentProvider {
                     .paymentStatus(PaymentStatus.PENDING)
                     .stripePaymentIntentId(intent.getId())
                     .transactionRef(intent.getId())
+                    .clientSecret(intent.getClientSecret())
                     .build();
 
             paymentRepository.save(payment);

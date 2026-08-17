@@ -2,13 +2,13 @@
 
 **Actors:** Saga Orchestrator (reservation-service) → Kafka (compensate commands) → Ticket Service + Payment Service + Event Service (parallel compensation) → Stripe (refund API)
 
-> **Note:** The primary refund mechanism in the codebase is **Saga Compensation**, triggered automatically when any saga step fails. Saga-triggered refunds mark the payment `REFUNDED` directly **without** publishing a `RefundCompletedEvent`, so the Notification Service is not notified. The `RefundCompletedEvent` → `payment.refunded` → notification path exists (`PaymentService.handleRefundCompleted`), but that handler is only reachable through the Stripe webhook, and **`StripeWebhookController` is currently disabled** (`@RestController` commented out).
+> **Note:** The primary refund mechanism in the codebase is **Saga Compensation**, triggered automatically when any saga step fails. Saga-triggered refunds mark the payment `REFUNDED` directly **without** publishing a `RefundCompletedEvent`, so the Notification Service is not notified. The `RefundCompletedEvent` → `payment.refunded` → notification path exists (`PaymentService.handleRefundCompleted`) and is reachable through the Stripe webhook (`POST /api/v1/payment/webhook/stripe`).
 
 ---
 
 ## Sequence Diagram
 
-> **Reading the diagram:** all compensate commands are async Kafka messages written via the outbox pattern; drawn service-to-service for readability. The Stripe webhook path is **disabled** in code (see Gap Analysis).
+> **Reading the diagram:** all compensate commands are async Kafka messages written via the outbox pattern; drawn service-to-service for readability.
 
 ```mermaid
 sequenceDiagram
@@ -104,11 +104,11 @@ sequenceDiagram
 | 4a | Consume `SagaLockConfirmCompensateCommand` | `EventEventConsumer.java` | 40-42 |
 | 4b | `LockService.release(reservationId)` deletes remaining lock rows | `EventEventConsumer.java` | 44 |
 
-### Phase 5 — Stripe Webhook (disabled code path)
+### Phase 5 — Stripe Webhook (refund notification path)
 
 | # | Action | File | Line(s) |
 |---|--------|------|---------|
-| 5a | `StripeWebhookController` disabled — `@RestController` commented out | `StripeWebhookController.java` | 16-19 |
+| 5a | `StripeWebhookController` enabled — `@RestController` at `POST /api/v1/payment/webhook/stripe` | `StripeWebhookController.java` | 16-19 |
 | 5b | `handleWebhookEvent()` routes `charge.refunded` → `handleRefundCompleted()` | `PaymentService.java` | 41-71 |
 | 5c | `handleRefundCompleted()` skips if already REFUNDED | `PaymentService.java` | 134-137 |
 | 5d | Marks REFUNDED, publishes `RefundCompletedEvent` via OutboxWriter → `payment.refunded` | `PaymentService.java` | 138-147 |
@@ -122,8 +122,7 @@ sequenceDiagram
 | Gap | Impact | Root Cause |
 |-----|--------|------------|
 | Saga-triggered refunds do **not** send notifications | User never receives "your payment has been refunded" email | `SagaPaymentCompensateConsumer` marks payment REFUNDED directly (`:42-46`) without publishing a `RefundCompletedEvent` to Kafka |
-| Stripe webhook controller is **disabled** | Even the intended notification path is unreachable at runtime | `@RestController` commented out at `StripeWebhookController.java:17` |
-| Refund notifications never fire end-to-end | Combined effect of the two gaps above | No active producer of `payment.refunded` in the deployed code path |
+| Refund notifications only fire via the Stripe webhook | The `payment.refunded` path is only exercised when Stripe sends `charge.refunded` | `handleRefundCompleted` is webhook-driven (`PaymentService.java:129-150`) |
 | `RefundCompletedEvent` field mislabeling | Notification looks up `userId`/`eventId` from customer/reservation IDs | `PaymentService.java:141-146` passes `customerID`/`reservationID` into the `userId`/`eventId` slots |
 | `TicketCancelledEvent` defined but never published/consumed | Dead code — no event-driven ticket cancellation outside saga | Only definition in `shared-module/.../events/TicketCancelledEvent.java`; no publisher nor consumer |
 
@@ -141,7 +140,7 @@ sequenceDiagram
 | Payment compensate consumer (no event) | `SagaPaymentCompensateConsumer.java` | 25-51 |
 | StripePaymentProvider.refund | `StripePaymentProvider.java` | 80-102 |
 | Lock compensate consumer | `EventEventConsumer.java` | 40-45 |
-| Stripe webhook controller (disabled) | `StripeWebhookController.java` | 16-19 |
+| Stripe webhook controller | `StripeWebhookController.java` | 16-19 |
 | PaymentService.handleRefundCompleted | `PaymentService.java` | 129-150 |
 | RefundCompletedEvent record | `RefundCompletedEvent.java` | 6-11 |
 | Notification consumer for refund | `NotificationEventConsumer.java` | 25-28 |
