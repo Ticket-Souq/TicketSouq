@@ -12,5 +12,6 @@ COPY --from=builder /app/extracted/dependencies/          ./
 COPY --from=builder /app/extracted/spring-boot-loader/    ./
 COPY --from=builder /app/extracted/snapshot-dependencies/ ./
 COPY --from=builder /app/extracted/application/           ./
+RUN mkdir -p /app/uploads && chown -R appuser:appgroup /app/uploads
 USER appuser
 ENTRYPOINT ["java", "--enable-preview", "org.springframework.boot.loader.launch.JarLauncher"]
