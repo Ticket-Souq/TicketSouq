@@ -680,7 +680,7 @@ services:
       retries: 8
       start_period: 45s
     volumes:
-      - ./uploads:/app/uploads
+      - event_uploads:/app/uploads
     networks:
       - Ticket-Souq-Microservice
   venue-service:
@@ -889,7 +889,7 @@ services:
         VITE_SUPPORT_EMAIL: ${VITE_SUPPORT_EMAIL:-support@ticketaty.com}
     container_name: frontend
     ports:
-      - "5173:80"
+      - "8081:80"
 #    depends_on:
 #      api-gateway:
 #        condition: service_healthy
@@ -917,6 +917,7 @@ volumes:
   kafka_data:
   es_data:
   redis_data:
+  event_uploads:
 
 networks:
   Ticket-Souq-Microservice:
