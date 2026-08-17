@@ -35,6 +35,7 @@ public class PaymentModel {
 
     private String transactionRef;
     private String stripePaymentIntentId;
+    private String clientSecret;
 
     @CreationTimestamp
     private Instant createdAt;

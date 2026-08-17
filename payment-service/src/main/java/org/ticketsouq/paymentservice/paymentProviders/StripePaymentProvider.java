@@ -3,6 +3,7 @@ package org.ticketsouq.paymentservice.paymentProviders;
 import com.stripe.exception.StripeException;
 import com.stripe.model.PaymentIntent;
 import com.stripe.model.Refund;
+import com.stripe.net.RequestOptions;
 import com.stripe.param.PaymentIntentCreateParams;
 import com.stripe.param.RefundCreateParams;
 import lombok.RequiredArgsConstructor;
@@ -39,7 +40,10 @@ public class StripePaymentProvider implements PaymentProvider {
                 .build();
 
         try {
-            PaymentIntent intent = PaymentIntent.create(params);
+            RequestOptions requestOptions = RequestOptions.builder()
+                    .setIdempotencyKey(request.reservationID().toString())
+                    .build();
+            PaymentIntent intent = PaymentIntent.create(params, requestOptions);
 
             PaymentModel payment = PaymentModel.builder()
                     .reservationID(request.reservationID())
@@ -48,6 +52,7 @@ public class StripePaymentProvider implements PaymentProvider {
                     .paymentStatus(PaymentStatus.PENDING)
                     .stripePaymentIntentId(intent.getId())
                     .transactionRef(intent.getId())
+                    .clientSecret(intent.getClientSecret())
                     .build();
 
             paymentRepository.save(payment);

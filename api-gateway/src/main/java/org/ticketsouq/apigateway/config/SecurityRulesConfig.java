@@ -23,6 +23,11 @@ public class SecurityRulesConfig {
             ), HttpMethod.GET, SecurityRule.Access.HAS_ROLE, List.of("CUSTOMER")),
 
             new SecurityRule(List.of(
+                "/api/v1/payment/reservation/{reservationId}", // Get a payment + Stripe clientSecret by reservation id
+                "/api/v1/payment/{paymentId}" // Get payment details by payment id
+            ), HttpMethod.GET, SecurityRule.Access.HAS_ROLE, List.of("CUSTOMER")),
+
+            new SecurityRule(List.of(
                 "/api/v1/event/locks/{eventId}/seats", // Acquire seat locks for checkout
                 "/api/v1/event/locks/{eventId}/zones", // Acquire a zone lock
                 "/api/v1/event/locks/reserve", // Finalize a reservation from acquired locks
@@ -151,6 +156,11 @@ public class SecurityRulesConfig {
             // The outer /api/v1/user/org/{orgHeadId}/approve endpoint is ADMIN-gated.
             new SecurityRule(List.of(
                 "/api/v1/auth/unlock-org"
+            ), HttpMethod.POST, SecurityRule.Access.PERMIT_ALL, null),
+
+            // Stripe webhook callback: payload is signature-verified by the payment-service, Stripe cannot send auth headers.
+            new SecurityRule(List.of(
+                "/api/v1/payment/webhook/stripe"
             ), HttpMethod.POST, SecurityRule.Access.PERMIT_ALL, null),
 
             //********************************************************************************************

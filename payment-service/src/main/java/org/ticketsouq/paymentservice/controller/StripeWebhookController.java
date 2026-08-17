@@ -14,8 +14,8 @@ import org.springframework.web.bind.annotation.RestController;
 import org.ticketsouq.paymentservice.service.PaymentService;
 
 @Slf4j
-//@RestController
-@RequestMapping("api/v1/webhook")
+@RestController
+@RequestMapping("api/v1/payment/webhook")
 public class StripeWebhookController {
 
     private final PaymentService paymentService;
