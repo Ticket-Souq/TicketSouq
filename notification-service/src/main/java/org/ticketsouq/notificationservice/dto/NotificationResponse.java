@@ -2,6 +2,7 @@ package org.ticketsouq.notificationservice.dto;
 
 import org.ticketsouq.notificationservice.enums.NotificationType;
 
+import java.time.Instant;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
@@ -11,6 +12,6 @@ public record NotificationResponse(
     String message,
     NotificationType type,
     boolean isRead,
-    LocalDateTime createdAt
+    Instant createdAt
 ) {
 }
