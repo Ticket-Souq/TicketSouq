@@ -6,9 +6,11 @@ COPY ${JAR_FILE} app.jar
 RUN java --enable-preview -Djarmode=tools -jar app.jar extract --layers --launcher --destination extracted
 # Stage 2: final lean image
 FROM eclipse-temurin:25-jre-alpine
+RUN addgroup -S appgroup && adduser -S appuser -G appgroup
 WORKDIR /app
 COPY --from=builder /app/extracted/dependencies/          ./
 COPY --from=builder /app/extracted/spring-boot-loader/    ./
 COPY --from=builder /app/extracted/snapshot-dependencies/ ./
 COPY --from=builder /app/extracted/application/           ./
+USER appuser
 ENTRYPOINT ["java", "--enable-preview", "org.springframework.boot.loader.launch.JarLauncher"]

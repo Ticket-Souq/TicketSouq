@@ -1,209 +1,320 @@
-#x-postgres: &postgres
-#  image: postgres
-#  restart: unless-stopped
-#  networks:
-#    - Ticket-Souq-Microservice
-
 services:
 
   # ─── Databases ──────────────────────────────────────────────
 
-#  user-db:
-#    <<: *postgres
-#    container_name: user-db
-#    environment:
-#      POSTGRES_USER: admin
-#      POSTGRES_PASSWORD: admin
-#      POSTGRES_DB: user_db
-#    ports:
-#      - "5433:5432"
-#    volumes:
-#      - postgres_user_data:/var/lib/postgresql
-#
-#  auth-db:
-#    <<: *postgres
-#    container_name: auth-db
-#    environment:
-#      POSTGRES_USER: admin
-#      POSTGRES_PASSWORD: admin
-#      POSTGRES_DB: auth_db
-#    ports:
-#      - "5443:5432"
-#    volumes:
-#      - postgres_auth_data:/var/lib/postgresql
-#
-#  event-db:
-#    <<: *postgres
-#    container_name: event-db
-#    environment:
-#      POSTGRES_USER: admin
-#      POSTGRES_PASSWORD: admin
-#      POSTGRES_DB: event_db
-#    ports:
-#      - "5434:5432"
-#    volumes:
-#      - postgres_event_data:/var/lib/postgresql
-#
-#  venue-db:
-#    <<: *postgres
-#    container_name: venue-db
-#    environment:
-#      POSTGRES_USER: admin
-#      POSTGRES_PASSWORD: admin
-#      POSTGRES_DB: venue_db
-#    ports:
-#      - "5435:5432"
-#    volumes:
-#      - postgres_venue_data:/var/lib/postgresql
-#
-#  ticket-db:
-#    <<: *postgres
-#    container_name: ticket-db
-#    environment:
-#      POSTGRES_USER: admin
-#      POSTGRES_PASSWORD: admin
-#      POSTGRES_DB: ticket_db
-#    ports:
-#      - "5436:5432"
-#    volumes:
-#      - postgres_ticket_data:/var/lib/postgresql
-#
-#  reservation-db:
-#    <<: *postgres
-#    container_name: reservation-db
-#    environment:
-#      POSTGRES_USER: admin
-#      POSTGRES_PASSWORD: admin
-#      POSTGRES_DB: reservation_db
-#    ports:
-#      - "5437:5432"
-#    volumes:
-#      - postgres_reservation_data:/var/lib/postgresql
-#
-#  payment-db:
-#    <<: *postgres
-#    container_name: payment-db
-#    environment:
-#      POSTGRES_USER: admin
-#      POSTGRES_PASSWORD: admin
-#      POSTGRES_DB: payment_db
-#    ports:
-#      - "5438:5432"
-#    volumes:
-#      - postgres_payment_data:/var/lib/postgresql
-
-#  notification-db:
-#    <<: *postgres
-#    container_name: notification-db
-#    environment:
-#      POSTGRES_USER: admin
-#      POSTGRES_PASSWORD: admin
-#      POSTGRES_DB: notification_db
-#    ports:
-#      - "5439:5432"
-#    volumes:
-#      - postgres_notification_data:/var/lib/postgresql
-
-#  audit-db:
-#    <<: *postgres
-#    container_name: audit-db
-#    environment:
-#      POSTGRES_USER: admin
-#      POSTGRES_PASSWORD: admin
-#      POSTGRES_DB: audit_db
-#    ports:
-#      - "5440:5432"
-#    volumes:
-#      - postgres_audit_data:/var/lib/postgresql
-#
-#  analytics-db:
-#    <<: *postgres
-#    container_name: analytics-db
-#    environment:
-#      POSTGRES_USER: admin
-#      POSTGRES_PASSWORD: admin
-#      POSTGRES_DB: analytics_db
-#    ports:
-#      - "5441:5432"
-#    volumes:
-#      - postgres_analytics_data:/var/lib/postgresql
-#
-#  availability-locking-db:
-#    <<: *postgres
-#    container_name: availability-locking-db
-#    environment:
-#      POSTGRES_USER: admin
-#      POSTGRES_PASSWORD: admin
-#      POSTGRES_DB: availability_locking_db
-#    ports:
-#      - "5442:5432"
-#    volumes:
-#      - postgres_availability_locking_data:/var/lib/postgresql
+  auth-db:
+    image: postgres:18.4
+    container_name: auth-db
+    environment:
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: admin
+      POSTGRES_DB: auth_db
+    restart: unless-stopped
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_auth_data:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U admin -d auth_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    networks:
+      - Ticket-Souq-Microservice
+  user-db:
+    image: postgres:18.4
+    container_name: user-db
+    environment:
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: admin
+      POSTGRES_DB: user_db
+    restart: unless-stopped
+    ports:
+      - "5438:5432"
+    volumes:
+      - postgres_user_data:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U admin -d user_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    networks:
+      - Ticket-Souq-Microservice
+  notification-db:
+    image: postgres:18.4
+    container_name: notification-db
+    environment:
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: admin
+      POSTGRES_DB: notification_db
+    restart: unless-stopped
+    ports:
+      - "5433:5432"
+    volumes:
+      - postgres_notification_data:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U admin -d notification_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    networks:
+      - Ticket-Souq-Microservice
+  payment-db:
+    image: postgres:18.4
+    container_name: payment-db
+    environment:
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: admin
+      POSTGRES_DB: payment_db
+    ports:
+      - "5436:5432"
+    restart: unless-stopped
+    volumes:
+      - postgres_payment_data:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U admin -d payment_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    networks:
+      - Ticket-Souq-Microservice
+  venue-db:
+    image: postgres:18.4
+    container_name: venue-db
+    environment:
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: admin
+      POSTGRES_DB: venue_db
+    restart: unless-stopped
+    ports:
+      - "5435:5432"
+    volumes:
+      - postgres_venue_data:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U admin -d venue_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    networks:
+      - Ticket-Souq-Microservice
+  event-db:
+    image: postgres:18.4
+    container_name: event-db
+    environment:
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: admin
+      POSTGRES_DB: event_db
+    restart: unless-stopped
+    ports:
+      - "5434:5432"
+    volumes:
+      - postgres_event_data:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U admin -d event_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    networks:
+      - Ticket-Souq-Microservice
+  ticket-db:
+    image: postgres:18.4
+    container_name: ticket-db
+    environment:
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: admin
+      POSTGRES_DB: ticket_db
+    restart: unless-stopped
+    ports:
+      - "5439:5432"
+    volumes:
+      - postgres_ticket_data:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U admin -d ticket_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    networks:
+      - Ticket-Souq-Microservice
+  audit-db:
+    image: postgres:18.4
+    container_name: audit-db
+    environment:
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: admin
+      POSTGRES_DB: audit_db
+    restart: unless-stopped
+    ports:
+      - "5440:5432"
+    volumes:
+      - postgres_audit_data:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U admin -d audit_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    networks:
+      - Ticket-Souq-Microservice
+  reservation-db:
+    image: postgres:18.4
+    container_name: reservation-db
+    environment:
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: admin
+      POSTGRES_DB: reservation_db
+    ports:
+      - "5437:5432"
+    restart: unless-stopped
+    volumes:
+      - postgres_reservation_data:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U admin -d reservation_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    networks:
+      - Ticket-Souq-Microservice
+  analytics-db:
+    image: postgres:18.4
+    container_name: analytics-db
+    environment:
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: admin
+      POSTGRES_DB: analytics_db
+    restart: unless-stopped
+    ports:
+      - "5441:5432"
+    volumes:
+      - postgres_analytics_data:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U admin -d analytics_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    networks:
+      - Ticket-Souq-Microservice
 
   # ─── Messaging ──────────────────────────────────────────────
 
-#  kafka:
-#    image: confluentinc/cp-kafka:7.6.0
-#    container_name: kafka
-#    ports:
-#      - "29092:29092"
-#    environment:
-#      KAFKA_NODE_ID: 1
-#      KAFKA_PROCESS_ROLES: broker,controller
-#      KAFKA_CONTROLLER_QUORUM_VOTERS: 1@kafka:9093
-#      KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:9092,PLAINTEXT_HOST://0.0.0.0:29092,CONTROLLER://0.0.0.0:9093
-#      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092,PLAINTEXT_HOST://localhost:29092
-#      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT,CONTROLLER:PLAINTEXT
-#      KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
-#      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
-#      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
-#      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
-#      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
-#      CLUSTER_ID: MkU3OEVBNTcwNTJENDM2Qk
-#    volumes:
-#      - kafka_data:/var/lib/kafka/data
-#    networks:
-#      - Ticket-Souq-Microservice
-#
-#  kafka-ui:
-#    image: provectuslabs/kafka-ui:latest
-#    container_name: kafka-ui
-#    depends_on:
-#      - kafka
-#    ports:
-#      - "8086:8080"
-#    environment:
-#      KAFKA_CLUSTERS_0_NAME: local
-#      KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: kafka:9092
-#      DYNAMIC_CONFIG_ENABLED: "true"
-#    networks:
-#      - Ticket-Souq-Microservice
+  kafka:
+    image: confluentinc/cp-kafka:7.6.0
+    container_name: kafka
+    restart: unless-stopped
+    ports:
+      - "29092:29092"
+    environment:
+      KAFKA_NODE_ID: 1
+      KAFKA_PROCESS_ROLES: broker,controller
+      KAFKA_CONTROLLER_QUORUM_VOTERS: 1@kafka:9093
+      KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:9092,PLAINTEXT_HOST://0.0.0.0:29092,CONTROLLER://0.0.0.0:9093
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092,PLAINTEXT_HOST://localhost:29092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT,CONTROLLER:PLAINTEXT
+      KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      CLUSTER_ID: MkU3OEVBNTcwNTJENDM2Qk
+    healthcheck:
+      test: [ "CMD-SHELL", "kafka-broker-api-versions --bootstrap-server localhost:9092 || exit 1" ]
+      interval: 10s
+      timeout: 10s
+      retries: 10
+      start_period: 30s
+    volumes:
+      - kafka_data:/var/lib/kafka/data
+    networks:
+      - Ticket-Souq-Microservice
+  kafka-ui:
+    image: provectuslabs/kafka-ui:v0.7.2
+    container_name: kafka-ui
+    depends_on:
+      kafka:
+        condition: service_healthy
+    ports:
+      - "8066:8080"
+    environment:
+      KAFKA_CLUSTERS_0_NAME: local
+      KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: kafka:9092
+      DYNAMIC_CONFIG_ENABLED: "true"
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q --spider http://localhost:8080/actuator/health || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 10
+      start_period: 60s
+    networks:
+      - Ticket-Souq-Microservice
+  kafka-exporter:
+    image: danielqsj/kafka-exporter:v1.9.0
+    container_name: kafka-exporter
+    depends_on:
+      kafka:
+        condition: service_healthy
+    command:
+      - --kafka.server=kafka:9092
+    ports:
+      - "9308:9308"
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q --spider http://localhost:9308/metrics || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    networks:
+      - Ticket-Souq-Microservice
 
   # ─── Observability ──────────────────────────────────────────
 
   prometheus:
     image: prom/prometheus:v2.46.0
     container_name: prometheus
-    volumes:
-      - ./Docker/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+    entrypoint:
+      - /bin/sh
     command:
-      - --config.file=/etc/prometheus/prometheus.yml
-      - --enable-feature=exemplar-storage
+      - /usr/local/bin/replace_env.sh
+    environment:
+      EUREKA_HOST: ${EUREKA_HOST:-host.docker.internal}
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    volumes:
+      - ./Docker/prometheus/prometheus.yml:/etc/prometheus/prometheus.tmpl:ro
+      - ./Docker/prometheus/replace_env.sh:/usr/local/bin/replace_env.sh:ro
     ports:
       - "9090:9090"
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q --spider http://localhost:9090/-/healthy || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
     networks:
       - Ticket-Souq-Microservice
-
   loki:
-    image: grafana/loki:main
+    image: grafana/loki:3.1.2
     container_name: loki
     command:
       - -config.file=/etc/loki/local-config.yaml
     ports:
       - "3100:3100"
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q --spider http://localhost:3100/ready || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
     networks:
       - Ticket-Souq-Microservice
-
   tempo:
     image: grafana/tempo:2.2.2
     container_name: tempo
@@ -217,9 +328,73 @@ services:
       - "9411:9411"   # zipkin listen port
 #      - "4317:4317"   # OTLP gRPC
 #      - "4318:4318"   # OTLP HTTP — services send directly here
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q --spider http://localhost:3200/ready || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
     networks:
       - Ticket-Souq-Microservice
-
+  pyroscope:
+    build:
+      context: .
+      dockerfile_inline: |
+        FROM grafana/pyroscope:2.2.1
+        COPY --from=busybox:1.36-musl /bin/busybox /bin/busybox
+    container_name: pyroscope
+    ports:
+      - "4040:4040"
+    healthcheck:
+      test: ["CMD", "/bin/busybox", "wget", "-q", "--spider", "http://127.0.0.1:4040/ready"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+    networks:
+      - Ticket-Souq-Microservice
+  cadvisor:
+    image: gcr.io/cadvisor/cadvisor:v0.47.0
+    container_name: cadvisor
+    privileged: true
+    devices:
+      - /dev/kmsg
+    volumes:
+      - /:/rootfs:ro
+      - /var/run:/var/run:ro
+      - /sys:/sys:ro
+      - /var/lib/docker/:/var/lib/docker:ro
+      - /dev/disk/:/dev/disk:ro
+    ports:
+      - "8082:8080"
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q --spider http://localhost:8080/healthz || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    networks:
+      - Ticket-Souq-Microservice
+  promtail:
+    image: grafana/promtail:2.9.2
+    container_name: promtail
+    volumes:
+      - ./Docker/loki/promtail.yml:/etc/promtail/config.yml:ro
+      - /var/run/docker.sock:/var/run/docker.sock
+    command:
+      - -config.file=/etc/promtail/config.yml
+    depends_on:
+      loki:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "bash -c 'cat < /dev/null > /dev/tcp/127.0.0.1/9080'"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+    networks:
+      - Ticket-Souq-Microservice
   grafana:
     image: grafana/grafana:10.1.0
     container_name: grafana
@@ -229,37 +404,143 @@ services:
       GF_AUTH_ANONYMOUS_ENABLED: true
       GF_AUTH_ANONYMOUS_ORG_ROLE: Admin
       GF_AUTH_DISABLE_LOGIN_FORM: true
-      GF_PLUGINS_PREINSTALL: hamedkarbasi93-kafka-datasource
+      GF_INSTALL_PLUGINS: hamedkarbasi93-kafka-datasource, redis-datasource
+      GF_SECURITY_ALLOW_EMBEDDING: true
+      GF_SECURITY_COOKIE_SAMESITE: none
+      GF_SECURITY_ALLOW_GRANULATE_ACL: false
+      GF_SERVER_ROOT_URL: "%(protocol)s://%(domain)s/grafana"
+      GF_SERVER_SERVE_FROM_SUB_PATH: "true"
     volumes:
-      - ./Docker/grafana:/etc/grafana/provisioning/datasources:ro
+      - ./Docker/grafana/datasources:/etc/grafana/provisioning/datasources:ro
+      - ./Docker/grafana/dashboards:/etc/grafana/provisioning/dashboards:ro
+      - ./Docker/grafana/plugins:/var/lib/grafana/plugins
     depends_on:
-      - prometheus
-      - loki
-      - tempo
+      prometheus:
+        condition: service_healthy
+      loki:
+        condition: service_healthy
+      tempo:
+        condition: service_healthy
+      pyroscope:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q --spider http://localhost:3000/api/health || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
     networks:
       - Ticket-Souq-Microservice
 
   # ─── Cache ──────────────────────────────────────────────────
 
-#  redis:
-#    image: redis:7-alpine
-#    container_name: redis
-#    command: redis-server --appendonly yes
-#    ports:
-#      - "6379:6379"
-#    volumes:
-#      - redis_data:/data
-#    restart: unless-stopped
-#    healthcheck:
-#      test: [ "CMD", "redis-cli", "ping" ]
-#      interval: 10s
-#      timeout: 5s
-#      retries: 5
-#    networks:
-#      - Ticket-Souq-Microservice
-#
+  redis:
+    image: redis:7-alpine
+    container_name: redis
+    command: redis-server --appendonly yes
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    restart: unless-stopped
+    healthcheck:
+      test: [ "CMD", "redis-cli", "ping" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - Ticket-Souq-Microservice
+  redis-exporter:
+    build:
+      context: .
+      dockerfile_inline: |
+        FROM oliver006/redis_exporter:v1.88.0
+        COPY --from=busybox:1.36-musl /bin/busybox /bin/busybox
+    container_name: redis-exporter
+    depends_on:
+      redis:
+        condition: service_healthy
+    command:
+      - --redis.addr=redis://redis:6379
+    ports:
+      - "9121:9121"
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "/bin/busybox", "wget", "-q", "--spider", "http://127.0.0.1:9121/metrics"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    networks:
+      - Ticket-Souq-Microservice
+  telegraf:
+    image: telegraf:1.30.3
+    container_name: telegraf
+    entrypoint:
+      - /usr/bin/telegraf
+    command:
+      - --config
+      - /etc/telegraf/telegraf.conf
+    volumes:
+      - ./Docker/telegraf/telegraf.conf:/etc/telegraf/telegraf.conf:ro
+      - /var/run/docker.sock:/var/run/docker.sock
+    ports:
+      - "9273:9273"
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q --spider http://localhost:9273/metrics || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    networks:
+      - Ticket-Souq-Microservice
 
-#   ─── Spring Boot Services (commented out until built) ───────
+  # ─── Elastic Search ───────
+
+  elasticsearch:
+    image: elasticsearch:9.2.3
+    container_name: elasticsearch
+    environment:
+      discovery.type: single-node
+      ES_JAVA_OPTS: "-Xms512m -Xmx512m"
+      xpack.security.enabled: "false"
+    ports:
+      - "9200:9200"
+    volumes:
+      - es_data:/usr/share/elasticsearch/data
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:9200/_cluster/health || exit 1"]
+      interval: 20s
+      timeout: 10s
+      retries: 5
+    restart: unless-stopped
+    networks:
+      - Ticket-Souq-Microservice
+  kibana:
+    image: kibana:9.2.3
+    container_name: kibana
+    environment:
+      ELASTICSEARCH_HOSTS: http://elasticsearch:9200
+    ports:
+      - "5601:5601"
+    depends_on:
+      elasticsearch:
+        condition: service_healthy   # ← wait for ES to be actually ready
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fs http://localhost:5601/api/status || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 10
+      start_period: 60s
+    networks:
+      - Ticket-Souq-Microservice
+
+  # ─── Infrastructure Services ─────────────────────────────────
 
   config-server:
     build:
@@ -271,8 +552,7 @@ services:
     ports:
       - "8888:8888"
     environment:
-      EUREKA_ORIGIN: http://discovery-server:8761
-      SPRING_PROFILES_ACTIVE: native,Docker
+      SPRING_PROFILES_ACTIVE: Docker,native
     networks:
       - Ticket-Souq-Microservice
     healthcheck:
@@ -281,14 +561,13 @@ services:
       timeout: 5s
       retries: 8
       start_period: 30s
-
   discovery-server:
+    container_name: discovery-server
     build:
       context: .
       dockerfile: Dockerfile
       args:
         JAR_FILE: discovery-server/target/*.jar
-    container_name: discovery-server
     ports:
       - "8761:8761"
     environment:
@@ -305,117 +584,342 @@ services:
       retries: 8
       start_period: 30s
 
-#volumes:
-#  postgres_user_data:
-#  postgres_auth_data:
-#  postgres_event_data:
-#  postgres_venue_data:
-#  postgres_ticket_data:
-#  postgres_reservation_data:
-#  postgres_payment_data:
-#  postgres_notification_data:
-#  postgres_audit_data:
-#  postgres_analytics_data:
-#  postgres_availability_locking_data:
-#  kafka_data:
-#  es_data:
-#  redis_data:
+  # ─── Gateway ─────────────────────────────────────────────────
 
+  api-gateway:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        JAR_FILE: api-gateway/target/*.jar
+    container_name: api-gateway
+    ports:
+      - "8080:8080"
+    environment:
+      SPRING_PROFILES_ACTIVE: Docker
+      JWT_SECRET: ${JWT_SECRET}
+      JWT_ATX: 300000  # access token expiration 5 minutes
+      JWT_ETX: 300000  # email token expiration 5 minutes
+      JWT_PTX: 300000  # password token expiration 5 minutes
+      JWT_RTX: 604800000  # refresh token expiration 7 days
+      RATE_LIMIT: 2000
+      FRONTEND_HOST: localhost
+      FRONTEND_PORT: 5173
+      GENERATED_EMAIL_DOMAIN: ${GENERATED_EMAIL_DOMAIN:-ticketaty.com}
+    depends_on:
+      auth-db:
+        condition: service_healthy
+      config-server:
+        condition: service_healthy
+      discovery-server:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - Ticket-Souq-Microservice
+    healthcheck:
+      test: [ "CMD", "wget", "-qO-", "http://localhost:8080/actuator/health" ]
+      interval: 15s
+      timeout: 5s
+      retries: 8
+      start_period: 45s
+
+  # ─── Business Services ───────────────────────────────────────
+
+  user-service:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        JAR_FILE: user-service/target/*.jar
+    container_name: user-service
+    environment:
+      SPRING_PROFILES_ACTIVE: Docker
+    depends_on:
+      config-server:
+        condition: service_healthy
+      discovery-server:
+        condition: service_healthy
+      user-db:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:8081/actuator/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 8
+      start_period: 45s
+    networks:
+      - Ticket-Souq-Microservice
+  event-service:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        JAR_FILE: event-service/target/*.jar
+    container_name: event-service
+    environment:
+      SPRING_PROFILES_ACTIVE: Docker
+      SEARCH_ENGINE: ES # PG,ES
+    depends_on:
+      config-server:
+        condition: service_healthy
+      discovery-server:
+        condition: service_healthy
+      event-db:
+        condition: service_healthy
+      elasticsearch:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:8082/actuator/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 8
+      start_period: 45s
+    volumes:
+      - ./uploads:/app/uploads
+    networks:
+      - Ticket-Souq-Microservice
+  venue-service:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        JAR_FILE: venue-service/target/*.jar
+    container_name: venue-service
+    environment:
+      SPRING_PROFILES_ACTIVE: Docker
+    depends_on:
+      config-server:
+        condition: service_healthy
+      discovery-server:
+        condition: service_healthy
+      venue-db:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:8084/actuator/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 8
+      start_period: 45s
+    networks:
+      - Ticket-Souq-Microservice
+  ticket-service:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        JAR_FILE: ticket-service/target/*.jar
+    container_name: ticket-service
+    environment:
+      SPRING_PROFILES_ACTIVE: Docker
+    depends_on:
+      config-server:
+        condition: service_healthy
+      discovery-server:
+        condition: service_healthy
+      ticket-db:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:8083/actuator/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 8
+      start_period: 45s
+    networks:
+      - Ticket-Souq-Microservice
+  payment-service:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        JAR_FILE: payment-service/target/*.jar
+    container_name: payment-service
+    environment:
+      SPRING_PROFILES_ACTIVE: Docker
+      PAYMENT_PROVIDER: ${PAYMENT_PROVIDER}
+      MOCK_SUCCESS_RATE: ${MOCK_SUCCESS_RATE}
+      STRIPE_SECRET: ${STRIPE_SECRET}
+      STRIPE_PUBLISHABLE: ${STRIPE_PUBLISHABLE}
+      STRIPE_WEBHOOK: ${STRIPE_WEBHOOK}
+    depends_on:
+      config-server:
+        condition: service_healthy
+      discovery-server:
+        condition: service_healthy
+      payment-db:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:8086/actuator/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 8
+      start_period: 45s
+    networks:
+      - Ticket-Souq-Microservice
+  reservation-service:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        JAR_FILE: reservation-service/target/*.jar
+    container_name: reservation-service
+    environment:
+      SPRING_PROFILES_ACTIVE: Docker
+    depends_on:
+      config-server:
+        condition: service_healthy
+      discovery-server:
+        condition: service_healthy
+      reservation-db:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:8085/actuator/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 8
+      start_period: 45s
+    networks:
+      - Ticket-Souq-Microservice
+  notification-service:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        JAR_FILE: notification-service/target/*.jar
+    container_name: notification-service
+    environment:
+      SPRING_PROFILES_ACTIVE: Docker
+      EMAIL: ${EMAIL}
+      EMAIL_PASSWORD: ${EMAIL_PASSWORD}
+      EMAIL_PROVIDER: ${EMAIL_PROVIDER}
+      FRONTEND_URL: ${FRONTEND_URL:-http://localhost:5173/login}
+      BRAND_NAME: ${VITE_BRAND_NAME:-Ticketaty}
+      SUPPORT_EMAIL: ${VITE_SUPPORT_EMAIL:-support@ticketaty.com}
+    depends_on:
+      config-server:
+        condition: service_healthy
+      discovery-server:
+        condition: service_healthy
+      notification-db:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:8087/actuator/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 8
+      start_period: 45s
+    networks:
+      - Ticket-Souq-Microservice
+  audit-service:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        JAR_FILE: audit-service/target/*.jar
+    container_name: audit-service
+    environment:
+      SPRING_PROFILES_ACTIVE: Docker
+    depends_on:
+      config-server:
+        condition: service_healthy
+      discovery-server:
+        condition: service_healthy
+      audit-db:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:8088/actuator/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 8
+      start_period: 45s
+    networks:
+      - Ticket-Souq-Microservice
+  analytics-service:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        JAR_FILE: analytics-service/target/*.jar
+    container_name: analytics-service
+    environment:
+      SPRING_PROFILES_ACTIVE: Docker
+    depends_on:
+      config-server:
+        condition: service_healthy
+      discovery-server:
+        condition: service_healthy
+      analytics-db:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:8089/actuator/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 8
+      start_period: 45s
+    networks:
+      - Ticket-Souq-Microservice
+
+  # ─── Frontend ──────────────────────────────────────────────
+
+  frontend:
+    build:
+      context: ../client-side
+      dockerfile: Dockerfile
+      args:
+#        VITE_API_URL: ${VITE_API_URL:-http://localhost:8080}
+        VITE_API_URL: ${VITE_API_URL:-}
+        VITE_GRAFANA_URL: ${VITE_GRAFANA_URL:-http://localhost:3000}
+        VITE_BRAND_NAME: ${VITE_BRAND_NAME:-Ticketaty}
+        VITE_SUPPORT_EMAIL: ${VITE_SUPPORT_EMAIL:-support@ticketaty.com}
+    container_name: frontend
+    ports:
+      - "5173:80"
+#    depends_on:
+#      api-gateway:
+#        condition: service_healthy
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q --spider http://127.0.0.1/ || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    networks:
+      - Ticket-Souq-Microservice
+
+volumes:
+  postgres_user_data:
+  postgres_auth_data:
+  postgres_event_data:
+  postgres_venue_data:
+  postgres_ticket_data:
+  postgres_reservation_data:
+  postgres_payment_data:
+  postgres_notification_data:
+  postgres_audit_data:
+  postgres_analytics_data:
+  kafka_data:
+  es_data:
+  redis_data:
 
 networks:
   Ticket-Souq-Microservice:
     name: Ticket-Souq-Microservice
     driver: bridge
 
-
-# ─── not working right now do not try to run it ───────
-
-# ─── Elastic Search (commented out until needed) ───────
-#  elasticsearch:
-#    image: elasticsearch:9.2.3
-#    container_name: elasticsearch
-#    environment:
-#      discovery.type: single-node
-#      ES_JAVA_OPTS: "-Xms512m -Xmx512m"
-#      xpack.security.enabled: "false"
-#    ports:
-#      - "9200:9200"
-#    volumes:
-#      - es_data:/usr/share/elasticsearch/data
-#    ulimits:
-#      memlock:
-#        soft: -1
-#        hard: -1
-#    healthcheck:
-#      test: [ "CMD-SHELL", "curl -f http://localhost:9200/_cluster/health || exit 1" ]
-#      interval: 20s
-#      timeout: 10s
-#      retries: 5
-#    restart: unless-stopped
-#    networks:
-#      - Ticket-Souq-Microservice
-#
-#  kibana:
-#    image: kibana:9.2.3
-#    container_name: kibana
-#    environment:
-#      ELASTICSEARCH_HOSTS: http://elasticsearch:9200
-#    ports:
-#      - "5601:5601"
-#    depends_on:
-#      elasticsearch:
-#        condition: service_healthy   # ← wait for ES to be actually ready
-#    networks:
-#      - Ticket-Souq-Microservice
-#
-#
-#  api-gateway:
-#    build:
-#      context: .
-#      dockerfile: Dockerfile
-#      args:
-#        JAR_FILE: api-gateway/target/*.jar
-#    container_name: api-gateway
-#    ports:
-#      - "8080:8080"
-#    environment:
-#      EUREKA_ORIGIN: http://discovery-server:8761
-#      SPRING_PROFILES_ACTIVE: Docker
-#      LOKI_HOST: loki
-#      LOKI_PORT: 3100
-#      KAFKA_SERVER: kafka:9092
-#    networks:
-#      - Ticket-Souq-Microservice
-#    depends_on:
-#      config-server:
-#        condition: service_healthy
-#      kafka:
-#        condition: service_started
-#
-#  user-service:
-#    build:
-#      context: .
-#      dockerfile: Dockerfile
-#      args:
-#        JAR_FILE: user-service/target/*.jar
-#    container_name: user-service
-#    environment:
-#      EUREKA_ORIGIN: http://discovery-server:8761
-#      SPRING_PROFILES_ACTIVE: Docker
-#      DATABASE_HOST: user-db
-#      DATABASE_NAME: user_db
-#      DATABASE_PORT: 5432
-#      DATABASE_USERNAME: admin
-#      DATABASE_PASSWORD: admin
-#      LOKI_HOST: loki
-#      LOKI_PORT: 3100
-#      KAFKA_SERVER: kafka:9092
-#    networks:
-#      - Ticket-Souq-Microservice
-#    depends_on:
-#      config-server:
-#        condition: service_healthy
-#      user-db:
-#        condition: service_started
-#      kafka:
-#        condition: service_started

@@ -2,6 +2,7 @@
 <project version="4">
   <component name="CompilerConfiguration">
     <annotationProcessing>
+      <profile default="true" name="Default" enabled="true" />
       <profile name="Maven default annotation processors profile" enabled="true">
         <sourceOutputDir name="target/generated-sources/annotations" />
         <sourceTestOutputDir name="target/generated-test-sources/test-annotations" />
@@ -26,6 +27,7 @@
         <module name="discovery-server" />
         <module name="payment-service" />
         <module name="event-service" />
+        <module name="ticketsouq-outbox" />
         <module name="reservation-service" />
         <module name="analytics-service" />
         <module name="api-gateway" />
@@ -34,6 +36,7 @@
       </profile>
     </annotationProcessing>
     <bytecodeTargetLevel>
+      <module name="availability-locking-service" target="25" />
       <module name="demo-module" target="25" />
     </bytecodeTargetLevel>
   </component>
@@ -55,6 +58,7 @@
       <module name="reservation-service" options="-parameters --enable-preview" />
       <module name="shared-module" options="-parameters --enable-preview" />
       <module name="ticket-service" options="-parameters --enable-preview" />
+      <module name="ticketsouq-outbox" options="-parameters --enable-preview" />
       <module name="user-service" options="-parameters --enable-preview" />
       <module name="venue-service" options="-parameters --enable-preview" />
     </option>

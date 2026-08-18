@@ -1,0 +1,22 @@
+database:
+  host: ${DATABASE_HOST}
+  port: ${DATABASE_PORT}
+  name: event_db
+  username: admin
+  password: admin
+
+kafka:
+  group-id: event-service
+
+search:
+  engine: ${SEARCH_ENGINE:ES}
+
+spring:
+  elasticsearch:
+    uris: http://${elasticsearch.host}:${elasticsearch.port}
+    connection-timeout: 5s
+    socket-timeout: 60s
+
+app:
+  lock:
+    ttl: 12

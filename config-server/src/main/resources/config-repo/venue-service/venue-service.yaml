@@ -1,0 +1,6 @@
+database:
+  host: ${DATABASE_HOST}
+  port: ${DATABASE_PORT}
+  name: venue_db
+  username: admin
+  password: admin

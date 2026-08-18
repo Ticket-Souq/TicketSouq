@@ -1,0 +1,9 @@
+DATABASE_HOST : event-db
+DATABASE_PORT : 5432
+
+elasticsearch:
+  host: elasticsearch
+  port: 9200
+
+server:
+  port: 8082

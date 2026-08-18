@@ -1,0 +1,301 @@
+apiVersion: 1
+
+datasources:
+  - name: Prometheus
+    uid: prometheus
+    type: prometheus
+    access: proxy
+    url: http://prometheus:9090
+    editable: false
+    jsonData:
+      httpMethod: POST
+      exemplarTraceIdDestinations:
+        - name: trace_id
+          datasourceUid: tempo
+
+
+  - name: Tempo
+    type: tempo
+    access: proxy
+    orgId: 1
+    url: http://tempo:3200
+    basicAuth: false
+    isDefault: true
+    version: 1
+    editable: false
+    apiVersion: 1
+    uid: tempo
+    jsonData:
+      httpMethod: GET
+      tracesToLogs:
+        datasourceUid: 'loki'
+      nodeGraph:
+        enabled: true
+      serviceMap:
+        datasourceUid: prometheus
+
+
+  - name: Loki
+    type: loki
+    uid: loki
+    access: proxy
+    orgId: 1
+    url: http://loki:3100
+    basicAuth: false
+    isDefault: false
+    version: 1
+    editable: false
+    apiVersion: 1
+    jsonData:
+      derivedFields:
+        -   datasourceUid: tempo
+            matcherRegex: \[([a-f0-9]{16,32})\]
+            name: TraceID
+            url: $${__value.raw}
+
+
+  - name: Pyroscope
+    type: grafana-pyroscope-datasource
+    uid: pyroscope
+    access: proxy
+    orgId: 1
+    url: http://pyroscope:4040
+    basicAuth: false
+    isDefault: false
+    version: 1
+    editable: false
+    apiVersion: 1
+    jsonData:
+      httpMethod: POST
+
+
+  - name: Kafka
+    type: hamedkarbasi93-kafka-datasource
+    uid: kafka
+    access: proxy
+    orgId: 1
+    url: http://kafka:9092
+    basicAuth: false
+    isDefault: false
+    version: 1
+    editable: false
+    apiVersion: 1
+    jsonData:
+      bootstrapServers: kafka:9092
+      securityProtocol: PLAINTEXT
+      logLevel: info
+      healthcheckTimeout: 2000
+
+
+  - name: Redis
+    type: redis-datasource
+    uid: redis
+    access: proxy
+    orgId: 1
+    url: redis://redis:6379
+    basicAuth: false
+    isDefault: false
+    version: 1
+    editable: false
+    apiVersion: 1
+    jsonData:
+      client: grafana-redis-datasource
+      address: redis://redis:6379
+
+
+  - name: Elasticsearch
+    type: elasticsearch
+    uid: elasticsearch
+    access: proxy
+    orgId: 1
+    url: http://elasticsearch:9200
+    basicAuth: false
+    isDefault: false
+    version: 1
+    editable: false
+    apiVersion: 1
+    jsonData:
+      esVersion: "8.0.0"
+      timeField: "@timestamp"
+      logMessageField: message
+      logLevelField: level
+
+
+  - name: PostgreSQL - Auth
+    type: postgres
+    uid: postgres-auth
+    access: proxy
+    orgId: 1
+    url: auth-db:5432
+    user: admin
+    secureJsonData:
+      password: admin
+    jsonData:
+      database: auth_db
+      sslmode: disable
+      postgresVersion: 1500
+      timescaledb: false
+    isDefault: false
+    editable: false
+
+
+  - name: PostgreSQL - User
+    type: postgres
+    uid: postgres-user
+    access: proxy
+    orgId: 1
+    url: user-db:5432
+    user: admin
+    secureJsonData:
+      password: admin
+    jsonData:
+      database: user_db
+      sslmode: disable
+      postgresVersion: 1500
+      timescaledb: false
+    isDefault: false
+    editable: false
+
+
+  - name: PostgreSQL - Notification
+    type: postgres
+    uid: postgres-notification
+    access: proxy
+    orgId: 1
+    url: notification-db:5432
+    user: admin
+    secureJsonData:
+      password: admin
+    jsonData:
+      database: notification_db
+      sslmode: disable
+      postgresVersion: 1500
+      timescaledb: false
+    isDefault: false
+    editable: false
+
+
+  - name: PostgreSQL - Payment
+    type: postgres
+    uid: postgres-payment
+    access: proxy
+    orgId: 1
+    url: payment-db:5432
+    user: admin
+    secureJsonData:
+      password: admin
+    jsonData:
+      database: payment_db
+      sslmode: disable
+      postgresVersion: 1500
+      timescaledb: false
+    isDefault: false
+    editable: false
+
+
+  - name: PostgreSQL - Venue
+    type: postgres
+    uid: postgres-venue
+    access: proxy
+    orgId: 1
+    url: venue-db:5432
+    user: admin
+    secureJsonData:
+      password: admin
+    jsonData:
+      database: venue_db
+      sslmode: disable
+      postgresVersion: 1500
+      timescaledb: false
+    isDefault: false
+    editable: false
+
+
+  - name: PostgreSQL - Event
+    type: postgres
+    uid: postgres-event
+    access: proxy
+    orgId: 1
+    url: event-db:5432
+    user: admin
+    secureJsonData:
+      password: admin
+    jsonData:
+      database: event_db
+      sslmode: disable
+      postgresVersion: 1500
+      timescaledb: false
+    isDefault: false
+    editable: false
+
+
+  - name: PostgreSQL - Ticket
+    type: postgres
+    uid: postgres-ticket
+    access: proxy
+    orgId: 1
+    url: ticket-db:5432
+    user: admin
+    secureJsonData:
+      password: admin
+    jsonData:
+      database: ticket_db
+      sslmode: disable
+      postgresVersion: 1500
+      timescaledb: false
+    isDefault: false
+    editable: false
+
+
+  - name: PostgreSQL - Audit
+    type: postgres
+    uid: postgres-audit
+    access: proxy
+    orgId: 1
+    url: audit-db:5432
+    user: admin
+    secureJsonData:
+      password: admin
+    jsonData:
+      database: audit_db
+      sslmode: disable
+      postgresVersion: 1500
+      timescaledb: false
+    isDefault: false
+    editable: false
+
+
+  - name: PostgreSQL - Reservation
+    type: postgres
+    uid: postgres-reservation
+    access: proxy
+    orgId: 1
+    url: reservation-db:5432
+    user: admin
+    secureJsonData:
+      password: admin
+    jsonData:
+      database: reservation_db
+      sslmode: disable
+      postgresVersion: 1500
+      timescaledb: false
+    isDefault: false
+    editable: false
+
+
+  - name: PostgreSQL - Analytics
+    type: postgres
+    uid: postgres-analytics
+    access: proxy
+    orgId: 1
+    url: analytics-db:5432
+    user: admin
+    secureJsonData:
+      password: admin
+    jsonData:
+      database: analytics_db
+      sslmode: disable
+      postgresVersion: 1500
+      timescaledb: false
+    isDefault: false
+    editable: false

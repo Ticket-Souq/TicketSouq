@@ -1,0 +1,5 @@
+DATABASE_HOST : ticket-db
+DATABASE_PORT : 5432
+
+server:
+  port: 8083

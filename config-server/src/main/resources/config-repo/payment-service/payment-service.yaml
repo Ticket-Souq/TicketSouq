@@ -1,0 +1,19 @@
+database:
+  host: ${DATABASE_HOST}
+  port: ${DATABASE_PORT}
+  name: payment_db
+  username: admin
+  password: admin
+
+kafka:
+  group-id: payment-service
+
+payment:
+  provider: ${PAYMENT_PROVIDER:mock}
+  mock:
+    success-rate: ${MOCK_SUCCESS_RATE:50}
+
+stripe:
+  secret-key: ${STRIPE_SECRET:sk_test_xxxxxxxxx}
+  publishable-key: ${STRIPE_PUBLISHABLE:pk_test_xxxxxxxxx}
+  webhook-secret: ${STRIPE_WEBHOOK:whsec_xxxxxxxxx}

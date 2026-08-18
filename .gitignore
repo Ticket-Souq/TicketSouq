@@ -31,3 +31,14 @@ build/
 
 ### VS Code ###
 .vscode/
+
+data/*
+/data
+
+
+# Environment variables
+.env
+.env.local
+
+/uploads
+/Docker/grafana/plugins

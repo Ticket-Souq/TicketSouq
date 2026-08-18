@@ -1,4 +1,12 @@
+server:
+  port: 0
+
 spring:
+
+  servlet:
+    multipart:
+      max-file-size: 10MB
+      max-request-size: 20MB
 
   # ── Database defaults (services override only what differs) ──────────
   datasource:
@@ -8,27 +16,44 @@ spring:
     driver-class-name: org.postgresql.Driver
   jpa:
     hibernate:
-      ddl-auto: update
+      ddl-auto: validate
     show-sql: true
     properties:
       hibernate:
         dialect: org.hibernate.dialect.PostgreSQLDialect
         format_sql: true
 
+  # ── Flyway ─────────────────────────────────────────────────
+  # Schema is managed by versioned migrations in each service.
+  # baseline-on-migrate lets pre-existing (non-empty) DBs adopt Flyway
+  # without wiping data: they are baselined at V1; fresh DBs run V1+.
+  flyway:
+    enabled: true
+    baseline-on-migrate: true
+    baseline-version: 1
+    locations: classpath:db/migration
+
   # ── Kafka defaults (services override only what differs) ──────────
   kafka:
-    bootstrap-servers: ${kafka.server}
+    bootstrap-servers: ${kafka.host}:${kafka.port}
+    listener:
+      ack-mode: RECORD
     producer:
       key-serializer: org.apache.kafka.common.serialization.StringSerializer
       value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
       properties:
-        spring.json.add.type.headers: false
+        spring.json.add.type.headers: true
+        enable.idempotence: true
     consumer:
-      auto-offset-reset: latest
+      group-id: ${kafka.group-id}
+      auto-offset-reset: earliest
+      enable-auto-commit: false
       key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
       value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
       properties:
         spring.json.trusted.packages: "*"
+        spring.deserializer.value.delegate.class: org.springframework.kafka.support.serializer.JsonDeserializer
+        spring.json.use.type.headers: true
 
 # ── Swagger ──────────
 springdoc:
@@ -51,6 +76,7 @@ logging:
   loki:
     url: http://${loki.host}:${loki.port}/loki/api/v1/push
   level:
+    org.springframework.cache: TRACE
     io.micrometer.tracing: DEBUG
     zipkin2: DEBUG
 
@@ -69,7 +95,8 @@ management:
   endpoints:
     web:
       exposure:
-        include: "*"
+        include: health,info,metrics,prometheus,refresh
+#        include: "*"
   endpoint:
     health:
       show-details: always
@@ -82,6 +109,8 @@ management:
         enabled: true
 
   metrics:
+    enable:
+      resilience4j: false
     distribution:
       percentiles-histogram:
         http.server.requests: true
@@ -107,3 +136,27 @@ eureka:
     instance-id: ${spring.application.name}:${spring.application.instance_id:${random.value}}
     lease-renewal-interval-in-seconds: 5
     lease-expiration-duration-in-seconds: 15
+
+# ── Feign + Circuit Breaker (Resilience4j) for all services ──────────
+feign:
+  circuitbreaker:
+    enabled: true
+
+resilience4j:
+  circuitbreaker:
+    configs:
+      default:
+        sliding-window-size: 10
+        minimum-number-of-calls: 5
+        failure-rate-threshold: 50
+        wait-duration-in-open-state: 30s
+        permitted-number-of-calls-in-half-open-state: 3
+        sliding-window-type: COUNT_BASED
+  timelimiter:
+    configs:
+      default:
+        timeout-duration: 5s
+
+# ── Continuous Profiling → Pyroscope ──────────
+pyroscope:
+  agent-enabled: true

@@ -1,0 +1,45 @@
+database:
+  host: ${DATABASE_HOST}
+  port: ${DATABASE_PORT}
+  name: notification_db
+  username: admin
+  password: admin
+
+kafka:
+  group-id: notification-service
+
+spring:
+
+  mail:
+    host: smtp.gmail.com
+    port: 587
+    username: ${EMAIL}
+    password: ${EMAIL_PASSWORD}
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+  cloud:
+    openfeign:
+      client:
+        config:
+          event-service:
+            connectTimeout: 3000
+            readTimeout: 3000
+
+
+email:
+  provider: ${EMAIL_PROVIDER:MOCK} # REAL
+
+management:
+  health:
+    mail:
+      enabled: false
+
+app:
+  frontend:
+    login-url: ${FRONTEND_URL:http://localhost:5173/login}
+  brand-name: ${BRAND_NAME:Ticketaty}
+  support-email: ${SUPPORT_EMAIL:support@ticketaty.com}

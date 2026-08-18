@@ -1,11 +1,12 @@
-EurekaOrigin : ${EUREKA_ORIGIN}
+EurekaOrigin : http://discovery-server:8761
 
 kafka:
-  server: ${KAFKA_SERVER}
+  host: kafka
+  port: 9092
 
 loki:
-  host: ${LOKI_HOST}
-  port: ${LOKI_PORT}
+  host: loki
+  port: 3100
 
 tempo:
   host: tempo
@@ -16,3 +17,6 @@ logging:
   level:
     org.springframework.cloud.gateway: INFO
     org.springframework.cloud.loadbalancer: INFO
+
+pyroscope:
+  server-address: http://pyroscope:4040

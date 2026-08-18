@@ -1,0 +1,18 @@
+logging:
+  loki:
+    enabled: false
+
+spring:
+  cloud:
+    config:
+      enabled: false
+  kafka:
+    consumer:
+      group-id: test-group
+      auto-offset-reset: earliest
+    listener:
+      auto-startup: false
+
+eureka:
+  client:
+    enabled: false

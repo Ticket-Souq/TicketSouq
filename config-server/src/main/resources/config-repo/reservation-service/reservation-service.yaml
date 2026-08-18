@@ -1,0 +1,15 @@
+database:
+  host: ${DATABASE_HOST}
+  port: ${DATABASE_PORT}
+  name: reservation_db
+  username: admin
+  password: admin
+
+kafka:
+  group-id: reservation-service
+
+spring:
+  datasource:
+    hikari:
+      maximum-pool-size: 20
+      minimum-idle: 5

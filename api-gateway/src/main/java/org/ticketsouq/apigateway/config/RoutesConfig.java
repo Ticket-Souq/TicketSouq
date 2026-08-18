@@ -25,12 +25,18 @@ public class RoutesConfig {
             .before(BeforeFilterFunctions.rewritePath("/eureka", "/"))
             .before(BeforeFilterFunctions.uri(eurekaOrigin))
             .build()
-            .and(
-                GatewayRouterFunctions.route("discovery-service-static")
+            .and(GatewayRouterFunctions.route("discovery-service-static")
                     .route(RequestPredicates.path("/eureka/**"), HandlerFunctions.http())
                     .before(BeforeFilterFunctions.uri(eurekaOrigin))
-                    .build()
-            );
+                    .build());
+    }
+
+    @Bean
+    public RouterFunction<ServerResponse> posterRoutes() {
+        return GatewayRouterFunctions.route("poster-static")
+            .route(RequestPredicates.path("/uploads/posters/**"), HandlerFunctions.http())
+            .filter(LoadBalancerFilterFunctions.lb("event-service"))
+            .build();
     }
 
     @Bean
@@ -39,7 +45,6 @@ public class RoutesConfig {
             "user-service",
             "analytics-service",
             "audit-service",
-            "availability-locking-service",
             "event-service",
             "notification-service",
             "payment-service",
@@ -52,7 +57,6 @@ public class RoutesConfig {
 
         for (String service : services) {
             String prefix = service.replace("-service", "");
-
             RouterFunction<ServerResponse> serviceRoute =
                 GatewayRouterFunctions.route(service)
                     .route(RequestPredicates.path("/api/v1/" + prefix + "/**"), HandlerFunctions.http())
@@ -68,9 +72,7 @@ public class RoutesConfig {
                     .filter(LoadBalancerFilterFunctions.lb(service))  // ← resolves lb:// correctly
                     .build();
 
-            routes = (routes == null)
-                ? serviceRoute.and(docsRoute)
-                : routes.and(serviceRoute).and(docsRoute);
+            routes = (routes == null) ? serviceRoute.and(docsRoute) : routes.and(serviceRoute).and(docsRoute);
         }
 
         return routes;

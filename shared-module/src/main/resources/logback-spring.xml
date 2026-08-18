@@ -21,7 +21,7 @@
         </http>
         <format>
             <label>
-                <pattern>app=${appName},env=${SPRING_PROFILES_ACTIVE:-local},level=%level</pattern>
+                <pattern>service=${appName},app=${appName},env=${SPRING_PROFILES_ACTIVE:-local},level=%level</pattern>
             </label>
 
             <message>
@@ -49,6 +49,8 @@
     <logger name="io.micrometer"                         level="WARN"/>
     <logger name="org.hibernate.SQL"                     level="DEBUG"/>
     <logger name="org.hibernate.type.descriptor.sql"     level="WARN"/>
+
+    <turboFilter class="org.ticketsouq.sharedmodule.logging.OutboxSqlTurboFilter"/>
 
     <!-- ── Root ─────────────────────────────────────────────────── -->
     <root level="INFO">

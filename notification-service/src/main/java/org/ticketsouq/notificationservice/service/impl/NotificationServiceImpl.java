@@ -1,0 +1,250 @@
+package org.ticketsouq.notificationservice.service.impl;
+
+import org.springframework.transaction.annotation.Transactional;
+import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Service;
+import org.ticketsouq.notificationservice.dto.EventDetailsResponse;
+import org.ticketsouq.notificationservice.dto.NotificationResponse;
+import org.ticketsouq.notificationservice.dto.UnreadCountResponse;
+import org.ticketsouq.notificationservice.entity.Notification;
+import org.ticketsouq.notificationservice.entity.UserEmailProjection;
+import org.ticketsouq.notificationservice.enums.NotificationTemplate;
+import org.ticketsouq.notificationservice.mapper.NotificationMapper;
+import org.ticketsouq.notificationservice.repository.NotificationRepository;
+import org.ticketsouq.notificationservice.repository.UserEmailProjectionRepository;
+import org.ticketsouq.notificationservice.service.EmailJobService;
+import org.ticketsouq.notificationservice.service.EventDetailsService;
+import org.ticketsouq.notificationservice.service.NotificationService;
+import org.ticketsouq.sharedmodule.ApiGateway.event.AccountsGeneratedEvent;
+import org.ticketsouq.sharedmodule.ApiGateway.event.EmailVerificationEvent;
+import org.ticketsouq.sharedmodule.ApiGateway.event.PasswordChangedEvent;
+import org.ticketsouq.sharedmodule.ApiGateway.event.PasswordResetEvent;
+import org.ticketsouq.sharedmodule.NotificationService.exception.NotificationNotFoundException;
+import org.ticketsouq.sharedmodule.NotificationService.exception.UserEmailProjectionNotFoundException;
+import org.ticketsouq.sharedmodule.PaymentService.events.RefundCompletedEvent;
+import org.ticketsouq.sharedmodule.ReservationService.events.ReservationCompletedEvent;
+import org.ticketsouq.sharedmodule.UserService.events.OrganizationStatusChangedEvent;
+
+
+import java.util.*;
+
+@Service
+@RequiredArgsConstructor
+public class NotificationServiceImpl implements NotificationService {
+
+    private final EmailJobService emailJobService;
+    private final NotificationRepository notificationRepository;
+    private final UserEmailProjectionRepository userEmailProjectionRepository;
+    private final NotificationMapper notificationMapper;
+    private final EventDetailsService eventDetailsService;
+
+    @Value("${app.frontend.login-url:http://localhost:5173/login}")
+    private String loginUrl;
+
+
+    @Override
+    @Transactional
+    public void handleEmailVerification(EmailVerificationEvent event) {
+        NotificationTemplate template = NotificationTemplate.REGISTRATION;
+
+        Map<String, Object> variables = new HashMap<>();
+
+        variables.put("verificationToken", event.token());
+
+        if (!userEmailProjectionRepository.existsById(event.userId())) {
+            userEmailProjectionRepository.save(new UserEmailProjection(event.userId(), event.email()));
+        }
+        emailJobService.createEmailJob(
+            event.messageId(),
+            event.email(),
+            template,
+            variables
+        );
+
+    }
+
+    @Override
+    public List<NotificationResponse> getNotifications(UUID userId) {
+        return notificationRepository.findByUserIdOrderByCreatedAtDesc(userId).stream().map(notificationMapper::toResponse).toList();
+    }
+
+    @Override
+    public UnreadCountResponse getUnreadCount(UUID userId) {
+        long count = notificationRepository.countByUserIdAndIsReadFalse(userId);
+        return notificationMapper.toUnreadCountResponse(count);
+    }
+
+    @Override
+    @Transactional
+    public void markAsRead(Long notificationId, UUID userId) {
+        Notification notification = notificationRepository.findByIdAndUserId(notificationId, userId).orElseThrow(() -> new NotificationNotFoundException(notificationId));
+
+        if (!notification.isRead()) notification.setRead(true);
+    }
+
+    @Override
+    @Transactional
+    public void markAllAsRead(UUID userId) {
+        notificationRepository.markAllAsRead(userId);
+    }
+
+    @Override
+    @Transactional
+    public void handlePasswordReset(PasswordResetEvent event) {
+        UserEmailProjection user = userEmailProjectionRepository
+            .findById(event.userId()).orElseThrow(() -> new RuntimeException("User not found"));
+
+        NotificationTemplate template = NotificationTemplate.PASSWORD_RESET;
+
+        Map<String, Object> variables = new HashMap<>();
+
+        variables.put("resetUrl", event.token());
+
+        emailJobService.createEmailJob(
+            event.messageId(),
+            user.getEmail(),
+            template,
+            variables
+        );
+    }
+
+    @Override
+    @Transactional
+    public void handlePasswordChanged(PasswordChangedEvent event) {
+
+        UserEmailProjection user = userEmailProjectionRepository
+            .findById(event.userId())
+            .orElseThrow(() ->
+                new UserEmailProjectionNotFoundException(event.userId())
+            );
+
+        NotificationTemplate template = NotificationTemplate.PASSWORD_CHANGED;
+
+        notificationRepository.save(
+            notificationMapper.create(
+                event.userId(),
+                template.getInAppTitle(),
+                template.getInAppMessage(),
+                template.getNotificationType()
+            )
+        );
+        emailJobService.createEmailJob(
+            event.messageId(),
+            user.getEmail(),
+            template,
+            Map.of()
+        );
+    }
+
+    @Override
+    @Transactional
+    public void handleReservationCompleted(ReservationCompletedEvent event) {
+        if (!event.success()) return;
+
+        NotificationTemplate template = NotificationTemplate.PAYMENT_SUCCESS;
+
+        UserEmailProjection user = userEmailProjectionRepository
+            .findById(event.userId())
+            .orElseThrow(() ->
+                new UserEmailProjectionNotFoundException(event.userId())
+            );
+
+        EventDetailsResponse eventDetailsResponse = eventDetailsService.getEvent(event.eventId());
+        notificationRepository.save(
+            notificationMapper.create(
+                event.userId(),
+                template.getInAppTitle(),
+                template.getInAppMessage(),
+                template.getNotificationType()
+            )
+        );
+        Map<String, Object> variables = new HashMap<>();
+        variables.put("eventName", eventDetailsResponse.name());
+        variables.put("location", eventDetailsResponse.location());
+        variables.put("date", eventDetailsResponse.startDate());
+        variables.put("amount", event.totalAmount());
+        emailJobService.createEmailJob(
+            event.messageId(),
+            user.getEmail(),
+            template,
+            variables
+        );
+    }
+
+    @Override
+    @Transactional
+    public void handleAccountGenerated(AccountsGeneratedEvent event) {
+
+        NotificationTemplate template = NotificationTemplate.ACCOUNT_GENERATED;
+
+        UserEmailProjection orgHead = userEmailProjectionRepository
+            .findById(event.orgHeadUserId())
+            .orElseThrow(() ->
+                new UserEmailProjectionNotFoundException(event.orgHeadUserId())
+            );
+
+        Map<String, Object> variables = new HashMap<>();
+        variables.put("accounts", event.accounts());
+        variables.put("loginUrl", loginUrl);
+
+        emailJobService.createEmailJob(
+            event.messageId(),
+            orgHead.getEmail(),
+            template,
+            variables
+        );
+    }
+
+    @Override
+    @Transactional
+    public void handleRefundCompleted(RefundCompletedEvent event) {
+        NotificationTemplate template = NotificationTemplate.EVENT_CANCELLED;
+
+        UserEmailProjection user = userEmailProjectionRepository
+            .findById(event.userId())
+            .orElseThrow(() ->
+                new UserEmailProjectionNotFoundException(event.userId())
+            );
+        EventDetailsResponse eventDetailsResponse = eventDetailsService.getEvent(event.eventId());
+        notificationRepository.save(
+            notificationMapper.create(
+                event.userId(),
+                template.getInAppTitle(),
+                template.getInAppMessage(),
+                template.getNotificationType()
+            )
+        );
+        Map<String, Object> variables = new HashMap<>();
+        variables.put("eventName", eventDetailsResponse.name());
+        variables.put("location", eventDetailsResponse.location());
+        variables.put("date", eventDetailsResponse.startDate());
+        variables.put("amount", event.amount());
+
+        emailJobService.createEmailJob(
+            event.messageId(),
+            user.getEmail(),
+            template,
+            variables
+        );
+
+    }
+
+    @Override
+    @Transactional
+    public void handleOrgStatusChanged(OrganizationStatusChangedEvent event) {
+        NotificationTemplate template = switch (event.status()) {
+            case "APPROVED" -> NotificationTemplate.ORG_APPROVED;
+            case "BANNED" -> NotificationTemplate.ORG_BANNED;
+            case "REJECTED" -> NotificationTemplate.ORG_REJECTED;
+            default -> throw new IllegalArgumentException("Unsupported organization status: " + event.status());
+        };
+
+        emailJobService.createEmailJob(
+            event.messageId(),
+            event.orgHeadEmail(),
+            template,
+            Map.of("organizationName", event.organizationName())
+        );
+    }
+}

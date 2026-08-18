@@ -1,0 +1,10 @@
+DATABASE_HOST : auth-db
+DATABASE_PORT : 5432
+
+redis:
+  host: redis
+  port: 6379
+
+frontend:
+  host: ${FRONTEND_HOST}
+  port: ${FRONTEND_PORT}

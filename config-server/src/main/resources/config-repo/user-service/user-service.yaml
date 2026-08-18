@@ -1,0 +1,9 @@
+database:
+  host: ${DATABASE_HOST}
+  port: ${DATABASE_PORT}
+  name: user_db
+  username: admin
+  password: admin
+
+kafka:
+  group-id: user-service
