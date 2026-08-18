@@ -887,6 +887,7 @@ services:
         VITE_GRAFANA_URL: ${VITE_GRAFANA_URL:-http://localhost:3000}
         VITE_BRAND_NAME: ${VITE_BRAND_NAME:-Ticketaty}
         VITE_SUPPORT_EMAIL: ${VITE_SUPPORT_EMAIL:-support@ticketaty.com}
+        VITE_STRIPE_PUBLISHABLE_KEY: ${VITE_STRIPE_PUBLISHABLE_KEY:-pk_test_51TUAICJ0xQ4cACneRblBTSum5IAEMMrXurm7n9tkwzXH9szilEgK1YmeBozcIl3NTeraayns9IEXNyc369Iizt2j00guZYejTZ}
     container_name: frontend
     ports:
       - "8081:80"
