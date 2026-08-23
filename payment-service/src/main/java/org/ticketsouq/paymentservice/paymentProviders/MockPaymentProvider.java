@@ -28,6 +28,7 @@ public class MockPaymentProvider implements PaymentProvider {
         PaymentModel payment = PaymentModel.builder()
                 .reservationID(request.reservationID())
                 .customerID(request.customerID())
+                .eventId(request.eventID())
                 .amount(request.amount())
                 .paymentStatus(status)
                 .transactionRef(UUID.randomUUID().toString())

@@ -30,24 +30,30 @@ public class StripePaymentProvider implements PaymentProvider {
     public PaymentResponse pay(PaymentRequest request) {
         long amountInSmallestUnit = convertToSmallestCurrencyUnit(request.amount(), "EGP");
 
-        PaymentIntentCreateParams params = PaymentIntentCreateParams.builder()
+        PaymentIntentCreateParams.Builder paramsBuilder = PaymentIntentCreateParams.builder()
                 .setAmount(amountInSmallestUnit)
                 .setCurrency("egp")
                 .setAutomaticPaymentMethods(
                         PaymentIntentCreateParams.AutomaticPaymentMethods.builder()
                                 .setEnabled(true)
                                 .build())
-                .build();
+                .putMetadata("reservationId", request.reservationID().toString())
+                .putMetadata("customerId", request.customerID().toString());
+        if (request.eventID() != null) {
+            paramsBuilder.putMetadata("eventId", request.eventID().toString());
+        }
+        PaymentIntentCreateParams params = paramsBuilder.build();
 
         try {
             RequestOptions requestOptions = RequestOptions.builder()
-                    .setIdempotencyKey(request.reservationID().toString())
+                    .setIdempotencyKey("reservation-payment-" + request.reservationID().toString())
                     .build();
             PaymentIntent intent = PaymentIntent.create(params, requestOptions);
 
             PaymentModel payment = PaymentModel.builder()
                     .reservationID(request.reservationID())
                     .customerID(request.customerID())
+                    .eventId(request.eventID())
                     .amount(request.amount())
                     .paymentStatus(PaymentStatus.PENDING)
                     .stripePaymentIntentId(intent.getId())

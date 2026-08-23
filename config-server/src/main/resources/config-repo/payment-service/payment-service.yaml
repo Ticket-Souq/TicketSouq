@@ -13,6 +13,11 @@ payment:
   mock:
     success-rate: ${MOCK_SUCCESS_RATE:50}
 
+payout:
+  provider: ${PAYOUT_PROVIDER:mock}
+  mock:
+    success-rate: ${PAYOUT_MOCK_SUCCESS_RATE:100}
+
 stripe:
   secret-key: ${STRIPE_SECRET:sk_test_xxxxxxxxx}
   publishable-key: ${STRIPE_PUBLISHABLE:pk_test_xxxxxxxxx}

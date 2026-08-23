@@ -114,6 +114,21 @@ public class SecurityRulesConfig {
             ), HttpMethod.GET, SecurityRule.Access.HAS_ROLE, List.of("ADMIN")),
 
             new SecurityRule(List.of(
+                "/api/v1/payout/dashboard", // Admin payout dashboard: owed/paid/outstanding per org
+                "/api/v1/payout/records", // Admin paginated payout records
+                "/api/v1/payout/organization/{organization}/summary", // Per-org summary
+                "/api/v1/payout/event/{eventId}", // Payout by event
+                "/api/v1/payout/{payoutId}", // Payout by id
+                "/api/v1/payout" // List payouts
+            ), HttpMethod.GET, SecurityRule.Access.HAS_ROLE, List.of("ADMIN")),
+
+            new SecurityRule(List.of(
+                "/api/v1/payout/pay/organization/{organization}", // Pay all outstanding for org
+                "/api/v1/payout/pay/event/{eventId}", // Pay single event
+                "/api/v1/payout/{payoutId}/retry" // Retry failed payout
+            ), HttpMethod.POST, SecurityRule.Access.HAS_ROLE, List.of("ADMIN")),
+
+            new SecurityRule(List.of(
                 "/api/v1/user/org/{orgHeadId}/approve", // Admin approves an organization
                 "/api/v1/user/org/{orgHeadId}/ban", // Admin bans an organization
                 "/api/v1/user/org/{orgHeadId}/reject" // Admin rejects an organization

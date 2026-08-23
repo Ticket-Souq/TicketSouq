@@ -26,10 +26,29 @@ public class Payout {
     private UUID id;
 
     private UUID organizerId;
+
+    @Column(name = "event_id")
+    private UUID eventId;
+
+    private String organization;
+
     private BigDecimal amount;
+
+    @Column(name = "net_amount")
+    private BigDecimal netAmount;
+
     private String currency;
     private String status;
     private String stripeTransferId;
+
+    @Column(name = "provider_transfer_id")
+    private String providerTransferId;
+
+    @Column(name = "failure_reason")
+    private String failureReason;
+
+    @Column(name = "retry_count")
+    private Integer retryCount;
 
     @CreationTimestamp
     private Instant createdAt;

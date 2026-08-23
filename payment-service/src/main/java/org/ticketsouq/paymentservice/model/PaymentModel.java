@@ -28,6 +28,8 @@ public class PaymentModel {
 
     private UUID reservationID;
     private UUID customerID;
+    @Column(name = "event_id")
+    private UUID eventId;
     private BigDecimal amount;
 
     @Enumerated(EnumType.STRING)
