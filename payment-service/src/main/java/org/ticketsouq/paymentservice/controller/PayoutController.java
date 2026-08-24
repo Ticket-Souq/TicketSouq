@@ -82,6 +82,11 @@ public class PayoutController {
         return ResponseEntity.ok(payoutService.getOrgSummary(organization));
     }
 
+    @GetMapping("/my-organization/summary")
+    public ResponseEntity<OrgPayoutSummary> getMyOrgSummary(@RequestHeader("X-User-Id") UUID userId) {
+        return ResponseEntity.ok(payoutService.getMyOrgSummary(userId));
+    }
+
     @GetMapping("/records")
     public ResponseEntity<Page<PayoutResponse>> getRecords(
             @RequestParam(required = false) String organization,

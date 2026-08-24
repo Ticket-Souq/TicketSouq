@@ -89,6 +89,10 @@ public class SecurityRulesConfig {
             ), HttpMethod.GET, SecurityRule.Access.HAS_ROLE, List.of("ORG_HEAD")),
 
             new SecurityRule(List.of(
+                "/api/v1/payout/my-organization/summary" // Org payout balance: earned/paid/outstanding for caller org
+            ), HttpMethod.GET, SecurityRule.Access.HAS_ANY_ROLE, List.of("ORG_HEAD", "ORG_Agent")),
+
+            new SecurityRule(List.of(
                 "/api/v1/auth/org", // Org head reactivates an employee account
                 "/api/v1/auth/org/generate-accounts", // Org head bulk-generates org-member accounts
                 "/api/v1/venue", // Create a venue

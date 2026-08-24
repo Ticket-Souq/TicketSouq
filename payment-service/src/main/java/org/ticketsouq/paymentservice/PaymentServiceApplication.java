@@ -3,6 +3,7 @@ package org.ticketsouq.paymentservice;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.AutoConfigurationPackage;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.cloud.openfeign.EnableFeignClients;
 import org.springframework.data.jpa.repository.config.EnableJpaAuditing;
 import org.springframework.kafka.annotation.EnableKafka;
 
@@ -10,6 +11,7 @@ import org.springframework.kafka.annotation.EnableKafka;
 @AutoConfigurationPackage(basePackages = "org.ticketsouq")
 @EnableKafka
 @EnableJpaAuditing
+@EnableFeignClients(basePackages = "org.ticketsouq.paymentservice.client")
 public class PaymentServiceApplication {
 
     public static void main(String[] args) {

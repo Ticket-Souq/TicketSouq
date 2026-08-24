@@ -13,11 +13,14 @@ import org.ticketsouq.paymentservice.repository.PayoutRepository;
 import org.ticketsouq.paymentservice.repository.PaymentRepository;
 import org.ticketsouq.sharedmodule.EventService.events.EventPayoutReleaseEvent;
 
+import org.ticketsouq.paymentservice.client.UserServiceClient;
 import org.ticketsouq.paymentservice.dto.BulkPayResult;
 import org.ticketsouq.paymentservice.dto.EventPayoutRow;
 import org.ticketsouq.paymentservice.dto.OrgPayoutSummary;
 import org.ticketsouq.paymentservice.dto.PayoutDashboardResponse;
 import org.ticketsouq.paymentservice.dto.PayoutResponse;
+import org.ticketsouq.sharedmodule.GeneralExceptions.BusinessException;
+import org.springframework.http.HttpStatus;
 
 import java.math.BigDecimal;
 import java.util.ArrayList;
@@ -35,6 +38,7 @@ public class PayoutService {
     private final PayoutRepository payoutRepository;
     private final PaymentRepository paymentRepository;
     private final PayoutProvider payoutProvider;
+    private final UserServiceClient userServiceClient;
 
     @Transactional
     public Optional<Payout> handlePayoutRelease(EventPayoutReleaseEvent event) {
@@ -172,6 +176,15 @@ public class PayoutService {
 
     @Transactional(readOnly = true)
     public OrgPayoutSummary getOrgSummary(String organization) {
+        return buildOrgSummary(organization);
+    }
+
+    @Transactional(readOnly = true)
+    public OrgPayoutSummary getMyOrgSummary(UUID userId) {
+        String organization = userServiceClient.getOrganizationNameByUserId(userId);
+        if (organization == null || organization.isBlank()) {
+            throw new BusinessException("Organization not found for user: " + userId, HttpStatus.NOT_FOUND);
+        }
         return buildOrgSummary(organization);
     }
 

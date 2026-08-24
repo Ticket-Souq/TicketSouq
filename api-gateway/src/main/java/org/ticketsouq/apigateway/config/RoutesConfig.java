@@ -40,6 +40,14 @@ public class RoutesConfig {
     }
 
     @Bean
+    public RouterFunction<ServerResponse> payoutRoutes() {
+        return GatewayRouterFunctions.route("payment-service-payout")
+            .route(RequestPredicates.path("/api/v1/payout/**"), HandlerFunctions.http())
+            .filter(LoadBalancerFilterFunctions.lb("payment-service"))
+            .build();
+    }
+
+    @Bean
     public RouterFunction<ServerResponse> serviceRoutes() {
         String[] services = {
             "user-service",
