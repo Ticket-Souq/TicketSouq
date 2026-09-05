@@ -6,8 +6,10 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.TransactionDefinition;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionTemplate;
 import org.ticketsouq.outbox.service.OutboxWriter;
+import org.ticketsouq.paymentservice.dto.PaymentResponse;
 import org.ticketsouq.paymentservice.enums.PaymentStatus;
 import org.ticketsouq.paymentservice.model.PaymentModel;
 import org.ticketsouq.paymentservice.paymentProviders.PaymentProvider;
@@ -18,6 +20,7 @@ import org.ticketsouq.sharedmodule.PaymentService.events.PaymentSuccessEvent;
 import org.ticketsouq.sharedmodule.PaymentService.events.RefundCompletedEvent;
 import org.ticketsouq.sharedmodule.ReservationService.events.SagaPaymentReplyEvent;
 
+import java.nio.file.AccessDeniedException;
 import java.util.UUID;
 
 import org.ticketsouq.paymentservice.metrics.PaymentMetrics;
@@ -37,6 +40,42 @@ public class PaymentService {
     private final PlatformTransactionManager transactionManager;
     private final PaymentProvider paymentProvider;
     private final PaymentMetrics paymentMetrics;
+
+    @Transactional(readOnly = true)
+    public PaymentResponse getPaymentByReservation(UUID reservationId, UUID userId) throws AccessDeniedException {
+        PaymentModel payment = paymentRepository.findByReservationID(reservationId)
+                .orElseThrow(() -> new ResourceNotFoundException("Payment for reservation", reservationId));
+
+        if (!payment.getCustomerID().equals(userId)) {
+            throw new AccessDeniedException("You are not allowed to view this payment");
+        }
+
+        return toPaymentResponse(payment);
+    }
+
+    @Transactional(readOnly = true)
+    public PaymentResponse getPaymentById(UUID paymentId, UUID userId) throws AccessDeniedException {
+        PaymentModel payment = paymentRepository.findById(paymentId)
+                .orElseThrow(() -> new ResourceNotFoundException("Payment", paymentId));
+
+        if (!payment.getCustomerID().equals(userId)) {
+            throw new AccessDeniedException("You are not allowed to view this payment");
+        }
+
+        return toPaymentResponse(payment);
+    }
+
+    private PaymentResponse toPaymentResponse(PaymentModel payment) {
+        String secret = payment.getPaymentStatus() == PaymentStatus.PENDING
+                ? payment.getClientSecret()
+                : null;
+        return new PaymentResponse(
+                secret,
+                payment.getId(),
+                payment.getPaymentStatus(),
+                "Payment retrieved successfully"
+        );
+    }
 
     public void handleWebhookEvent(Event event) {
         EventDataObjectDeserializer dataObjectDeserializer = event.getDataObjectDeserializer();

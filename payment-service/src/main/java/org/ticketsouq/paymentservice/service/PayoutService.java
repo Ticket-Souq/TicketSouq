@@ -20,6 +20,9 @@ import org.ticketsouq.paymentservice.dto.OrgPayoutSummary;
 import org.ticketsouq.paymentservice.dto.PayoutDashboardResponse;
 import org.ticketsouq.paymentservice.dto.PayoutResponse;
 import org.ticketsouq.sharedmodule.GeneralExceptions.BusinessException;
+import org.ticketsouq.sharedmodule.GeneralExceptions.ResourceNotFoundException;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 
 import java.math.BigDecimal;
@@ -118,6 +121,59 @@ public class PayoutService {
     @Transactional(readOnly = true)
     public Optional<Payout> getById(UUID payoutId) {
         return payoutRepository.findById(payoutId);
+    }
+
+    @Transactional(readOnly = true)
+    public PayoutResponse getPayoutById(UUID payoutId) {
+        Payout payout = payoutRepository.findById(payoutId)
+                .orElseThrow(() -> new ResourceNotFoundException("Payout", payoutId));
+        return toPayoutResponse(payout);
+    }
+
+    @Transactional(readOnly = true)
+    public PayoutResponse getPayoutByEventId(UUID eventId) {
+        Payout payout = payoutRepository.findByEventId(eventId)
+                .orElseThrow(() -> new ResourceNotFoundException("Payout for event", eventId));
+        return toPayoutResponse(payout);
+    }
+
+    @Transactional(readOnly = true)
+    public List<PayoutResponse> getPayoutsByOrganizerId(UUID organizerId) {
+        return payoutRepository.findByOrganizerId(organizerId).stream()
+                .map(this::toPayoutResponse)
+                .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public List<PayoutResponse> getAllPayouts(String organization, String status) {
+        List<Payout> payouts;
+        if (organization != null && status != null) {
+            payouts = payoutRepository.findByOrganizationAndStatus(organization, status);
+        } else if (organization != null) {
+            payouts = payoutRepository.findByOrganization(organization);
+        } else if (status != null) {
+            payouts = payoutRepository.findByStatus(status);
+        } else {
+            payouts = payoutRepository.findAll();
+        }
+        return payouts.stream()
+                .map(this::toPayoutResponse)
+                .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public Page<PayoutResponse> getPayoutRecords(String organization, String status, Pageable pageable) {
+        Page<Payout> page;
+        if (organization != null && status != null) {
+            page = payoutRepository.findByOrganizationAndStatus(organization, status, pageable);
+        } else if (organization != null) {
+            page = payoutRepository.findByOrganization(organization, pageable);
+        } else if (status != null) {
+            page = payoutRepository.findByStatus(status, pageable);
+        } else {
+            page = payoutRepository.findAll(pageable);
+        }
+        return page.map(this::toPayoutResponse);
     }
 
     @Transactional
