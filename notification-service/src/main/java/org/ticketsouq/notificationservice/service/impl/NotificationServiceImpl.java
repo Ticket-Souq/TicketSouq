@@ -55,18 +55,17 @@ public class NotificationServiceImpl implements NotificationService {
         if (!userEmailProjectionRepository.existsById(event.userId())) {
             userEmailProjectionRepository.save(new UserEmailProjection(event.userId(), event.email()));
         }
-        emailJobService.createEmailJob(
-            event.messageId(),
-            event.email(),
-            template,
-            variables
-        );
+        emailJobService.createEmailJob(event.messageId(), event.email(), template, variables);
 
     }
 
     @Override
     public List<NotificationResponse> getNotifications(UUID userId) {
-        return notificationRepository.findByUserIdOrderByCreatedAtDesc(userId).stream().map(notificationMapper::toResponse).toList();
+        return notificationRepository
+            .findByUserIdOrderByCreatedAtDesc(userId)
+            .stream()
+            .map(notificationMapper::toResponse)
+            .toList();
     }
 
     @Override
@@ -78,7 +77,9 @@ public class NotificationServiceImpl implements NotificationService {
     @Override
     @Transactional
     public void markAsRead(Long notificationId, UUID userId) {
-        Notification notification = notificationRepository.findByIdAndUserId(notificationId, userId).orElseThrow(() -> new NotificationNotFoundException(notificationId));
+        Notification notification = notificationRepository
+            .findByIdAndUserId(notificationId, userId)
+            .orElseThrow(() -> new NotificationNotFoundException(notificationId));
 
         if (!notification.isRead()) notification.setRead(true);
     }
@@ -93,7 +94,8 @@ public class NotificationServiceImpl implements NotificationService {
     @Transactional
     public void handlePasswordReset(PasswordResetEvent event) {
         UserEmailProjection user = userEmailProjectionRepository
-            .findById(event.userId()).orElseThrow(() -> new RuntimeException("User not found"));
+            .findById(event.userId())
+            .orElseThrow(() -> new RuntimeException("User not found"));
 
         NotificationTemplate template = NotificationTemplate.PASSWORD_RESET;
 
@@ -101,12 +103,7 @@ public class NotificationServiceImpl implements NotificationService {
 
         variables.put("resetUrl", event.token());
 
-        emailJobService.createEmailJob(
-            event.messageId(),
-            user.getEmail(),
-            template,
-            variables
-        );
+        emailJobService.createEmailJob(event.messageId(), user.getEmail(), template, variables);
     }
 
     @Override
@@ -115,26 +112,13 @@ public class NotificationServiceImpl implements NotificationService {
 
         UserEmailProjection user = userEmailProjectionRepository
             .findById(event.userId())
-            .orElseThrow(() ->
-                new UserEmailProjectionNotFoundException(event.userId())
-            );
+            .orElseThrow(() -> new UserEmailProjectionNotFoundException(event.userId()));
 
         NotificationTemplate template = NotificationTemplate.PASSWORD_CHANGED;
 
-        notificationRepository.save(
-            notificationMapper.create(
-                event.userId(),
-                template.getInAppTitle(),
-                template.getInAppMessage(),
-                template.getNotificationType()
-            )
-        );
-        emailJobService.createEmailJob(
-            event.messageId(),
-            user.getEmail(),
-            template,
-            Map.of()
-        );
+        notificationRepository
+            .save(notificationMapper.create(event.userId(), template.getInAppTitle(), template.getInAppMessage(), template.getNotificationType()));
+        emailJobService.createEmailJob(event.messageId(), user.getEmail(), template, Map.of());
     }
 
     @Override
@@ -146,30 +130,17 @@ public class NotificationServiceImpl implements NotificationService {
 
         UserEmailProjection user = userEmailProjectionRepository
             .findById(event.userId())
-            .orElseThrow(() ->
-                new UserEmailProjectionNotFoundException(event.userId())
-            );
+            .orElseThrow(() -> new UserEmailProjectionNotFoundException(event.userId()));
 
         EventDetailsResponse eventDetailsResponse = eventDetailsService.getEvent(event.eventId());
-        notificationRepository.save(
-            notificationMapper.create(
-                event.userId(),
-                template.getInAppTitle(),
-                template.getInAppMessage(),
-                template.getNotificationType()
-            )
-        );
+        notificationRepository
+            .save(notificationMapper.create(event.userId(), template.getInAppTitle(), template.getInAppMessage(), template.getNotificationType()));
         Map<String, Object> variables = new HashMap<>();
         variables.put("eventName", eventDetailsResponse.name());
         variables.put("location", eventDetailsResponse.location());
         variables.put("date", eventDetailsResponse.startDate());
         variables.put("amount", event.totalAmount());
-        emailJobService.createEmailJob(
-            event.messageId(),
-            user.getEmail(),
-            template,
-            variables
-        );
+        emailJobService.createEmailJob(event.messageId(), user.getEmail(), template, variables);
     }
 
     @Override
@@ -180,20 +151,13 @@ public class NotificationServiceImpl implements NotificationService {
 
         UserEmailProjection orgHead = userEmailProjectionRepository
             .findById(event.orgHeadUserId())
-            .orElseThrow(() ->
-                new UserEmailProjectionNotFoundException(event.orgHeadUserId())
-            );
+            .orElseThrow(() -> new UserEmailProjectionNotFoundException(event.orgHeadUserId()));
 
         Map<String, Object> variables = new HashMap<>();
         variables.put("accounts", event.accounts());
         variables.put("loginUrl", loginUrl);
 
-        emailJobService.createEmailJob(
-            event.messageId(),
-            orgHead.getEmail(),
-            template,
-            variables
-        );
+        emailJobService.createEmailJob(event.messageId(), orgHead.getEmail(), template, variables);
     }
 
     @Override
@@ -203,30 +167,16 @@ public class NotificationServiceImpl implements NotificationService {
 
         UserEmailProjection user = userEmailProjectionRepository
             .findById(event.userId())
-            .orElseThrow(() ->
-                new UserEmailProjectionNotFoundException(event.userId())
-            );
+            .orElseThrow(() -> new UserEmailProjectionNotFoundException(event.userId()));
         EventDetailsResponse eventDetailsResponse = eventDetailsService.getEvent(event.eventId());
-        notificationRepository.save(
-            notificationMapper.create(
-                event.userId(),
-                template.getInAppTitle(),
-                template.getInAppMessage(),
-                template.getNotificationType()
-            )
-        );
+        notificationRepository.save(notificationMapper.create(event.userId(), template.getInAppTitle(), template.getInAppMessage(), template.getNotificationType()));
         Map<String, Object> variables = new HashMap<>();
         variables.put("eventName", eventDetailsResponse.name());
         variables.put("location", eventDetailsResponse.location());
         variables.put("date", eventDetailsResponse.startDate());
         variables.put("amount", event.amount());
 
-        emailJobService.createEmailJob(
-            event.messageId(),
-            user.getEmail(),
-            template,
-            variables
-        );
+        emailJobService.createEmailJob(event.messageId(), user.getEmail(), template, variables);
 
     }
 
@@ -240,11 +190,6 @@ public class NotificationServiceImpl implements NotificationService {
             default -> throw new IllegalArgumentException("Unsupported organization status: " + event.status());
         };
 
-        emailJobService.createEmailJob(
-            event.messageId(),
-            event.orgHeadEmail(),
-            template,
-            Map.of("organizationName", event.organizationName())
-        );
+        emailJobService.createEmailJob(event.messageId(), event.orgHeadEmail(), template, Map.of("organizationName", event.organizationName()));
     }
 }

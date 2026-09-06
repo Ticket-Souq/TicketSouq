@@ -31,7 +31,6 @@
         <module name="reservation-service" />
         <module name="analytics-service" />
         <module name="api-gateway" />
-        <module name="availability-locking-service" />
         <module name="venue-service" />
       </profile>
     </annotationProcessing>

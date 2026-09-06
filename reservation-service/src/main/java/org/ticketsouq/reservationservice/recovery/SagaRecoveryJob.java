@@ -35,10 +35,10 @@ public class SagaRecoveryJob {
         recoverStuckSagas("startup");
     }
 
-    @Scheduled(fixedDelay = 30000)
-    public void recoverPeriodic() {
-        recoverStuckSagas("periodic");
-    }
+//    @Scheduled(fixedDelay = 30000)
+//    public void recoverPeriodic() {
+//        recoverStuckSagas("periodic");
+//    }
 
     @Scheduled(fixedDelay = 60000)
     public void checkSagaTimeouts() {
