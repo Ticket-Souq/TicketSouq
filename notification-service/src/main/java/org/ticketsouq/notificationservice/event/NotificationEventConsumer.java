@@ -23,34 +23,34 @@ public class NotificationEventConsumer {
 
 
     @KafkaListener(topics = PAYMENT_REFUNDED)
-    public void RefundCompletedConsumer(RefundCompletedEvent event) {
+    public void refundCompletedConsumer(RefundCompletedEvent event) {
         notificationService.handleRefundCompleted(event);
     }
 
 
     @KafkaListener(topics = RESERVATION_COMPLETED)
-    public void ReservationCompletedConsumer(ReservationCompletedEvent event) {
+    public void reservationCompletedConsumer(ReservationCompletedEvent event) {
         notificationService.handleReservationCompleted(event);
     }
 
 
     @KafkaListener(topics = USER_PASSWORD_RESET)
-    public void PasswordResetConsumer(PasswordResetEvent event) {
+    public void passwordResetConsumer(PasswordResetEvent event) {
         notificationService.handlePasswordReset(event);
     }
 
     @KafkaListener(topics = USER_PASSWORD_CHANGE)
-    public void PasswordChangedConsumer(PasswordChangedEvent event) {
+    public void passwordChangedConsumer(PasswordChangedEvent event) {
         notificationService.handlePasswordChanged(event);
     }
 
     @KafkaListener(topics = USER_EMAIL_VERIFICATION)
-    public void EmailVerificationConsumer(EmailVerificationEvent event) {
+    public void emailVerificationConsumer(EmailVerificationEvent event) {
         notificationService.handleEmailVerification(event);
     }
 
     @KafkaListener(topics = ACCOUNTS_GENERATED)
-    public void AccountGeneratedConsumer(AccountsGeneratedEvent event) {
+    public void accountGeneratedConsumer(AccountsGeneratedEvent event) {
         notificationService.handleAccountGenerated(event);
     }
 

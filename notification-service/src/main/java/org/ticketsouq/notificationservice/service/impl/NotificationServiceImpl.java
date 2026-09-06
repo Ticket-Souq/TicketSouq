@@ -26,8 +26,10 @@ import org.ticketsouq.sharedmodule.PaymentService.events.RefundCompletedEvent;
 import org.ticketsouq.sharedmodule.ReservationService.events.ReservationCompletedEvent;
 import org.ticketsouq.sharedmodule.UserService.events.OrganizationStatusChangedEvent;
 
-
-import java.util.*;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
@@ -81,7 +83,9 @@ public class NotificationServiceImpl implements NotificationService {
             .findByIdAndUserId(notificationId, userId)
             .orElseThrow(() -> new NotificationNotFoundException(notificationId));
 
-        if (!notification.isRead()) notification.setRead(true);
+        if (!notification.isRead()) {
+            notification.setRead(true);
+        }
     }
 
     @Override
@@ -95,7 +99,7 @@ public class NotificationServiceImpl implements NotificationService {
     public void handlePasswordReset(PasswordResetEvent event) {
         UserEmailProjection user = userEmailProjectionRepository
             .findById(event.userId())
-            .orElseThrow(() -> new RuntimeException("User not found"));
+            .orElseThrow(() -> new UserEmailProjectionNotFoundException(event.userId()));
 
         NotificationTemplate template = NotificationTemplate.PASSWORD_RESET;
 
@@ -124,7 +128,9 @@ public class NotificationServiceImpl implements NotificationService {
     @Override
     @Transactional
     public void handleReservationCompleted(ReservationCompletedEvent event) {
-        if (!event.success()) return;
+        if (!event.success()) {
+            return;
+        }
 
         NotificationTemplate template = NotificationTemplate.PAYMENT_SUCCESS;
 
