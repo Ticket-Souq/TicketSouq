@@ -109,7 +109,9 @@ public class EventService {
         Map<UUID, Integer> adjustedRemaining = new HashMap<>();
         Set<UUID> lockedSeatIds = Collections.emptySet();
 
-        if (event.getSections() == null) return new LockInfo(lockedSeatIds, adjustedRemaining);
+        if (event.getSections() == null) {
+            return new LockInfo(lockedSeatIds, adjustedRemaining);
+        }
 
         if (event.getBookingModel() == BookingModel.SEAT) {
             List<UUID> sectionIds = event.getSections().stream()
@@ -228,13 +230,15 @@ public class EventService {
     }
 
     private void validateEventCanBeCancelled(Event event) {
-        if (event.getStatus() != EventStatus.PUBLISHED)
+        if (event.getStatus() != EventStatus.PUBLISHED) {
             throw new ConflictException("Only published events can be cancelled.");
+        }
 
         Instant deadline = event.getStartDate().minus(Duration.ofHours(24));
 
-        if (Instant.now().isAfter(deadline))
+        if (Instant.now().isAfter(deadline)) {
             throw new ConflictException("Events cannot be cancelled less than 24 hours before start time.");
+        }
 
     }
 

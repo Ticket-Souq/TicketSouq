@@ -147,20 +147,24 @@ public class LockService {
 
     private void confirmSeats(List<SeatLock> seatLocks, String reservationId) {
         LocalDateTime now = LocalDateTime.now();
-        boolean expired = seatLocks.stream().anyMatch(sl -> sl.getExpiresAt().isBefore(now));
+        boolean expired = seatLocks
+            .stream()
+            .anyMatch(sl -> sl.getExpiresAt().isBefore(now));
         if (expired) {
             seatLockRepository.deleteByReservationId(reservationId);
             throw new LockExpiredException(reservationId);
         }
 
-        List<UUID> seatIds = seatLocks.stream()
+        List<UUID> seatIds = seatLocks
+            .stream()
             .map(SeatLock::getSeatId)
             .sorted()
             .toList();
 
         List<Seat> seats = seatRepository.findByIdsWithSection(seatIds);
 
-        List<UUID> bookedSeats = seats.stream()
+        List<UUID> bookedSeats = seats
+            .stream()
             .filter(s -> s.getStatus() == SeatStatus.BOOKED)
             .map(Seat::getId)
             .toList();
@@ -171,7 +175,8 @@ public class LockService {
         seats.forEach(seat -> seat.setStatus(SeatStatus.BOOKED));
         seatRepository.saveAll(seats);
 
-        Map<Section, Long> seatsPerSection = seats.stream()
+        Map<Section, Long> seatsPerSection = seats
+            .stream()
             .collect(Collectors.groupingBy(Seat::getSection, Collectors.counting()));
         seatsPerSection.forEach((section, count) -> {
             section.setRemainingCapacity(section.getRemainingCapacity() - count.intValue());

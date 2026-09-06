@@ -106,7 +106,6 @@ public class SectionService {
 
         Event event = eventRepository.findById(eventId).orElseThrow(() -> new ResourceNotFoundException("Event not found.", eventId));
 
-
         validateEventCanBeUpdated(event);
 
         validateZoneBased(event);
@@ -127,7 +126,6 @@ public class SectionService {
     private void validateSectionName(UUID eventId, String name) {
 
         if (sectionRepository.existsByEventIdAndName(eventId, name)) {
-
             throw new ConflictException("A section with this name already exists.");
         }
     }

@@ -34,7 +34,7 @@ public class SeatService {
     @Transactional
     public SeatResponse updateOrganizerSeatStatusByTemplateId(UUID eventId, UUID templateSeatId, UpdateSeatStatusRequest request, UUID userId) {
         Seat seat = seatRepository.findByTemplateSeatIdAndEventId(templateSeatId, eventId)
-            .orElseThrow(() -> new ResourceNotFoundException("Seat" , templateSeatId));
+            .orElseThrow(() -> new ResourceNotFoundException("Seat", templateSeatId));
 
         Event event = seat.getSection().getEvent();
         validateEventCanBeUpdated(event);
@@ -68,9 +68,13 @@ public class SeatService {
 
     private void validateSeatStatusTransition(SeatStatus current, SeatStatus target) {
 
-        if (current == SeatStatus.AVAILABLE && target == SeatStatus.BOOKED_ORGANIZER) return;
+        if (current == SeatStatus.AVAILABLE && target == SeatStatus.BOOKED_ORGANIZER) {
+            return;
+        }
 
-        if (current == SeatStatus.BOOKED_ORGANIZER && target == SeatStatus.AVAILABLE) return;
+        if (current == SeatStatus.BOOKED_ORGANIZER && target == SeatStatus.AVAILABLE) {
+            return;
+        }
 
         throw new BadRequestException("Invalid seat status transition.");
     }
@@ -88,7 +92,8 @@ public class SeatService {
     }
 
     private void validateEventCanBeUpdated(Event event) {
-        if (event.getStatus() != EventStatus.PUBLISHED)
+        if (event.getStatus() != EventStatus.PUBLISHED) {
             throw new ConflictException("Only published events can be updated.");
+        }
     }
 }
