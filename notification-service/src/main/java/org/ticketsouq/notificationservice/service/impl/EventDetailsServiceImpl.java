@@ -18,14 +18,6 @@ public class EventDetailsServiceImpl implements EventDetailsService {
     @Override
     @Cacheable(value = "events", key = "#eventId")
     public EventDetailsResponse getEvent(UUID eventId) {
-
-        EventDetailsResponse response = eventClient.getEventById(eventId);
-
-        return new EventDetailsResponse(
-            response.id(),
-            response.name(),
-            response.location(),
-            response.startDate()
-        );
+        return eventClient.getEventById(eventId);
     }
 }

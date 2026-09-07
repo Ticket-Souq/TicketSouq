@@ -57,7 +57,7 @@ public class SagaOrchestrator {
 
         if (saga.getSagaStatus() == SagaStatus.ACTIVE) {
             log.info("Starting/resuming saga {} for reservation {}", saga.getId(), saga.getReservationId());
-            advanceSaga(saga, context);
+            advanceSaga(saga);
         }
     }
 
@@ -107,7 +107,7 @@ public class SagaOrchestrator {
                 saga.setLastStepCompletedAt(Instant.now());
                 sagaInstanceRepository.save(saga);
                 log.info("Payment confirmed for saga {}, advancing to ticket issuance", saga.getId());
-                advanceSaga(saga, buildContext(saga));
+                advanceSaga(saga);
             } else {
                 String reason = "Payment failed: " + event.failReason();
                 log.warn("Payment failed for saga {}: {}", saga.getId(), reason);
@@ -134,7 +134,7 @@ public class SagaOrchestrator {
                 saga.setLastStepCompletedAt(Instant.now());
                 sagaInstanceRepository.save(saga);
                 log.info("Ticket issuance confirmed for saga {}, advancing to lock confirmation", saga.getId());
-                advanceSaga(saga, buildContext(saga));
+                advanceSaga(saga);
             } else {
                 String reason = "Ticket issuance failed: " + event.failReason();
                 log.warn("Ticket issuance failed for saga {}: {}", saga.getId(), reason);
@@ -170,7 +170,7 @@ public class SagaOrchestrator {
         });
     }
 
-    private void advanceSaga(SagaInstance saga, ReservationContext context) {
+    private void advanceSaga(SagaInstance saga) {
         switch (saga.getCurrentStep()) {
             case INITIATED -> {
                 SagaPaymentCommand cmd = new SagaPaymentCommand(
@@ -223,19 +223,33 @@ public class SagaOrchestrator {
         // Publish all compensation commands in a single transaction, then mark FAILED
         transactionTemplate.executeWithoutResult(status -> {
             if (lastConfirmed.ordinal() >= SagaStep.TICKET_ISSUANCE.ordinal()) {
-                outboxWriter.save(new SagaTicketCompensateCommand(saga.getReservationId()),
-                    SAGA_TICKET_COMPENSATE, saga.getReservationId().toString());
+                outboxWriter.save(
+                    new SagaTicketCompensateCommand(saga.getReservationId()),
+                    SAGA_TICKET_COMPENSATE,
+                    saga.getReservationId().toString()
+                );
                 log.info("Published SagaTicketCompensateCommand for saga {}", saga.getId());
             }
 
             if (lastConfirmed.ordinal() >= SagaStep.PAYMENT.ordinal() && saga.getPaymentId() != null) {
-                outboxWriter.save(new SagaPaymentCompensateCommand(saga.getReservationId(), saga.getPaymentId()),
-                    SAGA_PAYMENT_COMPENSATE, saga.getReservationId().toString());
+                outboxWriter.save(
+                    new SagaPaymentCompensateCommand(
+                        saga.getReservationId(),
+                        saga.getPaymentId()
+                    ),
+                    SAGA_PAYMENT_COMPENSATE,
+                    saga.getReservationId().toString()
+                );
                 log.info("Published SagaPaymentCompensateCommand for saga {}", saga.getId());
             }
 
-            outboxWriter.save(new SagaLockConfirmCompensateCommand(saga.getReservationId()),
-                SAGA_LOCK_CONFIRM_COMPENSATE, saga.getReservationId().toString());
+            outboxWriter.save(
+                new SagaLockConfirmCompensateCommand(
+                    saga.getReservationId()
+                ),
+                SAGA_LOCK_CONFIRM_COMPENSATE,
+                saga.getReservationId().toString()
+            );
             log.info("Published SagaLockConfirmCompensateCommand for saga {}", saga.getId());
 
             saga.setSagaStatus(SagaStatus.FAILED);
@@ -260,14 +274,12 @@ public class SagaOrchestrator {
 
                 log.info("Recovering saga {} (status={}, step={})", saga.getId(), saga.getSagaStatus(), saga.getCurrentStep());
 
-                ReservationContext context = buildContext(saga);
-
                 if (saga.getSagaStatus() == SagaStatus.COMPENSATING) {
                     compensate(saga);
                     return;
                 }
 
-                advanceSaga(saga, context);
+                advanceSaga(saga);
             });
         } catch (Exception e) {
             log.warn("Recovery of saga for reservation {} encountered an error (may be idempotent): {}", reservationId, e.getMessage());
@@ -283,13 +295,15 @@ public class SagaOrchestrator {
             saga.setLastStepCompletedAt(Instant.now());
             sagaInstanceRepository.save(saga);
 
-            reservationRepository.findById(saga.getReservationId()).ifPresent(r -> {
+            reservationRepository.findById(saga.getReservationId())
+                .ifPresent(r -> {
                 r.setStatus(ReservationStatus.COMPLETED);
                 r.setCompletedAt(Instant.now());
                 reservationRepository.save(r);
             });
 
-            outboxWriter.save(new ReservationCompletedEvent(
+            outboxWriter.save(
+                new ReservationCompletedEvent(
                 UUID.randomUUID(),
                 saga.getReservationId(),
                 saga.getUserId(),
@@ -303,17 +317,6 @@ public class SagaOrchestrator {
             log.info("Published ReservationCompletedEvent for saga {}", saga.getId());
         });
         log.info("Saga {} completed successfully", saga.getId());
-    }
-
-    private ReservationContext buildContext(SagaInstance saga) {
-        return ReservationContext.builder()
-            .reservationId(saga.getReservationId())
-            .userId(saga.getUserId())
-            .eventId(saga.getEventId())
-            .tickets(fromJson(saga.getTicketDetails()))
-            .totalAmount(saga.getTotalAmount())
-            .paymentId(saga.getPaymentId())
-            .build();
     }
 
     private String toJson(Object value) {

@@ -25,10 +25,11 @@ public class EmailJobProcessor {
     private final ObjectMapper objectMapper;
     private final EmailJobRepository emailJobRepository;
 
-
     @Transactional
     public void process(UUID jobId) {
-        EmailJob job = emailJobRepository.findById(jobId).orElseThrow(() -> new IllegalStateException("EmailJob not found"));
+        EmailJob job = emailJobRepository
+            .findById(jobId)
+            .orElseThrow(() -> new IllegalStateException("EmailJob not found: " + jobId));
         try {
             Map<String, Object> variables = objectMapper.readValue(
                 job.getVariablesJson(),

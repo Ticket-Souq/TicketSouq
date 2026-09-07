@@ -13,7 +13,11 @@ import java.util.UUID;
     @Index(name = "idx_seat_lock_expires", columnList = "expires_at"),
     @Index(name = "idx_seat_lock_reservation", columnList = "reservation_id")
 })
-@Getter @Setter @NoArgsConstructor @AllArgsConstructor @Builder
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
 @EntityListeners(AuditingEntityListener.class)
 public class SeatLock {
 
